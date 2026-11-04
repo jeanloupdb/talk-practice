@@ -254,7 +254,8 @@ function stopSpeak(){
   setPlay(speakingBtn, false); speakingBtn = null;
 }
 /* Voix Google (Gemini TTS) : toute la reponse en un appel, ~4 s, avec la meme cle. */
-const MODELES_TTS = ["gemini-3.8-flash-tts", "gemini-2.5-flash-preview-tts"];
+const MODELES_TTS = ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts", "gemini-2.5-flash-preview-tts"];
+const ttsModelesKO = new Set(); // modeles de voix dont le quota du jour est epuise
 const STYLE_VITESSE = {0.8:"Speak slowly and very clearly, for a language learner: ", 0.9:"Speak clearly, a little slowly: ", 1:""};
 let ttsGoogleKO = false; // passe a true quand la limite gratuite est atteinte (jusqu'au prochain lancement)
 async function genAudioGoogle(text){
@@ -267,12 +268,19 @@ async function genAudioGoogle(text){
     });
     let r = null;
     for (const m of MODELES_TTS) {
+      if (ttsModelesKO.has(m)) continue;
       r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent",
         {method:"POST", headers:{"Content-Type":"application/json","x-goog-api-key":S.key}, body});
       if (r.ok) break;
-      if (r.status === 429) { ttsGoogleKO = true; throw new Error("quota voix Google"); }
+      const d = await r.text().catch(() => "");
+      if (r.status === 429 && /per_day|PerDay|retry in \d+h/i.test(d)) ttsModelesKO.add(m); // quota du jour : on ne reessaie plus ce modele
+      console.warn("voix " + m + " HTTP " + r.status, d.slice(0, 200));
+      r = null;
     }
-    if (!r.ok) throw new Error("TTS Google HTTP " + r.status);
+    if (!r) {
+      if (MODELES_TTS.every(m => ttsModelesKO.has(m))) ttsGoogleKO = true;
+      throw new Error("voix Google indisponible");
+    }
     const j = await r.json();
     const part = (j.candidates?.[0]?.content?.parts || []).find(p => p.inlineData);
     if (!part) throw new Error("TTS Google : pas d'audio");
@@ -347,7 +355,7 @@ async function speak(text, btn, reveal){
 
 /* ---------- Micro (reconnaissance de Chrome) ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null, listening = false, liveEl = null, heard = "";
+let rec = null, listening = false, liveEl = null, heard = "", micErr = null, micStart = 0;
 if (SR) {
   rec = new SR(); rec.lang = "en-GB"; rec.interimResults = true; rec.continuous = true;
   rec.onresult = e => {
@@ -361,22 +369,30 @@ if (SR) {
     if (!liveEl) { liveEl = el("div","you live"); feed.append(liveEl); }
     liveEl.textContent = heard; scrollDown();
   };
+  // L'erreur arrive AVANT onend : on la garde pour afficher la vraie cause au lieu de "rien entendu".
+  const MSG_MICRO = {
+    "not-allowed": "Micro refusé. Appui long sur l’icône de l’appli → Infos → Autorisations → Micro (ou dans Chrome : ⋮ → Paramètres → Paramètres des sites → Micro).",
+    "service-not-allowed": "La reconnaissance vocale est désactivée sur ce téléphone. Active « Saisie vocale Google » dans les paramètres Android, ou dicte avec le clavier.",
+    "network": "La reconnaissance vocale n’a pas pu joindre Google (réseau). Réessaie, ou dicte avec le clavier.",
+    "audio-capture": "Aucun micro disponible, ou il est utilisé par une autre appli.",
+    "language-not-supported": "L’anglais n’est pas disponible pour la dictée sur ce téléphone. Dicte avec le clavier."
+  };
   rec.onend = () => {
     listening = false; mic.classList.remove("on"); mic.setAttribute("aria-label","Parler");
     liveEl?.remove(); liveEl = null;
-    if (heard) submit(heard); else setStatus("Je n’ai rien entendu. Appuie sur le micro et parle en anglais.");
-    heard = "";
+    if (heard) submit(heard);
+    else if (micErr) setStatus(MSG_MICRO[micErr] || ("Le micro a coupé (" + micErr + "). Réessaie ou dicte avec le clavier."));
+    else if (Date.now() - micStart < 1500) setStatus("Le micro s’est coupé tout de suite, sans explication. Réessaie ; si ça continue, ferme et rouvre l’appli.");
+    else setStatus("Je n’ai rien entendu. Appuie sur le micro et parle en anglais.");
+    heard = ""; micErr = null;
   };
-  rec.onerror = e => {
-    if (e.error === "no-speech" || e.error === "aborted") return;
-    setStatus(e.error === "not-allowed" ? "Autorise le micro pour ce site dans Chrome, ou dicte avec le clavier." : "Le micro a coupé. Réessaie ou dicte avec le clavier.");
-  };
+  rec.onerror = e => { if (e.error !== "no-speech") micErr = e.error; };
 } else mic.hidden = true;
 mic.onclick = () => {
   if (!rec) return;
   if (listening) { rec.stop(); return; }
   stopSpeak(); unlockAudio(); hidePop();
-  heard = "";
+  heard = ""; micErr = null; micStart = Date.now();
   try { rec.start(); listening = true; mic.classList.add("on"); mic.setAttribute("aria-label","Arrêter et envoyer"); setStatus("Je t’écoute… Touche le micro rouge quand tu as fini."); }
   catch { setStatus("Le micro ne démarre pas. Dicte avec le clavier."); }
 };
@@ -412,23 +428,40 @@ async function appelGemini(model, prompt){
   } catch (e) { throw {code:"net", detail:String(e)}; }
 }
 
+let modeleEpuise = null; // modele dont le quota gratuit du jour est epuise (retenu pour la session)
 async function llm(prompt){
   // Google renvoie souvent 503 ("modele tres demande") sur le niveau gratuit : on retente
   // avec une pause, puis on bascule sur le modele de secours si ca ne passe toujours pas.
+  // Un 429 "par jour" = quota du jour epuise sur ce modele : on passe au secours direct.
   const secours = S.model === MODELE_SECOURS ? "gemini-3.5-flash-lite" : MODELE_SECOURS;
-  const essais = [
-    {model:S.model, attente:0}, {model:S.model, attente:1500}, {model:S.model, attente:3000},
-    {model:secours, attente:1000}
-  ];
+  const essais = modeleEpuise === S.model
+    ? [{model:secours, attente:0}, {model:secours, attente:2000}]
+    : [{model:S.model, attente:0}, {model:S.model, attente:1500}, {model:S.model, attente:3000}, {model:secours, attente:1000}];
   let r;
   for (let i = 0; i < essais.length; i++) {
     const {model, attente} = essais[i];
+    const dernier = i === essais.length - 1;
     if (attente) { setStatus(model === S.model ? "Google est saturé, nouvel essai…" : "Toujours saturé, j’essaie le modèle de secours…"); await pause(attente); }
     r = await appelGemini(model, prompt);
     if (r.ok) break;
-    const sature = r.status === 503 || (r.status === 429 && i < essais.length - 1 && model === S.model);
-    if (sature && i < essais.length - 1) continue;
-    const code = r.status === 429 ? "rate" : r.status === 404 ? "model" : (r.status === 400 || r.status === 401 || r.status === 403) ? "key" : r.status === 503 ? "busy" : "http";
+    if (r.status === 503 && !dernier) continue;
+    if (r.status === 429) {
+      const detail = await r.text().catch(() => "");
+      const parJour = /per_day|PerDay|retry in \d+h/i.test(detail);
+      if (model === S.model && !dernier) {
+        if (parJour) {
+          modeleEpuise = S.model;
+          setStatus("Quota gratuit du jour épuisé pour " + S.model + ", je passe sur " + secours + "…");
+          r = await appelGemini(secours, prompt);
+          if (r.ok) break;
+          if (r.status === 429) throw {code:"rate", detail: await r.text().catch(() => "")};
+          continue;
+        }
+        continue; // limite par minute : les essais suivants attendent
+      }
+      throw {code:"rate", detail};
+    }
+    const code = r.status === 404 ? "model" : (r.status === 400 || r.status === 401 || r.status === 403) ? "key" : r.status === 503 ? "busy" : "http";
     throw {code, detail: await r.text().catch(() => "")};
   }
   const j = await r.json();
@@ -538,7 +571,7 @@ async function ask(learner, youEl){
     setStatus({
       key:"Clé API refusée. Vérifie-la dans les réglages ⚙️.",
       model:"Modèle introuvable. Change le nom du modèle dans les réglages ⚙️.",
-      rate:"Limite gratuite atteinte pour l’instant. Attends une minute (ou jusqu’à demain si c’est la limite du jour).",
+      rate:/per_day|PerDay|retry in \d+h/i.test(e?.detail || "") ? "Quota gratuit du jour épuisé, même sur le modèle de secours. Mets un autre modèle dans les réglages ⚙️, ou reviens demain." : "Limite gratuite par minute atteinte. Attends une minute et renvoie.",
       net:"Pas de réseau : la requête n’est pas partie. Vérifie ta connexion et renvoie.",
       busy:"Google est saturé, même avec le modèle de secours. Attends 30 secondes et renvoie.",
       parse:"L’IA a répondu dans un format inattendu. Renvoie, en une phrase plus simple si possible.",

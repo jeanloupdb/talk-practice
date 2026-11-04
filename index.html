@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2457C5">
+<title>Talk Practice</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#FFFFFF;--ink:#14213D;--muted:#5C6785;--accent:#2457C5;--on-accent:#FFFFFF;
+  --stage1:#EAF0FD;--stage2:#E9E6FB;--glow:#B9B2F2;--soft:#F1F3F8;--line:#D8DEEC;
+  --fix-bg:#FFF5E3;--fix-line:#E09A2C;--bad:#B5392F;--good:#18784A;--pop:#14213D;--on-pop:#FFFFFF;--live:#EC4B3E;
+  color-scheme:light;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0D1222;--ink:#E5EAF6;--muted:#9AA6C4;--accent:#7FA4F5;--on-accent:#0D1222;
+  --stage1:#141C33;--stage2:#1B1838;--glow:#3B3373;--soft:#18203A;--line:#26304D;
+  --fix-bg:#2A2213;--fix-line:#E3A43F;--bad:#F2877D;--good:#7DD6A7;--pop:#E5EAF6;--on-pop:#0D1222;--live:#F2877D;color-scheme:dark}}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.4}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+svg{width:24px;height:24px;flex:none}
+.app{display:flex;flex-direction:column;height:100%;max-width:620px;margin:0 auto}
+#stage{flex:1;min-height:0;display:flex;flex-direction:column;border-radius:0 0 34px 34px;
+  background:radial-gradient(120% 60% at 70% 105%,var(--glow),transparent 60%),linear-gradient(180deg,var(--stage1),var(--stage2))}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px 6px}
+.title{font-weight:600;font-size:1.05rem}
+.theme{font-size:.9rem;color:var(--muted)}
+.barbtns{display:flex}
+.iconbtn{background:none;border:none;padding:8px;border-radius:50%;display:grid;place-items:center;color:var(--accent)}
+#voiceStatus{margin:0 18px;font-size:.85rem;color:var(--muted)}
+#feed{flex:1;overflow-y:auto;padding:12px 22px 26px;display:flex;flex-direction:column;gap:18px}
+.empty{margin:auto 0;text-align:center}
+.empty p{color:var(--muted);margin:0 auto 22px;max-width:30ch}
+.primary{background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:14px 28px;font-weight:600;font-size:1.05rem}
+.primary:disabled{opacity:.45;cursor:default}
+.you{align-self:flex-end;text-align:right;color:var(--accent);font-weight:600;font-size:1.25rem;line-height:1.3;max-width:92%}
+.you.live{opacity:.6}
+.fix{background:var(--fix-bg);border-left:4px solid var(--fix-line);border-radius:4px 16px 16px 4px;padding:10px 14px;font-size:.95rem}
+.fix ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
+.wrong{color:var(--bad);text-decoration:line-through}
+.right{color:var(--good);font-weight:700}
+.why{display:block;color:var(--muted);font-size:.88rem}
+.natural{margin:8px 0 0;font-style:italic}
+.cheer{margin:6px 0 0;color:var(--muted);font-size:.88rem}
+.claude .msg{font-size:clamp(1.6rem,7vw,2.15rem);font-weight:600;line-height:1.28;margin:0;transition:filter .25s}
+.claude.old .msg{font-size:1.15rem;font-weight:500;color:var(--muted)}
+.msg.hide{filter:blur(9px);user-select:none;pointer-events:none}
+.chunk{border-bottom:2px dotted color-mix(in srgb,var(--accent) 45%,transparent);border-radius:3px;cursor:pointer}
+.chunk.sel{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.ctrl{display:flex;align-items:center;gap:6px;margin-top:14px}
+.play{width:56px;height:56px;border-radius:50%;border:none;background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent);display:grid;place-items:center}
+.claude.old .play{width:40px;height:40px}
+.claude.old .play svg{width:18px;height:18px}
+.tbtn{border:none;background:none;color:var(--accent);font-weight:600;padding:8px 10px;border-radius:999px;display:flex;gap:6px;align-items:center;font-size:.95rem}
+.claude.old .tbtn span{display:none}
+.fr{margin:10px 0 0;color:var(--muted);font-size:1.02rem}
+.dots{display:flex;gap:6px;padding:8px 0}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--accent);opacity:.3;animation:b 1s infinite}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes b{50%{opacity:1}}
+.pop{position:fixed;z-index:20;max-width:min(80vw,320px);background:var(--pop);color:var(--on-pop);padding:9px 13px;border-radius:12px;font-size:.98rem;box-shadow:0 6px 24px rgba(10,20,50,.25)}
+.pop small{display:block;opacity:.7;font-size:.8rem}
+footer{padding:10px 18px 16px}
+.status{font-size:.88rem;color:var(--muted);min-height:1.2em;margin:0 0 10px;text-align:center}
+.hint{background:var(--soft);border-radius:16px;padding:12px 14px;margin-bottom:12px}
+.hint b{display:block;font-size:1.05rem}
+.hint span{color:var(--muted);font-size:.92rem}
+.row{display:flex;gap:10px;align-items:flex-end}
+textarea{flex:1;resize:none;font:inherit;border:1px solid var(--line);border-radius:16px;padding:10px 12px;background:var(--bg);color:var(--ink);min-height:48px}
+.round{width:48px;height:48px;flex:none;border-radius:50%;border:none;display:grid;place-items:center}
+#hintBtn{background:var(--soft)}
+#send{background:var(--accent);color:var(--on-accent)}
+#mic{width:56px;height:56px;background:var(--accent);color:var(--on-accent)}
+#mic.on{background:var(--live)}
+.round:disabled{opacity:.4;cursor:default}
+.sheetwrap{position:fixed;inset:0;z-index:30;background:rgba(10,15,35,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:620px;max-height:90%;overflow-y:auto;border-radius:24px 24px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px))}
+.sheet h2{margin:0 0 4px;font-size:1.2rem}
+.sheet label{display:block;font-size:.9rem;color:var(--muted);margin:14px 0 6px}
+.sheet input,.sheet select{width:100%;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.sheet a{color:var(--accent)}
+.sheetbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.ghostbtn{background:var(--soft);border:none;border-radius:999px;padding:12px 22px;font-weight:600}
+.tip{font-size:.85rem;color:var(--muted);margin:6px 0 0}
+@media (prefers-reduced-motion:reduce){.dots i{animation:none;opacity:.7}.msg{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <section id="stage">
+    <div class="bar">
+      <div><div class="title">Jeu de rôle</div><div class="theme" id="themeName"></div></div>
+      <div class="barbtns">
+        <button class="iconbtn" id="gear" aria-label="Réglages">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+        <button class="iconbtn" id="newTheme" aria-label="Nouveau thème">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+        </button>
+      </div>
+    </div>
+    <p id="voiceStatus"></p>
+    <div id="feed" aria-live="polite">
+      <div class="empty" id="empty">
+        <p>Je te parle en anglais, tu réponds au micro. Le texte reste flou : écoute d’abord. Touche un mot pour le traduire.</p>
+        <button class="primary" id="start">Commencer</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p class="status" id="status"></p>
+    <div class="hint" id="hintBox" hidden></div>
+    <div class="row">
+      <button class="round" id="hintBtn" disabled aria-label="Astuce"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></button>
+      <textarea id="input" rows="1" placeholder="Réponds en anglais…" aria-label="Ton message en anglais"></textarea>
+      <button class="round" id="send" aria-label="Envoyer" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
+      <button class="round" id="mic" aria-label="Parler" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+    </div>
+  </footer>
+</div>
+
+<div class="sheetwrap" id="settings" hidden>
+  <div class="sheet" role="dialog" aria-label="Réglages">
+    <h2>Réglages</h2>
+    <label for="keyIn">Clé API Gemini</label>
+    <input id="keyIn" type="password" autocomplete="off" placeholder="Colle ta clé ici">
+    <p class="tip">Gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Elle reste uniquement sur ce téléphone.</p>
+    <label for="modelIn">Modèle Gemini</label>
+    <input id="modelIn" autocomplete="off">
+    <p class="tip">Si tu as une erreur « modèle introuvable », mets un modèle Flash ou Flash-Lite listé dans AI Studio.</p>
+    <label for="voiceSel">Voix</label>
+    <select id="voiceSel">
+      <option value="af_heart">Heart – américaine (la plus naturelle)</option>
+      <option value="af_bella">Bella – américaine</option>
+      <option value="am_michael">Michael – américain</option>
+      <option value="am_fenrir">Fenrir – américain</option>
+      <option value="bf_emma">Emma – britannique</option>
+      <option value="bf_isabella">Isabella – britannique</option>
+      <option value="bm_george">George – britannique</option>
+      <option value="bm_fable">Fable – britannique</option>
+    </select>
+    <label for="speedSel">Vitesse</label>
+    <select id="speedSel"><option value="0.8">Lente</option><option value="0.9">Un peu lente</option><option value="1">Normale</option></select>
+    <div class="sheetbtns"><button class="ghostbtn" id="testVoice">Tester la voix</button><button class="primary" id="saveSettings">Enregistrer</button></div>
+  </div>
+</div>
+<div class="pop" id="pop" hidden></div>
+
+<script>
+/* ---------- Réglages ---------- */
+const DEFAULTS = {key:"", model:"gemini-flash-latest", voice:"af_heart", speed:0.9};
+let S = {...DEFAULTS};
+try { S = {...DEFAULTS, ...JSON.parse(localStorage.getItem("tp-settings") || "{}")}; } catch {}
+function saveS(){ try { localStorage.setItem("tp-settings", JSON.stringify(S)); } catch {} }
+
+const THEMES = [
+  {fr:"Au pub à Dublin", en:"chatting at a pub in Dublin", role:"a chatty Dublin bartender"},
+  {fr:"Demander ton chemin à Galway", en:"asking for directions in Galway", role:"a helpful local in Galway"},
+  {fr:"Discuter avec ton hôte Airbnb", en:"small talk with your Airbnb host", role:"the learner’s Airbnb host in Cork"},
+  {fr:"Entretien de stage en systèmes embarqués", en:"a job interview for an embedded systems internship", role:"Sarah, engineering manager at a company building firmware for medical devices"},
+  {fr:"Parler de la météo", en:"talking about the weather", role:"a friendly Irish pensioner waiting at a bus stop"},
+  {fr:"Organiser un week-end en Irlande", en:"planning a weekend trip around Ireland", role:"a hostel receptionist who knows the country well"},
+  {fr:"Commander au restaurant", en:"ordering food in a restaurant", role:"a waiter in a busy Irish restaurant"},
+  {fr:"Expliquer tes études d’ingénieur", en:"explaining your engineering studies", role:"a curious Irish student the learner just met"},
+  {fr:"Acheter un billet de train", en:"buying a train ticket at Heuston station", role:"a ticket office clerk"},
+  {fr:"Regarder un match de rugby", en:"watching a rugby match with locals", role:"a passionate Irish rugby fan"}
+];
+const PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5z"/></svg>';
+const PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const TRANS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h9M8.5 3v2M11 5c-1 4-3.5 7-7 9M6 9c1.2 2 3 3.6 5 4.5M13 21l4-9 4 9M14.5 18h5"/></svg>';
+
+const $ = id => document.getElementById(id);
+const feed = $("feed"), input = $("input"), mic = $("mic"), statusEl = $("status"), pop = $("pop");
+let theme = null, history = [], busy = false, started = false, lastHint = null;
+function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function setStatus(t){ statusEl.textContent = t || ""; }
+function setVoiceStatus(t){ $("voiceStatus").textContent = t || ""; }
+function scrollDown(){ feed.scrollTop = feed.scrollHeight; }
+function pickTheme(){ let t; do { t = THEMES[Math.floor(Math.random()*THEMES.length)]; } while (t === theme); theme = t; $("themeName").textContent = t.fr; }
+pickTheme();
+
+/* ---------- Voix IA (Kokoro, dans le téléphone) ---------- */
+let tts = null, ttsState = "idle", actx = null, currentSrc = null, playToken = 0, speakingBtn = null;
+const audioCache = new Map();
+function unlockAudio(){
+  try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch {}
+}
+async function loadTTS(){
+  if (ttsState !== "idle") return;
+  ttsState = "loading";
+  setVoiceStatus("Téléchargement de la voix IA (environ 90 Mo, une seule fois)…");
+  try {
+    const { KokoroTTS } = await import("https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm");
+    tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", {
+      dtype: "q8", device: "wasm",
+      progress_callback: p => { if (p.status === "progress" && /onnx$/.test(p.file || "")) setVoiceStatus("Téléchargement de la voix IA : " + Math.round(p.progress) + " %"); }
+    });
+    ttsState = "ready"; setVoiceStatus("");
+  } catch (e) {
+    console.error(e); ttsState = "failed";
+    setVoiceStatus("Voix IA indisponible : j’utilise la voix du téléphone.");
+  }
+}
+function splitSentences(t){ return (t.match(/[^.!?]+[.!?]*\s*/g) || [t]).map(s => s.trim()).filter(Boolean); }
+async function genAudio(sentence){
+  const k = S.voice + "|" + S.speed + "|" + sentence;
+  if (audioCache.has(k)) return audioCache.get(k);
+  const p = tts.generate(sentence, {voice:S.voice, speed:Number(S.speed)});
+  audioCache.set(k, p);
+  if (audioCache.size > 80) audioCache.delete(audioCache.keys().next().value);
+  return p;
+}
+function playBuffer(a){
+  return new Promise(res => {
+    const buf = actx.createBuffer(1, a.audio.length, a.sampling_rate);
+    buf.copyToChannel(a.audio, 0);
+    const src = actx.createBufferSource(); src.buffer = buf; src.connect(actx.destination);
+    src.onended = () => { if (currentSrc === src) currentSrc = null; res(); };
+    currentSrc = src; src.start();
+  });
+}
+function setPlay(btn, on){ if (!btn) return; btn.innerHTML = on ? PAUSE : PLAY; btn.setAttribute("aria-label", on ? "Pause" : "Écouter"); }
+function stopSpeak(){
+  playToken++;
+  try { currentSrc?.stop(); } catch {}
+  currentSrc = null;
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  setPlay(speakingBtn, false); speakingBtn = null;
+}
+async function speak(text, btn, reveal){
+  stopSpeak(); unlockAudio();
+  const token = ++playToken;
+  speakingBtn = btn; setPlay(btn, true);
+  const done = () => { if (speakingBtn === btn && token === playToken) { setPlay(btn, false); speakingBtn = null; } };
+  const parts = splitSentences(text);
+  if (ttsState === "ready" && actx) {
+    try {
+      let next = genAudio(parts[0]);
+      for (let i = 0; i < parts.length; i++) {
+        const a = await next; if (token !== playToken) return;
+        if (i + 1 < parts.length) next = genAudio(parts[i+1]);
+        await playBuffer(a); if (token !== playToken) return;
+      }
+    } catch (e) { console.error(e); }
+    return done();
+  }
+  if (!("speechSynthesis" in window)) { reveal && reveal(); return done(); }
+  const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+  const v = vs.find(v => /en[-_](US|GB)/i.test(v.lang)) || vs[0];
+  parts.forEach((p, i) => {
+    const u = new SpeechSynthesisUtterance(p);
+    u.lang = v?.lang || "en-US"; if (v) u.voice = v; u.rate = Number(S.speed) * 0.95;
+    if (i === parts.length - 1) u.onend = done;
+    u.onerror = done;
+    speechSynthesis.speak(u);
+  });
+}
+
+/* ---------- Micro (reconnaissance de Chrome) ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false, liveEl = null, heard = "";
+if (SR) {
+  rec = new SR(); rec.lang = "en-GB"; rec.interimResults = true; rec.continuous = true;
+  rec.onresult = e => {
+    heard = ""; for (const r of e.results) heard += r[0].transcript;
+    heard = heard.trim();
+    if (!liveEl) { liveEl = el("div","you live"); feed.append(liveEl); }
+    liveEl.textContent = heard; scrollDown();
+  };
+  rec.onend = () => {
+    listening = false; mic.classList.remove("on"); mic.setAttribute("aria-label","Parler");
+    liveEl?.remove(); liveEl = null;
+    if (heard) submit(heard); else setStatus("Je n’ai rien entendu. Appuie sur le micro et parle en anglais.");
+    heard = "";
+  };
+  rec.onerror = e => {
+    if (e.error === "no-speech" || e.error === "aborted") return;
+    setStatus(e.error === "not-allowed" ? "Autorise le micro pour ce site dans Chrome, ou dicte avec le clavier." : "Le micro a coupé. Réessaie ou dicte avec le clavier.");
+  };
+} else mic.hidden = true;
+mic.onclick = () => {
+  if (!rec) return;
+  if (listening) { rec.stop(); return; }
+  stopSpeak(); unlockAudio(); hidePop();
+  heard = "";
+  try { rec.start(); listening = true; mic.classList.add("on"); mic.setAttribute("aria-label","Arrêter et envoyer"); setStatus("Je t’écoute… Touche le micro rouge quand tu as fini."); }
+  catch { setStatus("Le micro ne démarre pas. Dicte avec le clavier."); }
+};
+
+/* ---------- Traduction au toucher ---------- */
+let selChunk = null;
+function hidePop(){ pop.hidden = true; selChunk?.classList.remove("sel"); selChunk = null; }
+function showPop(span, en, fr){
+  hidePop(); selChunk = span; span.classList.add("sel");
+  pop.replaceChildren(document.createTextNode(fr || "—"), el("small", null, en));
+  pop.hidden = false;
+  const r = span.getBoundingClientRect(), p = pop.getBoundingClientRect();
+  const left = Math.min(Math.max(8, r.left + r.width/2 - p.width/2), window.innerWidth - p.width - 8);
+  let top = r.top - p.height - 10; if (top < 8) top = r.bottom + 10;
+  pop.style.left = left + "px"; pop.style.top = top + "px";
+}
+document.addEventListener("click", e => { if (!e.target.closest(".chunk") && !e.target.closest("#pop")) hidePop(); });
+feed.addEventListener("scroll", hidePop);
+
+/* ---------- IA (Gemini) ---------- */
+async function llm(prompt){
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(S.model) + ":generateContent";
+  const r = await fetch(url, {
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-goog-api-key":S.key},
+    body: JSON.stringify({contents:[{role:"user", parts:[{text:prompt}]}], generationConfig:{responseMimeType:"application/json", temperature:0.8}})
+  });
+  if (!r.ok) {
+    const code = r.status === 429 ? "rate" : r.status === 404 ? "model" : (r.status === 400 || r.status === 401 || r.status === 403) ? "key" : "http";
+    throw {code, detail: await r.text().catch(() => "")};
+  }
+  const j = await r.json();
+  const txt = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
+  return JSON.parse(txt.replace(/```json|```/g, "").trim());
+}
+
+function buildPrompt(learner){
+  const transcript = history.map(h => (h.role === "user" ? "Learner: " : "You: ") + h.content).join("\n") || "(nothing yet)";
+  return `You are a friendly English conversation partner for a French-speaking engineering student travelling in Ireland who wants to speak more fluently (intermediate level).
+Theme: ${theme.en}. Play this role: ${theme.role}. Stay roughly on the theme, but follow the learner if they go elsewhere.
+
+The learner's messages are transcribed from SPEECH: ignore spelling, punctuation and capital letters. Correct only grammar, vocabulary, word choice and unnatural phrasing. If a word looks wrongly transcribed in a way that suggests a pronunciation problem, add a correction whose explanation starts with "Prononciation ?". At most the 3 most useful corrections. Explanations in French, 15 words max.
+
+Your reply is READ ALOUD: 2 to 4 short spoken sentences, natural everyday English, no emojis, no lists. Write it the way people really talk: short sentences, natural openers (Oh, Well, Right, Ah, So), exclamations where you mean them, clear punctuation. Always end with one question that keeps the conversation going.
+
+Split your reply into chunks of 1 to 4 words, in order, which together form the exact reply. Keep idioms, phrasal verbs and set expressions in a single chunk. Attach punctuation to its chunk. "fr" is the French translation of that chunk in context.
+
+Conversation so far:
+${transcript}
+
+${learner ? `The learner just said: """${learner}"""` : "Start the conversation now: greet the learner in your role and ask a first, easy question. corrections must be [] and natural_version \"\"."}
+
+Respond with JSON only, exactly this shape:
+{"corrections":[{"original":"...","corrected":"...","explanation_fr":"..."}],"natural_version":"the learner's whole message rewritten naturally, or \"\" if already good","encouragement_fr":"one short encouraging sentence in French","chunks":[{"en":"Hello there,","fr":"Bonjour,"}],"reply_fr":"French translation of your whole reply","hint_en":"a short, simple answer the learner could give","hint_fr":"its French translation"}`;
+}
+
+function renderFix(d, after){
+  const box = el("div","fix");
+  const list = Array.isArray(d.corrections) ? d.corrections.filter(c => c && c.corrected) : [];
+  if (list.length) {
+    const ul = el("ul");
+    for (const c of list) {
+      const li = el("li");
+      if (c.original) li.append(el("span","wrong",c.original), document.createTextNode(" → "));
+      li.append(el("span","right",c.corrected));
+      if (c.explanation_fr) li.append(el("span","why",c.explanation_fr));
+      ul.append(li);
+    }
+    box.append(ul);
+    if (d.natural_version) box.append(el("p","natural","« " + d.natural_version + " »"));
+  } else box.append(el("div","right","✓ Rien à corriger"));
+  if (d.encouragement_fr) box.append(el("p","cheer",d.encouragement_fr));
+  after.after(box);
+}
+
+function renderClaude(chunks, replyFr){
+  feed.querySelectorAll(".claude").forEach(c => c.classList.add("old"));
+  const wrap = el("div","claude");
+  const msg = el("p","msg hide");
+  chunks.forEach((c, i) => {
+    const s = el("span","chunk",c.en); s.tabIndex = 0;
+    s.onclick = e => { e.stopPropagation(); showPop(s, c.en, c.fr); };
+    s.onkeydown = e => { if (e.key === "Enter") showPop(s, c.en, c.fr); };
+    msg.append(s); if (i < chunks.length - 1) msg.append(" ");
+  });
+  const text = chunks.map(c => c.en).join(" ");
+  const ctrl = el("div","ctrl");
+  const play = el("button","play"); setPlay(play, false);
+  const eye = el("button","tbtn"); eye.innerHTML = EYE; const eyeL = el("span",null,"Afficher"); eye.append(eyeL);
+  const tr = el("button","tbtn"); tr.innerHTML = TRANS; const trL = el("span",null,"Traduire"); tr.append(trL);
+  const fr = el("p","fr",replyFr || ""); fr.hidden = true;
+  const reveal = (on = true) => { msg.classList.toggle("hide", !on); eyeL.textContent = on ? "Masquer" : "Afficher"; };
+  play.onclick = () => { if (speakingBtn === play) stopSpeak(); else speak(text, play, reveal); };
+  eye.onclick = () => { hidePop(); reveal(msg.classList.contains("hide")); };
+  tr.onclick = () => { fr.hidden = !fr.hidden; trL.textContent = fr.hidden ? "Traduire" : "Cacher"; if (!fr.hidden) reveal(true); };
+  ctrl.append(play, eye); if (replyFr) ctrl.append(tr);
+  wrap.append(msg, ctrl, fr); feed.append(wrap);
+  return {text, play, reveal};
+}
+
+async function ask(learner, youEl){
+  if (busy) return;
+  busy = true; mic.disabled = true; updateSend(); hidePop();
+  $("hintBox").hidden = true; $("hintBtn").disabled = true;
+  const dots = el("div","dots"); dots.append(el("i"), el("i"), el("i"));
+  feed.append(dots); scrollDown(); setStatus("");
+  try {
+    const d = await llm(buildPrompt(learner));
+    dots.remove();
+    const chunks = Array.isArray(d?.chunks) ? d.chunks.filter(c => c && typeof c.en === "string" && c.en.trim()) : [];
+    if (!chunks.length) throw {code:"shape"};
+    if (learner) renderFix(d, youEl);
+    const t = renderClaude(chunks, d.reply_fr);
+    history.push({role:"assistant", content:t.text});
+    if (history.length > 20) history = history.slice(-20);
+    lastHint = d.hint_en ? {en:d.hint_en, fr:d.hint_fr || ""} : null;
+    $("hintBtn").disabled = !lastHint;
+    setStatus(rec ? "À toi : touche le micro, ou dicte avec le clavier." : "À toi : dicte avec le micro du clavier.");
+    scrollDown();
+    speak(t.text, t.play, t.reveal);
+  } catch (e) {
+    dots.remove(); console.error(e);
+    if (learner) { history.pop(); youEl?.remove(); input.value = learner; updateSend(); }
+    setStatus({
+      key:"Clé API refusée. Vérifie-la dans les réglages ⚙️.",
+      model:"Modèle introuvable. Change le nom du modèle dans les réglages ⚙️.",
+      rate:"Limite gratuite atteinte pour l’instant. Attends une minute (ou jusqu’à demain si c’est la limite du jour)."
+    }[e?.code] || "La réponse n’est pas arrivée. Vérifie ta connexion et renvoie.");
+  } finally {
+    busy = false; mic.disabled = !started; updateSend();
+  }
+}
+
+function submit(text){
+  const t = (text ?? input.value).trim();
+  if (!t || busy || !started) return;
+  stopSpeak(); unlockAudio();
+  input.value = ""; input.style.height = ""; updateSend();
+  const you = el("div","you",t); feed.append(you); scrollDown();
+  history.push({role:"user", content:t});
+  ask(t, you);
+}
+function begin(){
+  if (!S.key) { openSettings(); return; }
+  unlockAudio(); stopSpeak(); loadTTS();
+  started = true; history = []; lastHint = null;
+  feed.replaceChildren();
+  ask(null);
+}
+function updateSend(){ $("send").disabled = busy || !started || !input.value.trim(); }
+
+/* ---------- Réglages UI ---------- */
+function openSettings(){
+  $("keyIn").value = S.key; $("modelIn").value = S.model; $("voiceSel").value = S.voice; $("speedSel").value = String(S.speed);
+  $("settings").hidden = false;
+}
+$("gear").onclick = openSettings;
+$("saveSettings").onclick = () => {
+  S.key = $("keyIn").value.trim(); S.model = $("modelIn").value.trim() || DEFAULTS.model;
+  S.voice = $("voiceSel").value; S.speed = Number($("speedSel").value);
+  saveS(); $("settings").hidden = true;
+  if (!started && S.key) setStatus("C’est prêt. Touche « Commencer ».");
+};
+$("settings").onclick = e => { if (e.target.id === "settings") $("settings").hidden = true; };
+$("testVoice").onclick = async () => {
+  S.voice = $("voiceSel").value; S.speed = Number($("speedSel").value);
+  unlockAudio(); loadTTS();
+  if (ttsState === "loading") setStatus("La voix IA se télécharge, l’essai utilise la voix du téléphone en attendant.");
+  speak("Hi there! How are you getting on? Is this voice easy to understand?", null, null);
+};
+
+$("start").onclick = begin;
+$("send").onclick = () => submit();
+input.addEventListener("input", () => { updateSend(); input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 140) + "px"; });
+input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } });
+$("hintBtn").onclick = () => {
+  const box = $("hintBox");
+  if (!box.hidden) { box.hidden = true; return; }
+  if (!lastHint) return;
+  box.replaceChildren(el("b", null, lastHint.en), el("span", null, lastHint.fr));
+  box.hidden = false;
+};
+$("newTheme").onclick = () => { if (busy) return; stopSpeak(); pickTheme(); if (started) begin(); };
+
+if (!S.key) setStatus("Première fois ? Ajoute ta clé Gemini gratuite dans les réglages ⚙️.");
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>

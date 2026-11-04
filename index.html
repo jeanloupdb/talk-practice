@@ -319,18 +319,37 @@ document.addEventListener("click", e => { if (!e.target.closest(".chunk") && !e.
 feed.addEventListener("scroll", hidePop);
 
 /* ---------- IA (Gemini) ---------- */
-async function llm(prompt){
-  const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(S.model) + ":generateContent";
-  let r;
+// Modele de secours quand le modele principal est sature (503) : Flash-Lite est moins demande.
+const MODELE_SECOURS = "gemini-flash-lite-latest";
+const pause = ms => new Promise(ok => setTimeout(ok, ms));
+
+async function appelGemini(model, prompt){
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent";
   try {
-    r = await fetch(url, {
+    return await fetch(url, {
       method:"POST",
       headers:{"Content-Type":"application/json","x-goog-api-key":S.key},
       body: JSON.stringify({contents:[{role:"user", parts:[{text:prompt}]}], generationConfig:{responseMimeType:"application/json", temperature:0.8}})
     });
   } catch (e) { throw {code:"net", detail:String(e)}; }
-  if (!r.ok) {
-    const code = r.status === 429 ? "rate" : r.status === 404 ? "model" : (r.status === 400 || r.status === 401 || r.status === 403) ? "key" : "http";
+}
+
+async function llm(prompt){
+  // Google renvoie souvent 503 ("modele tres demande") sur le niveau gratuit : on retente
+  // avec une pause, puis on bascule sur le modele de secours si ca ne passe toujours pas.
+  const essais = [
+    {model:S.model, attente:0}, {model:S.model, attente:1500}, {model:S.model, attente:3000},
+    {model:MODELE_SECOURS, attente:1000}
+  ];
+  let r;
+  for (let i = 0; i < essais.length; i++) {
+    const {model, attente} = essais[i];
+    if (attente) { setStatus(model === S.model ? "Google est saturé, nouvel essai…" : "Toujours saturé, j’essaie le modèle de secours…"); await pause(attente); }
+    r = await appelGemini(model, prompt);
+    if (r.ok) break;
+    const sature = r.status === 503 || (r.status === 429 && i < essais.length - 1 && model === S.model);
+    if (sature && i < essais.length - 1) continue;
+    const code = r.status === 429 ? "rate" : r.status === 404 ? "model" : (r.status === 400 || r.status === 401 || r.status === 403) ? "key" : r.status === 503 ? "busy" : "http";
     throw {code, detail: await r.text().catch(() => "")};
   }
   const j = await r.json();
@@ -442,6 +461,7 @@ async function ask(learner, youEl){
       model:"Modèle introuvable. Change le nom du modèle dans les réglages ⚙️.",
       rate:"Limite gratuite atteinte pour l’instant. Attends une minute (ou jusqu’à demain si c’est la limite du jour).",
       net:"Pas de réseau : la requête n’est pas partie. Vérifie ta connexion et renvoie.",
+      busy:"Google est saturé, même avec le modèle de secours. Attends 30 secondes et renvoie.",
       parse:"L’IA a répondu dans un format inattendu. Renvoie, en une phrase plus simple si possible.",
       shape:"L’IA a répondu dans un format inattendu. Renvoie, en une phrase plus simple si possible.",
       http:"Erreur côté Google (" + (e?.detail || "").slice(0, 80) + "). Réessaie dans un instant."

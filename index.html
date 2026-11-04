@@ -137,18 +137,26 @@ textarea{flex:1;resize:none;font:inherit;border:1px solid var(--line);border-rad
     <p class="tip">Gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Elle reste uniquement sur ce téléphone.</p>
     <label for="modelIn">Modèle Gemini</label>
     <input id="modelIn" autocomplete="off">
-    <p class="tip">Si tu as une erreur « modèle introuvable », mets un modèle Flash ou Flash-Lite listé dans AI Studio.</p>
+    <p class="tip">Flash-Lite répond plus vite et est moins souvent saturé que Flash. Si tu as une erreur « modèle introuvable », mets un modèle listé dans AI Studio.</p>
     <label for="voiceSel">Voix</label>
     <select id="voiceSel">
-      <option value="af_heart">Heart – américaine (la plus naturelle)</option>
-      <option value="af_bella">Bella – américaine</option>
-      <option value="am_michael">Michael – américain</option>
-      <option value="am_fenrir">Fenrir – américain</option>
-      <option value="bf_emma">Emma – britannique</option>
-      <option value="bf_isabella">Isabella – britannique</option>
-      <option value="bm_george">George – britannique</option>
-      <option value="bm_fable">Fable – britannique</option>
+      <optgroup label="Google, rapide (avec ta clé, gratuit)">
+        <option value="g:Kore">Kore – femme, posée</option>
+        <option value="g:Aoede">Aoede – femme, enjouée</option>
+        <option value="g:Puck">Puck – homme, vif</option>
+        <option value="g:Charon">Charon – homme, grave</option>
+      </optgroup>
+      <optgroup label="Dans le téléphone, lent (marche hors ligne, 90 Mo)">
+        <option value="af_heart">Heart – américaine</option>
+        <option value="am_michael">Michael – américain</option>
+        <option value="bf_emma">Emma – britannique</option>
+        <option value="bm_george">George – britannique</option>
+      </optgroup>
+      <optgroup label="Voix du téléphone, instantanée">
+        <option value="sys">Voix système (qualité moindre)</option>
+      </optgroup>
     </select>
+    <p class="tip">Si la voix Google atteint sa limite gratuite, l’appli bascule toute seule sur la voix du téléphone.</p>
     <label for="speedSel">Vitesse</label>
     <select id="speedSel"><option value="0.8">Lente</option><option value="0.9">Un peu lente</option><option value="1">Normale</option></select>
     <div class="sheetbtns"><button class="ghostbtn" id="testVoice">Tester la voix</button><button class="primary" id="saveSettings">Enregistrer</button></div>
@@ -158,10 +166,16 @@ textarea{flex:1;resize:none;font:inherit;border:1px solid var(--line);border-rad
 
 <script>
 /* ---------- Réglages ---------- */
-const DEFAULTS = {key:"", model:"gemini-flash-latest", voice:"af_heart", speed:0.9};
+const DEFAULTS = {key:"", model:"gemini-flash-lite-latest", voice:"g:Kore", speed:0.9};
 let S = {...DEFAULTS};
 try { S = {...DEFAULTS, ...JSON.parse(localStorage.getItem("tp-settings") || "{}")}; } catch {}
 function saveS(){ try { localStorage.setItem("tp-settings", JSON.stringify(S)); } catch {} }
+// Migration des reglages de la v1 : Flash etait sature et la voix dans le telephone trop lente.
+if ((S.v || 1) < 2) {
+  if (S.model === "gemini-flash-latest") S.model = DEFAULTS.model;
+  if (!/^(g:|sys$)/.test(S.voice)) S.voice = DEFAULTS.voice;
+  S.v = 2; saveS();
+}
 
 const THEMES = [
   {fr:"Au pub à Dublin", en:"chatting at a pub in Dublin", role:"a chatty Dublin bartender"},
@@ -196,6 +210,7 @@ const audioCache = new Map();
 function unlockAudio(){
   try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch {}
 }
+function voixKokoro(){ return !S.voice.startsWith("g:") && S.voice !== "sys"; }
 async function loadTTS(){
   if (ttsState !== "idle") return;
   ttsState = "loading";
@@ -238,13 +253,75 @@ function stopSpeak(){
   if ("speechSynthesis" in window) speechSynthesis.cancel();
   setPlay(speakingBtn, false); speakingBtn = null;
 }
+/* Voix Google (Gemini TTS) : toute la reponse en un appel, ~4 s, avec la meme cle. */
+const MODELES_TTS = ["gemini-3.8-flash-tts", "gemini-2.5-flash-preview-tts"];
+const STYLE_VITESSE = {0.8:"Speak slowly and very clearly, for a language learner: ", 0.9:"Speak clearly, a little slowly: ", 1:""};
+let ttsGoogleKO = false; // passe a true quand la limite gratuite est atteinte (jusqu'au prochain lancement)
+async function genAudioGoogle(text){
+  const k = "g|" + S.voice + "|" + S.speed + "|" + text;
+  if (audioCache.has(k)) return audioCache.get(k);
+  const p = (async () => {
+    const body = JSON.stringify({
+      contents:[{parts:[{text:(STYLE_VITESSE[S.speed] || "") + text}]}],
+      generationConfig:{responseModalities:["AUDIO"], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:S.voice.slice(2)}}}}
+    });
+    let r = null;
+    for (const m of MODELES_TTS) {
+      r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent",
+        {method:"POST", headers:{"Content-Type":"application/json","x-goog-api-key":S.key}, body});
+      if (r.ok) break;
+      if (r.status === 429) { ttsGoogleKO = true; throw new Error("quota voix Google"); }
+    }
+    if (!r.ok) throw new Error("TTS Google HTTP " + r.status);
+    const j = await r.json();
+    const part = (j.candidates?.[0]?.content?.parts || []).find(p => p.inlineData);
+    if (!part) throw new Error("TTS Google : pas d'audio");
+    const bin = atob(part.inlineData.data), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const mime = part.inlineData.mimeType || "";
+    // Google renvoie du PCM 16 bits, soit dans un WAV (3.8), soit brut (audio/L16;rate=24000).
+    // On lit l'en-tete WAV a la main : plus simple et plus fiable que decodeAudioData.
+    let rate = Number((mime.match(/rate=(\d+)/) || [])[1]) || 24000, canaux = 1, debut = 0, fin = bytes.length;
+    const dv = new DataView(bytes.buffer), tag = o => String.fromCharCode(bytes[o], bytes[o+1], bytes[o+2], bytes[o+3]);
+    if (tag(0) === "RIFF" && tag(8) === "WAVE") {
+      let o = 12, bits = 16;
+      while (o + 8 <= bytes.length) {
+        const id = tag(o), taille = dv.getUint32(o + 4, true);
+        if (id === "fmt ") { canaux = dv.getUint16(o + 10, true); rate = dv.getUint32(o + 12, true); bits = dv.getUint16(o + 22, true); }
+        if (id === "data") { debut = o + 8; fin = Math.min(bytes.length, debut + taille); break; }
+        o += 8 + taille + (taille & 1);
+      }
+      if (bits !== 16) { const buf = await actx.decodeAudioData(bytes.buffer); return {audio: buf.getChannelData(0), sampling_rate: buf.sampleRate}; }
+    }
+    const n = Math.floor((fin - debut) / 2 / canaux), f32 = new Float32Array(n);
+    for (let i = 0; i < n; i++) f32[i] = dv.getInt16(debut + i * 2 * canaux, true) / 32768;
+    return {audio: f32, sampling_rate: rate};
+  })();
+  audioCache.set(k, p);
+  p.catch(() => audioCache.delete(k));
+  if (audioCache.size > 80) audioCache.delete(audioCache.keys().next().value);
+  return p;
+}
+
 async function speak(text, btn, reveal){
   stopSpeak(); unlockAudio();
   const token = ++playToken;
   speakingBtn = btn; setPlay(btn, true);
   const done = () => { if (speakingBtn === btn && token === playToken) { setPlay(btn, false); speakingBtn = null; } };
   const parts = splitSentences(text);
-  if (ttsState === "ready" && actx) {
+  // 1) Voix Google : un seul appel pour toute la reponse.
+  if (S.voice.startsWith("g:") && actx && S.key && !ttsGoogleKO) {
+    try {
+      const a = await genAudioGoogle(text); if (token !== playToken) return;
+      await playBuffer(a); if (token !== playToken) return;
+      return done();
+    } catch (e) {
+      console.warn("voix Google indisponible, secours", e);
+      if (ttsGoogleKO) setVoiceStatus("Limite gratuite de la voix Google atteinte : voix du téléphone jusqu’à demain.");
+    }
+  }
+  // 2) Voix Kokoro dans le telephone (si elle a ete chargee).
+  if (ttsState === "ready" && actx && !S.voice.startsWith("g:") && S.voice !== "sys") {
     try {
       let next = genAudio(parts[0]);
       for (let i = 0; i < parts.length; i++) {
@@ -255,6 +332,7 @@ async function speak(text, btn, reveal){
     } catch (e) { console.error(e); }
     return done();
   }
+  // 3) Voix systeme du telephone.
   if (!("speechSynthesis" in window)) { reveal && reveal(); return done(); }
   const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
   const v = vs.find(v => /en[-_](US|GB)/i.test(v.lang)) || vs[0];
@@ -337,9 +415,10 @@ async function appelGemini(model, prompt){
 async function llm(prompt){
   // Google renvoie souvent 503 ("modele tres demande") sur le niveau gratuit : on retente
   // avec une pause, puis on bascule sur le modele de secours si ca ne passe toujours pas.
+  const secours = S.model === MODELE_SECOURS ? "gemini-3.5-flash-lite" : MODELE_SECOURS;
   const essais = [
     {model:S.model, attente:0}, {model:S.model, attente:1500}, {model:S.model, attente:3000},
-    {model:MODELE_SECOURS, attente:1000}
+    {model:secours, attente:1000}
   ];
   let r;
   for (let i = 0; i < essais.length; i++) {
@@ -482,7 +561,7 @@ function submit(text){
 }
 function begin(){
   if (!S.key) { openSettings(); return; }
-  unlockAudio(); stopSpeak(); loadTTS();
+  unlockAudio(); stopSpeak(); if (voixKokoro()) loadTTS();
   started = true; history = []; lastHint = null;
   feed.replaceChildren();
   ask(null);
@@ -504,7 +583,7 @@ $("saveSettings").onclick = () => {
 $("settings").onclick = e => { if (e.target.id === "settings") $("settings").hidden = true; };
 $("testVoice").onclick = async () => {
   S.voice = $("voiceSel").value; S.speed = Number($("speedSel").value);
-  unlockAudio(); loadTTS();
+  unlockAudio(); if (voixKokoro()) loadTTS();
   if (ttsState === "loading") setStatus("La voix IA se télécharge, l’essai utilise la voix du téléphone en attendant.");
   speak("Hi there! How are you getting on? Is this voice easy to understand?", null, null);
 };

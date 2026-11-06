@@ -35,6 +35,21 @@ svg{width:24px;height:24px;flex:none}
 .title{font-weight:600;font-size:1.05rem}
 .theme{font-size:.9rem;color:var(--muted)}
 .barbtns{display:flex}
+.themebtn{background:none;border:none;padding:4px 8px;margin:-4px -8px;border-radius:14px;text-align:left;display:block;min-width:0}
+.themebtn:active{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.themebtn .title,.themebtn .theme{display:flex;align-items:center;gap:2px}
+.chev{width:18px;height:18px;color:var(--accent);margin-left:2px}
+.create{display:flex;align-items:center;gap:14px;background:var(--soft);border-radius:18px;padding:12px 14px;margin:12px 0 6px}
+.create b{display:block}
+.create span{display:block;color:var(--muted);font-size:.88rem}
+#roleMic{width:52px;height:52px;background:var(--accent);color:var(--on-accent)}
+#roleMic.on{background:var(--live)}
+.rgroup{font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 4px 4px}
+.ritem{display:flex;align-items:center;gap:8px}
+.rbtn{flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none;border:none;text-align:left;padding:13px 4px;border-bottom:1px solid var(--line);font-size:1rem}
+.rbtn.cur{color:var(--accent);font-weight:700}
+.rbtn.cur::after{content:"✓";font-weight:700}
+.rdel{background:none;border:none;color:var(--muted);padding:8px;font-size:1.2rem;line-height:1}
 .iconbtn{background:none;border:none;padding:8px;border-radius:50%;display:grid;place-items:center;color:var(--accent)}
 #voiceStatus{margin:0 18px;font-size:.85rem;color:var(--muted)}
 #feed{flex:1;overflow-y:auto;padding:12px 22px 26px;display:flex;flex-direction:column;gap:18px}
@@ -128,7 +143,7 @@ footer{padding:10px 18px 16px}
 <div class="app">
   <section id="stage">
     <div class="bar">
-      <div><div class="title">Jeu de rôle <span class="serie" id="serie" hidden></span></div><div class="theme" id="themeName"></div></div>
+      <button class="themebtn" id="themeBtn" aria-label="Choisir le jeu de rôle"><span class="title">Jeu de rôle <span class="serie" id="serie" hidden></span></span><span class="theme"><span id="themeName"></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></button>
       <div class="barbtns">
         <button class="iconbtn" id="askBtn" aria-label="Poser une question en français">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2-2.4 3.4"/><path d="M12 16.6h.01"/></svg>
@@ -194,6 +209,16 @@ footer{padding:10px 18px 16px}
   </div>
 </div>
 <div class="pop" id="pop" hidden></div>
+<div class="sheetwrap" id="roles" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="rolesTitle">
+    <div class="mothead"><h2 id="rolesTitle">Jeu de rôle</h2><button class="iconbtn" id="rolesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="create">
+      <button class="round" id="roleMic" aria-label="Décrire un nouveau jeu de rôle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <div><b>Créer le tien</b><span id="roleStatus">Décris la situation en français, par exemple « je suis à la pharmacie et j’ai mal à la gorge ».</span></div>
+    </div>
+    <div id="rolesList"></div>
+  </div>
+</div>
 <div class="sheetwrap" id="qa" hidden>
   <div class="sheet" role="dialog" aria-labelledby="qaTitle">
     <div class="mothead"><h2 id="qaTitle">Une question ?</h2><button class="iconbtn" id="qaClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -249,8 +274,9 @@ function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.c
 function setStatus(t){ statusEl.textContent = t || ""; }
 function setVoiceStatus(t){ $("voiceStatus").textContent = t || ""; }
 function scrollDown(){ feed.scrollTop = feed.scrollHeight; }
-function pickTheme(){ let t; do { t = THEMES[Math.floor(Math.random()*THEMES.length)]; } while (t === theme); theme = t; $("themeName").textContent = t.fr; }
-pickTheme();
+function setTheme(t){ theme = t; $("themeName").textContent = t.fr; S.theme = t; saveS(); }
+function pickTheme(){ const tous = [...THEMES, ...(S.mesThemes || [])]; let t; do { t = tous[Math.floor(Math.random()*tous.length)]; } while (tous.length > 1 && t.fr === theme?.fr); setTheme(t); }
+if (S.theme?.fr && S.theme?.en && S.theme?.role) setTheme(S.theme); else pickTheme();
 
 /* ---------- Voix IA (Kokoro, dans le téléphone) ---------- */
 let tts = null, ttsState = "idle", actx = null, currentSrc = null, playToken = 0, speakingBtn = null;
@@ -547,6 +573,61 @@ async function openMot(en, fr, phrase){
 }
 $("mot").onclick = e => { if (e.target.id === "mot" || e.target.closest("#motClose")) { $("mot").hidden = true; motToken++; stopSpeak(); } };
 
+/* ---------- Choix / creation du jeu de role ---------- */
+const SCHEMA_ROLE = {
+  type:"OBJECT",
+  properties:{ fr:{type:"STRING"}, en:{type:"STRING"}, role:{type:"STRING"} },
+  required:["fr","en","role"], propertyOrdering:["fr","en","role"]
+};
+let roleBusy = false;
+function roleStatus(t){ $("roleStatus").textContent = t; }
+function lancerTheme(t){ setTheme(t); $("roles").hidden = true; stopSpeak(); if (started) begin(); else setStatus("Touche « Commencer » quand tu es prêt."); }
+function afficherRoles(){
+  const l = $("rolesList"); l.replaceChildren();
+  const ligne = (t, perso) => {
+    const it = el("div","ritem");
+    const b = el("button", "rbtn" + (theme && t.fr === theme.fr ? " cur" : ""), t.fr);
+    b.onclick = () => lancerTheme(t);
+    it.append(b);
+    if (perso) {
+      const x = el("button","rdel","×"); x.setAttribute("aria-label","Supprimer « " + t.fr + " »");
+      x.onclick = () => { S.mesThemes = S.mesThemes.filter(m => m !== t); saveS(); afficherRoles(); };
+      it.append(x);
+    }
+    return it;
+  };
+  if ((S.mesThemes || []).length) { l.append(el("div","rgroup","Les tiens")); S.mesThemes.forEach(t => l.append(ligne(t, true))); }
+  l.append(el("div","rgroup","Idées")); THEMES.forEach(t => l.append(ligne(t, false)));
+}
+async function creerRole(desc){
+  roleBusy = true; roleStatus("Je prépare ton jeu de rôle…");
+  try {
+    const t = await llm(`A French-speaking engineering student travelling in Ireland wants to practise spoken English in a role-play. He described the situation he wants, in French (dictated, ignore transcription errors): """${desc}"""
+- "fr": a short French title for this role-play, 3 to 7 words, like "Au pub à Dublin" or "Chez le médecin".
+- "en": the situation in English, a few words, like "chatting at a pub in Dublin".
+- "role": who YOU will play, in English, with a name or a detail that makes it alive, like "a chatty Dublin bartender called Sean".`, SCHEMA_ROLE);
+    if (!t?.fr || !t?.en || !t?.role) throw {code:"shape"};
+    S.mesThemes = [t, ...(S.mesThemes || []).filter(m => m.fr !== t.fr)].slice(0, 12); saveS();
+    roleStatus("Décris la situation en français, par exemple « je suis à la pharmacie et j’ai mal à la gorge ».");
+    lancerTheme(t);
+  } catch (e) {
+    console.error(e);
+    roleStatus("Je n’ai pas pu créer le jeu de rôle (" + (e?.code === "rate" ? "limite gratuite atteinte" : "réseau ou Google saturé") + "). Réessaie.");
+  } finally { roleBusy = false; }
+}
+let roleDictee = null;
+$("themeBtn").onclick = () => {
+  if (busy) return;
+  if (listening) { stopVoulu = true; rec.stop(); }
+  hidePop(); afficherRoles(); $("roles").hidden = false;
+  if (!roleDictee) roleDictee = creerDictee("fr-FR", $("roleMic"), {
+    status: roleStatus, occupe: () => roleBusy,
+    live: t => { if (t !== null) roleStatus("« " + t + " »"); },
+    done: t => creerRole(t)
+  });
+};
+$("roles").onclick = e => { if (e.target.id === "roles" || e.target.closest("#rolesClose")) { roleDictee?.arreter(); $("roles").hidden = true; } };
+
 /* ---------- Question parallele (en francais, hors conversation) ---------- */
 const SCHEMA_QA = {
   type:"OBJECT",
@@ -578,7 +659,7 @@ ${avant}
 
 His question: """${q}"""
 
-Answer IN FRENCH, simply and concretely, like a good teacher talking: 2 to 5 short sentences, no jargon, no lists, no markdown. If he asks how to say something, give the natural English wording. Quote English words inside « ».
+Answer IN FRENCH, addressing him with « tu » (never « vous »), simply and concretely, like a good teacher talking: 2 to 5 short sentences, no jargon, no lists, no markdown. If he asks how to say something, give the natural English wording. Quote English words inside « ».
 "exemples": 0 to 3 short natural English sentences that illustrate the answer, each with its French translation. Empty if not useful.`, SCHEMA_QA);
     dots.remove();
     qaHisto.push({q, r:d.reponse_fr});
@@ -594,55 +675,74 @@ Answer IN FRENCH, simply and concretely, like a good teacher talking: 2 to 5 sho
   } catch (e) {
     dots.remove(); console.error(e);
     f.append(el("p","tip","Pas de réponse pour l’instant (" + (e?.code === "rate" ? "limite gratuite atteinte" : "réseau ou Google saturé") + "). Réessaie dans un moment."));
-  } finally { qaBusy = false; if (!qaEcoute) qaStatus("Touche le micro pour une autre question."); }
+  } finally { qaBusy = false; if (!qaDictee?.ecoute) qaStatus("Touche le micro pour une autre question."); }
 }
 
-// Dictee en francais : meme principe que le micro principal (relance sur silence, envoi quand on retouche).
-let qaRec = null, qaEcoute = false, qaStop = false, qaBase = "", qaEntendu = "", qaLive = null, qaDebut = 0, qaVides = 0, qaErr = null;
-if (SR) {
-  qaRec = new SR(); qaRec.lang = "fr-FR"; qaRec.interimResults = true; qaRec.continuous = true;
-  qaRec.onresult = e => {
+// Dictee reutilisable (fenetres question et jeu de role), meme principe que le micro principal :
+// relance sur silence, envoi quand on retouche le bouton.
+function creerDictee(lang, btn, cb){
+  if (!SR) { btn.hidden = true; cb.status("La dictée n’est pas disponible dans ce navigateur : ouvre l’appli dans Chrome."); return null; }
+  const r = new SR(); r.lang = lang; r.interimResults = true; r.continuous = true;
+  const st = {ecoute:false, stop:false, base:"", entendu:"", debut:0, vides:0, err:null};
+  r.onresult = e => {
     const norm = t => t.toLowerCase().replace(/[^\p{L}\p{N}' ]/gu, "").replace(/\s+/g, " ").trim();
     const segs = [];
-    for (const r of e.results) {
-      const t = r[0].transcript.trim(); if (!t) continue;
+    for (const x of e.results) {
+      const t = x[0].transcript.trim(); if (!t) continue;
       const nt = norm(t), nd = segs.length ? norm(segs[segs.length - 1]) : null;
       if (nd !== null && nt.startsWith(nd)) segs[segs.length - 1] = t;
       else if (nd !== null && nd.startsWith(nt)) continue;
       else segs.push(t);
     }
-    qaEntendu = (qaBase + " " + segs.join(" ")).trim();
-    if (!qaLive) { qaLive = el("div","qaq live"); $("qaFeed").append(qaLive); }
-    qaLive.textContent = qaEntendu;
+    st.entendu = (st.base + " " + segs.join(" ")).trim();
+    cb.live(st.entendu);
   };
-  qaRec.onerror = e => { if (e.error !== "no-speech") qaErr = e.error; };
-  qaRec.onend = () => {
-    const vide = qaEntendu === qaBase && Date.now() - qaDebut < 1000;
-    qaVides = vide ? qaVides + 1 : 0;
-    if (qaEcoute && !qaStop && !ERREURS_FATALES.includes(qaErr) && qaVides < 5) {
-      qaBase = qaEntendu; qaErr = null;
-      setTimeout(() => { if (!qaEcoute || qaStop) return; try { qaDebut = Date.now(); qaRec.start(); } catch { qaEcoute = false; qaRec.onend(); } }, 120);
+  r.onerror = e => { if (e.error !== "no-speech") st.err = e.error; };
+  r.onend = () => {
+    const vide = st.entendu === st.base && Date.now() - st.debut < 1000;
+    st.vides = vide ? st.vides + 1 : 0;
+    if (st.ecoute && !st.stop && !ERREURS_FATALES.includes(st.err) && st.vides < 5) {
+      st.base = st.entendu; st.err = null;
+      setTimeout(() => { if (!st.ecoute || st.stop) return; try { st.debut = Date.now(); r.start(); } catch { st.ecoute = false; r.onend(); } }, 120);
       return;
     }
-    qaEcoute = false; $("qaMic").classList.remove("on");
-    qaLive?.remove(); qaLive = null;
-    if (qaEntendu) poserQuestion(qaEntendu);
-    else qaStatus(qaErr ? (MSG_MICRO[qaErr] || "Le micro a coupé. Réessaie.") : "Je n’ai rien entendu. Touche le micro et pose ta question.");
-    qaEntendu = ""; qaBase = ""; qaErr = null;
+    st.ecoute = false; btn.classList.remove("on"); cb.live(null);
+    if (st.entendu) cb.done(st.entendu);
+    else cb.status(st.err ? (MSG_MICRO[st.err] || "Le micro a coupé. Réessaie.") : "Je n’ai rien entendu. Touche le micro et parle.");
+    st.entendu = ""; st.base = ""; st.err = null;
   };
-} else { $("qaMic").hidden = true; qaStatus("La dictée n’est pas disponible dans ce navigateur : ouvre l’appli dans Chrome."); }
-$("qaMic").onclick = () => {
-  if (!qaRec || qaBusy) return;
-  if (qaEcoute) { qaStop = true; qaRec.stop(); return; }
-  stopSpeak(); unlockAudio(); hidePop();
-  qaEntendu = ""; qaBase = ""; qaStop = false; qaErr = null; qaVides = 0; qaDebut = Date.now();
-  try { qaRec.start(); qaEcoute = true; $("qaMic").classList.add("on"); qaStatus("Je t’écoute… Touche le micro rouge quand tu as fini."); } catch { qaStatus("Le micro ne démarre pas. Réessaie."); }
-};
+  const ctl = {
+    get ecoute(){ return st.ecoute; },
+    arreter(){ if (st.ecoute) { st.stop = true; r.stop(); } },
+    basculer(){
+      if (st.ecoute) { st.stop = true; r.stop(); return; }
+      if (listening) { stopVoulu = true; rec.stop(); }
+      stopSpeak(); unlockAudio(); hidePop();
+      Object.assign(st, {entendu:"", base:"", stop:false, err:null, vides:0, debut:Date.now()});
+      try { r.start(); st.ecoute = true; btn.classList.add("on"); cb.status("Je t’écoute… Touche le micro rouge quand tu as fini."); }
+      catch { cb.status("Le micro ne démarre pas. Réessaie."); }
+    }
+  };
+  btn.onclick = () => { if (!cb.occupe()) ctl.basculer(); };
+  return ctl;
+}
+
+let qaLive = null;
+const qaDictee = creerDictee("fr-FR", $("qaMic"), {
+  status: qaStatus,
+  occupe: () => qaBusy,
+  live: t => {
+    if (t === null) { qaLive?.remove(); qaLive = null; return; }
+    if (!qaLive) { qaLive = el("div","qaq live"); $("qaFeed").append(qaLive); }
+    qaLive.textContent = t;
+  },
+  done: t => poserQuestion(t)
+});
 $("askBtn").onclick = () => {
   if (listening) { stopVoulu = true; rec.stop(); }
   stopSpeak(); hidePop(); $("qa").hidden = false;
 };
-const fermerQa = () => { if (qaEcoute) { qaStop = true; qaRec.stop(); } $("qa").hidden = true; stopSpeak(); };
+const fermerQa = () => { qaDictee?.arreter(); $("qa").hidden = true; stopSpeak(); };
 $("qa").onclick = e => { if (e.target.id === "qa" || e.target.closest("#qaClose")) fermerQa(); };
 
 /* ---------- IA (Gemini) ---------- */

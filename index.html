@@ -139,6 +139,21 @@ footer{padding:10px 18px 16px}
 .sheet a{color:var(--accent)}
 .sheetbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 .ghostbtn{background:var(--soft);border:none;border-radius:999px;padding:12px 22px;font-weight:600}
+.card{background:var(--soft);border-radius:18px;padding:14px 16px;margin-top:14px}
+.cardhead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.cardhead b{display:block;font-size:1.02rem}
+.cardhead span{display:block;color:var(--muted);font-size:.85rem}
+.card label{margin-top:12px}
+.card input,.card select{background:var(--bg)}
+.etat{flex:none;font-size:.78rem;font-weight:700;border-radius:999px;padding:3px 10px;background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--muted)}
+.etat.ok{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+.etat.ko{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:4px;margin-top:12px}
+.seg button{border:none;background:none;border-radius:999px;padding:9px 6px;font-weight:600;color:var(--muted)}
+.seg button[aria-checked="true"]{background:var(--accent);color:var(--on-accent)}
+.ghostbtn.full{width:100%;margin-top:14px;background:var(--bg)}
+.avance{margin-top:10px}
+.avance summary{cursor:pointer;color:var(--muted);font-size:.88rem}
 .tip{font-size:.85rem;color:var(--muted);margin:6px 0 0}
 @media (prefers-reduced-motion:reduce){.play.ready{animation:none}.dots i{animation:none;opacity:.7}.msg{transition:none}}
 </style>
@@ -180,51 +195,57 @@ footer{padding:10px 18px 16px}
 </div>
 
 <div class="sheetwrap" id="settings" hidden>
-  <div class="sheet" role="dialog" aria-label="Réglages">
-    <h2>Réglages</h2>
-    <label for="keyIn">Clé API Gemini</label>
-    <input id="keyIn" type="password" autocomplete="off" placeholder="Colle ta clé ici">
-    <p class="tip">Gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Elle reste uniquement sur ce téléphone.</p>
-    <label for="modelIn">Modèle Gemini</label>
-    <input id="modelIn" autocomplete="off">
-    <p class="tip">Flash-Lite répond plus vite et est moins souvent saturé que Flash. Si tu as une erreur « modèle introuvable », mets un modèle listé dans AI Studio.</p>
-    <label for="voiceSel">Voix</label>
-    <select id="voiceSel">
-      <optgroup label="Azure, instantanée (clé Azure, gratuit)">
-        <option value="az:en-US-AvaMultilingualNeural">Ava – américaine (la plus naturelle)</option>
-        <option value="az:en-US-AndrewMultilingualNeural">Andrew – américain (très naturel)</option>
-        <option value="az:en-GB-SoniaNeural">Sonia – britannique</option>
-        <option value="az:en-GB-RyanNeural">Ryan – britannique</option>
-        <option value="az:en-IE-EmilyNeural">Emily – irlandaise</option>
-        <option value="az:en-IE-ConnorNeural">Connor – irlandais</option>
-      </optgroup>
-      <optgroup label="Google (avec ta clé Gemini)">
-        <option value="g:Kore">Kore – femme, posée</option>
-        <option value="g:Aoede">Aoede – femme, enjouée</option>
-        <option value="g:Puck">Puck – homme, vif</option>
-        <option value="g:Charon">Charon – homme, grave</option>
-      </optgroup>
-      <optgroup label="Dans le téléphone, lent (marche hors ligne, 90 Mo)">
-        <option value="af_heart">Heart – américaine</option>
-        <option value="am_michael">Michael – américain</option>
-        <option value="bf_emma">Emma – britannique</option>
-        <option value="bm_george">George – britannique</option>
-      </optgroup>
-      <optgroup label="Voix du téléphone, instantanée">
-        <option value="sys">Voix système (qualité moindre)</option>
-      </optgroup>
-    </select>
-    <p class="tip">Si une voix atteint sa limite gratuite, l’appli passe toute seule à la suivante (Azure → Google → téléphone).</p>
-    <label for="azKeyIn">Clé Azure Speech (pour les voix Azure)</label>
-    <input id="azKeyIn" type="password" autocomplete="off" placeholder="Colle ta clé Azure ici">
-    <label for="azRegionIn">Région Azure</label>
-    <input id="azRegionIn" autocomplete="off" placeholder="westeurope">
-    <label for="speedSel">Vitesse</label>
-    <select id="speedSel"><option value="0.8">Lente</option><option value="0.9">Un peu lente</option><option value="1">Normale</option></select>
-    <label>Ce que l’appli sait de toi</label>
-    <div id="memoList"></div>
-    <button class="skip" id="memoClear" hidden>Tout oublier</button>
-    <div class="sheetbtns"><button class="ghostbtn" id="testVoice">Tester la voix</button><button class="primary" id="saveSettings">Enregistrer</button></div>
+  <div class="sheet" role="dialog" aria-labelledby="setTitle">
+    <div class="mothead"><h2 id="setTitle">Réglages</h2><button class="iconbtn" id="setClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+
+    <section class="card">
+      <div class="cardhead"><div><b>Voix</b><span>Ce que tu entends</span></div><span class="etat" id="voixEtat"></span></div>
+      <div class="seg" role="radiogroup" aria-label="Service de voix">
+        <button role="radio" data-prov="az">Azure</button>
+        <button role="radio" data-prov="g">Google</button>
+        <button role="radio" data-prov="sys">Téléphone</button>
+      </div>
+      <p class="tip" id="provTip"></p>
+      <div id="azBox">
+        <label for="azKeyIn">Clé Azure Speech</label>
+        <input id="azKeyIn" type="password" autocomplete="off" placeholder="Colle ta KEY 1 ici">
+        <label for="azRegionIn">Région</label>
+        <input id="azRegionIn" autocomplete="off" placeholder="swedencentral">
+      </div>
+      <div id="voiceBox">
+        <label for="voiceSel">Voix</label>
+        <select id="voiceSel"></select>
+      </div>
+      <label for="speedSel">Vitesse</label>
+      <select id="speedSel"><option value="0.8">Lente</option><option value="0.9">Un peu lente</option><option value="1">Normale</option></select>
+      <button class="ghostbtn full" id="testVoice">Tester la voix</button>
+      <p class="tip" id="voixUtilisee"></p>
+    </section>
+
+    <section class="card">
+      <div class="cardhead"><div><b>Écoute</b><span>Ce qui t’entend quand tu parles</span></div><span class="etat ok" id="ecouteEtat"></span></div>
+      <p class="tip" id="ecouteTip"></p>
+    </section>
+
+    <section class="card">
+      <div class="cardhead"><div><b>Gemini</b><span>Corrige, répond et t’écoute</span></div><span class="etat" id="gemEtat"></span></div>
+      <label for="keyIn">Clé API Gemini</label>
+      <input id="keyIn" type="password" autocomplete="off" placeholder="Colle ta clé ici">
+      <p class="tip">Gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Elle reste sur ce téléphone.</p>
+      <details class="avance"><summary>Avancé</summary>
+        <label for="modelIn">Modèle</label>
+        <input id="modelIn" autocomplete="off">
+        <p class="tip">Laisse « gemini-flash-lite-latest » sauf erreur « modèle introuvable ».</p>
+      </details>
+    </section>
+
+    <section class="card">
+      <div class="cardhead"><div><b>Ce que l’appli sait de toi</b><span>Pour personnaliser les conversations</span></div></div>
+      <div id="memoList"></div>
+      <button class="skip" id="memoClear" hidden>Tout oublier</button>
+    </section>
+
+    <div class="sheetbtns"><button class="primary" id="saveSettings">Enregistrer</button></div>
   </div>
 </div>
 <div class="pop" id="pop" hidden></div>
@@ -262,6 +283,8 @@ const DEFAULTS = {key:"", model:"gemini-flash-lite-latest", voice:"g:Kore", spee
 let S = {...DEFAULTS};
 try { S = {...DEFAULTS, ...JSON.parse(localStorage.getItem("tp-settings") || "{}")}; } catch {}
 function saveS(){ try { localStorage.setItem("tp-settings", JSON.stringify(S)); } catch {} }
+// Voix Kokoro retiree (trop lente sur telephone) : on bascule sur Google.
+if (S.voice && !/^(g:|az:|sys$)/.test(S.voice)) { S.voice = DEFAULTS.voice; saveS(); }
 // Migration des reglages de la v1 : Flash etait sature et la voix dans le telephone trop lente.
 if ((S.v || 1) < 2) {
   if (S.model === "gemini-flash-latest") S.model = DEFAULTS.model;
@@ -303,7 +326,7 @@ const audioCache = new Map();
 function unlockAudio(){
   try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch {}
 }
-function voixKokoro(){ return !S.voice.startsWith("g:") && S.voice !== "sys"; }
+function voixKokoro(){ return !/^(g:|az:|sys$)/.test(S.voice); }  // plus proposee, gardee pour d'anciens reglages
 async function loadTTS(){
   if (ttsState !== "idle") return;
   ttsState = "loading";
@@ -467,6 +490,7 @@ async function speak(text, btn, reveal){
   if (voixAzure() && actx) {
     try {
       const a = await genAudioAzure(text); if (token !== playToken) return;
+      derniereVoix = "Azure · " + nomVoix(S.voice);
       await playBuffer(a); if (token !== playToken) return;
       return done();
     } catch (e) { console.warn("voix Azure indisponible, secours Google", e); }
@@ -475,6 +499,7 @@ async function speak(text, btn, reveal){
   if (voixGoogle() && actx) {
     try {
       const a = await genAudioGoogle(text); if (token !== playToken) return;
+      derniereVoix = "Google · " + (S.voice.startsWith("g:") ? nomVoix(S.voice) : "Kore") + (S.voice.startsWith("az:") ? " (secours, Azure indisponible)" : "");
       await playBuffer(a); if (token !== playToken) return;
       return done();
     } catch (e) {
@@ -483,7 +508,7 @@ async function speak(text, btn, reveal){
     }
   }
   // 2) Voix Kokoro dans le telephone (si elle a ete chargee).
-  if (ttsState === "ready" && actx && !S.voice.startsWith("g:") && S.voice !== "sys") {
+  if (ttsState === "ready" && actx && voixKokoro()) {
     try {
       let next = genAudio(parts[0]);
       for (let i = 0; i < parts.length; i++) {
@@ -495,6 +520,7 @@ async function speak(text, btn, reveal){
     return done();
   }
   // 3) Voix systeme du telephone.
+  derniereVoix = "Téléphone" + (S.voice === "sys" ? "" : " (secours)");
   if (!("speechSynthesis" in window)) { reveal && reveal(); return done(); }
   const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
   const v = vs.find(v => /en[-_](US|GB)/i.test(v.lang)) || vs[0];
@@ -1178,36 +1204,87 @@ function begin(){
   ask(null);
 }
 
-/* ---------- Réglages UI ---------- */
+/* ---------- Réglages UI ----------
+   Trois blocs : Voix (ce que tu entends), Ecoute (ce qui t'entend), Gemini (le cerveau).
+   Pour la voix, on choisit d'abord le SERVICE, puis la voix de ce service. */
+const VOIX = {
+  az: [["az:en-US-AvaMultilingualNeural","Ava – américaine (la plus naturelle)"], ["az:en-US-AndrewMultilingualNeural","Andrew – américain"],
+       ["az:en-GB-SoniaNeural","Sonia – britannique"], ["az:en-GB-RyanNeural","Ryan – britannique"],
+       ["az:en-IE-EmilyNeural","Emily – irlandaise"], ["az:en-IE-ConnorNeural","Connor – irlandais"]],
+  g:  [["g:Kore","Kore – femme, posée"], ["g:Aoede","Aoede – femme, enjouée"], ["g:Puck","Puck – homme, vif"], ["g:Charon","Charon – homme, grave"]],
+  sys:[["sys","Voix du téléphone"]]
+};
+const NOM_PROV = {az:"Azure", g:"Google", sys:"Téléphone"};
+const provDe = v => v.startsWith("az:") ? "az" : v.startsWith("g:") ? "g" : "sys";
+const nomVoix = v => (Object.values(VOIX).flat().find(x => x[0] === v) || [v, v])[1].split(" – ")[0];
+let provChoisi = "az", voixParProv = {};
+let derniereVoix = "";          // voix reellement utilisee a la derniere lecture (affichee dans les reglages)
+
+function majReglages(){
+  // segment
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.prov === provChoisi)));
+  // liste des voix du service choisi
+  const sel = $("voiceSel"); sel.replaceChildren(...VOIX[provChoisi].map(([v, n]) => { const o = el("option", null, n); o.value = v; return o; }));
+  sel.value = voixParProv[provChoisi] || VOIX[provChoisi][0][0];
+  $("voiceBox").hidden = provChoisi === "sys";
+  $("azBox").hidden = provChoisi !== "az";
+  const azOk = $("azKeyIn").value.trim().length > 10, gemOk = $("keyIn").value.trim().length > 10;
+  $("provTip").textContent = {
+    az: "Démarre en moins d’une seconde. Gratuite jusqu’à environ 50 h par mois.",
+    g: "Utilise ta clé Gemini. Environ 4 s avant de parler, quota gratuit par jour.",
+    sys: "Instantanée et sans limite, mais moins naturelle."
+  }[provChoisi] + (provChoisi !== "sys" ? " Si elle échoue : " + (provChoisi === "az" ? "Google, puis téléphone." : "téléphone.") : "");
+  const etat = $("voixEtat");
+  const pret = provChoisi === "sys" || (provChoisi === "az" ? azOk : gemOk);
+  etat.textContent = pret ? NOM_PROV[provChoisi] + " ✓" : (provChoisi === "az" ? "Clé Azure manquante" : "Clé Gemini manquante");
+  etat.className = "etat " + (pret ? "ok" : "ko");
+  $("voixUtilisee").textContent = derniereVoix ? "Dernière lecture : " + derniereVoix + "." : "";
+  // ecoute
+  $("ecouteEtat").textContent = ENREG_OK ? "Gemini ✓" : "Chrome";
+  $("ecouteTip").textContent = ENREG_OK
+    ? "Ta voix est envoyée à Gemini, qui entend ta vraie prononciation. Rien à régler : il utilise ta clé Gemini."
+    : "Ce navigateur ne permet pas d’enregistrer : c’est la dictée de Chrome qui t’écoute (elle ne voit pas ta prononciation).";
+  // gemini
+  $("gemEtat").textContent = gemOk ? "Clé ✓" : "Clé manquante";
+  $("gemEtat").className = "etat " + (gemOk ? "ok" : "ko");
+}
 function openSettings(){
   afficherMemo();
   $("azKeyIn").value = S.azKey || ""; $("azRegionIn").value = S.azRegion || "";
-  $("keyIn").value = S.key; $("modelIn").value = S.model; $("voiceSel").value = S.voice; $("speedSel").value = String(S.speed);
+  $("keyIn").value = S.key; $("modelIn").value = S.model; $("speedSel").value = String(S.speed);
+  provChoisi = provDe(S.voice); voixParProv = {[provChoisi]: S.voice};
+  // une cle Azure est la, mais on etait reste sur Google par defaut : on propose Azure d'emblee
+  if (S.azKey && provChoisi === "g" && S.voice === DEFAULTS.voice) provChoisi = "az";
+  majReglages();
   $("settings").hidden = false;
 }
+document.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
+  voixParProv[provChoisi] = $("voiceSel").value;
+  provChoisi = b.dataset.prov; majReglages();
+});
+$("voiceSel").onchange = () => { voixParProv[provChoisi] = $("voiceSel").value; };
+["azKeyIn","keyIn"].forEach(id => $(id).addEventListener("input", majReglages));
+function lireReglages(){
+  const k = $("azKeyIn").value.trim(), r = $("azRegionIn").value.trim().toLowerCase().replace(/\s+/g, "");
+  if (k !== (S.azKey || "") || r !== (S.azRegion || "")) { azureKO = false; audioCache.clear(); }
+  S.azKey = k; S.azRegion = r || "swedencentral";
+  S.key = $("keyIn").value.trim(); S.model = $("modelIn").value.trim() || DEFAULTS.model;
+  S.voice = provChoisi === "sys" ? "sys" : $("voiceSel").value;
+  S.speed = Number($("speedSel").value);
+}
 $("gear").onclick = openSettings;
+$("setClose").onclick = () => { $("settings").hidden = true; };
 $("memoClear").onclick = () => { if (confirm("Oublier tout ce que l’appli sait de toi ?")) { S.memo = []; saveS(); afficherMemo(); } };
 $("saveSettings").onclick = () => {
-  S.key = $("keyIn").value.trim(); S.model = $("modelIn").value.trim() || DEFAULTS.model;
-  lireAzure();
-  // premiere cle Azure : on passe directement sur la meilleure voix Azure si la voix etait celle par defaut
-  if (S.azKey && S.voice === DEFAULTS.voice && $("voiceSel").value === DEFAULTS.voice) $("voiceSel").value = "az:en-US-AvaMultilingualNeural";
-  S.voice = $("voiceSel").value; S.speed = Number($("speedSel").value);
-  saveS(); $("settings").hidden = true;
+  lireReglages(); saveS(); $("settings").hidden = true;
   if (!started && S.key) setStatus("C’est prêt. Touche « Commencer ».");
 };
 $("settings").onclick = e => { if (e.target.id === "settings") $("settings").hidden = true; };
-function lireAzure(){
-  const k = $("azKeyIn").value.trim(), r = $("azRegionIn").value.trim().toLowerCase().replace(/\s+/g, "");
-  if (k !== (S.azKey || "") || r !== (S.azRegion || "")) { azureKO = false; audioCache.clear(); }
-  S.azKey = k; S.azRegion = r || "westeurope";
-}
 $("testVoice").onclick = async () => {
-  lireAzure();
-  S.voice = $("voiceSel").value; S.speed = Number($("speedSel").value);
-  unlockAudio(); if (voixKokoro()) loadTTS();
-  if (ttsState === "loading") setStatus("La voix IA se télécharge, l’essai utilise la voix du téléphone en attendant.");
-  speak("Hi there! How are you getting on? Is this voice easy to understand?", null, null);
+  lireReglages(); unlockAudio();
+  $("voixUtilisee").textContent = "Lecture en cours…";
+  await speak("Hi there! How are you getting on? Is this voice easy to understand?", null, null);
+  majReglages();
 };
 
 $("start").onclick = begin;

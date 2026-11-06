@@ -49,6 +49,10 @@ svg{width:24px;height:24px;flex:none}
 .wrong{color:var(--bad);text-decoration:line-through}
 .right{color:var(--good);font-weight:700}
 .why{display:block;color:var(--muted);font-size:.88rem}
+.say{background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--good);text-align:left;border-bottom:2px dotted color-mix(in srgb,var(--good) 50%,transparent)}
+.spk{display:inline-block;width:16px;height:16px;margin-left:6px;vertical-align:-2px;background:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z'/%3E%3C/svg%3E") center/contain no-repeat}
 .fix.good{background:none;border-left-color:var(--good);padding:2px 12px}
 .fixtitle{font-weight:700;margin-bottom:6px}
 .skip{display:block;margin:10px 0 0 auto;background:none;border:none;color:var(--muted);font-size:.85rem;text-decoration:underline;padding:4px}
@@ -125,7 +129,7 @@ textarea{flex:1;resize:none;font:inherit;border:1px solid var(--line);border-rad
     <p id="voiceStatus"></p>
     <div id="feed" aria-live="polite">
       <div class="empty" id="empty">
-        <p>Je te parle en anglais, tu réponds au micro. Si ta phrase a une erreur, tu la redis jusqu’à ce qu’elle soit juste. Touche un mot pour le traduire.</p>
+        <p>Je te parle en anglais, tu réponds au micro. Si ta phrase a une erreur, tu la redis jusqu’à ce qu’elle soit juste. Touche un mot pour le traduire, une correction pour l’écouter.</p>
         <button class="primary" id="start">Commencer</button>
       </div>
     </div>
@@ -273,6 +277,21 @@ function stopSpeak(){
   if ("speechSynthesis" in window) speechSynthesis.cancel();
   setPlay(speakingBtn, false); speakingBtn = null;
 }
+/* Petit "ding" de reussite, fabrique a la volee (pas de fichier). */
+function ding(){
+  if (!actx) return Promise.resolve();
+  const t = actx.currentTime;
+  [[880, 0], [1318.5, 0.11]].forEach(([f, dt]) => {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = "sine"; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t + dt);
+    g.gain.exponentialRampToValueAtTime(0.25, t + dt + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.45);
+    o.connect(g); g.connect(actx.destination); o.start(t + dt); o.stop(t + dt + 0.5);
+  });
+  return pause(450);
+}
+
 /* Voix Google (Gemini TTS) : toute la reponse en un appel, ~4 s, avec la meme cle. */
 const MODELES_TTS = ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts", "gemini-2.5-flash-preview-tts"];
 const ttsModelesKO = new Set(); // modeles de voix dont le quota du jour est epuise
@@ -376,6 +395,11 @@ async function speak(text, btn, reveal){
 /* ---------- Micro (reconnaissance de Chrome) ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, listening = false, liveEl = null, heard = "", micErr = null, micStart = 0;
+// Chrome (surtout Android) coupe la dictee des qu'il y a un petit silence, meme en mode continu.
+// On la relance aussitot en gardant ce qui a deja ete dit ("base"), jusqu'a ce que TU touches le micro.
+let base = "", stopVoulu = false, debutSession = 0, relancesVides = 0;
+const MICRO_MAX_MS = 90000;
+const ERREURS_FATALES = ["not-allowed", "service-not-allowed", "audio-capture", "language-not-supported", "network"];
 if (SR) {
   rec = new SR(); rec.lang = "en-GB"; rec.interimResults = true; rec.continuous = true;
   rec.onresult = e => {
@@ -394,7 +418,7 @@ if (SR) {
       else if (nd !== null && nd.startsWith(nt)) continue;               // repetition plus courte du dernier
       else segs.push(t);
     }
-    heard = segs.join(" ").trim();
+    heard = (base + " " + segs.join(" ")).trim();
     if (!liveEl) { liveEl = el("div","you live"); feed.append(liveEl); }
     liveEl.textContent = heard; scrollDown();
   };
@@ -407,21 +431,32 @@ if (SR) {
     "language-not-supported": "L’anglais n’est pas disponible pour la dictée sur ce téléphone. Dicte avec le clavier."
   };
   rec.onend = () => {
+    // Garde-fou : si Chrome coupe en boucle sans rien entendre, on arrete au bout de 5 fois.
+    const vide = heard === base && Date.now() - debutSession < 1000;
+    relancesVides = vide ? relancesVides + 1 : 0;
+    if (listening && !stopVoulu && !ERREURS_FATALES.includes(micErr) && relancesVides < 5 && Date.now() - micStart < MICRO_MAX_MS) {
+      base = heard; micErr = null;
+      setTimeout(() => {
+        if (!listening || stopVoulu) return;
+        try { debutSession = Date.now(); rec.start(); } catch (e) { console.warn("relance micro impossible", e); listening = false; rec.onend(); }
+      }, 120);
+      return;
+    }
     listening = false; mic.classList.remove("on"); mic.setAttribute("aria-label","Parler");
     liveEl?.remove(); liveEl = null;
     if (heard) submit(heard);
     else if (micErr) setStatus(MSG_MICRO[micErr] || ("Le micro a coupé (" + micErr + "). Réessaie ou dicte avec le clavier."));
     else if (Date.now() - micStart < 1500) setStatus("Le micro s’est coupé tout de suite, sans explication. Réessaie ; si ça continue, ferme et rouvre l’appli.");
     else setStatus("Je n’ai rien entendu. Appuie sur le micro et parle en anglais.");
-    heard = ""; micErr = null;
+    heard = ""; base = ""; micErr = null;
   };
   rec.onerror = e => { if (e.error !== "no-speech") micErr = e.error; };
 } else mic.hidden = true;
 mic.onclick = () => {
   if (!rec) return;
-  if (listening) { rec.stop(); return; }
+  if (listening) { stopVoulu = true; rec.stop(); return; }
   stopSpeak(); unlockAudio(); hidePop();
-  heard = ""; micErr = null; micStart = Date.now();
+  heard = ""; base = ""; stopVoulu = false; micErr = null; micStart = debutSession = Date.now(); relancesVides = 0;
   try { rec.start(); listening = true; mic.classList.add("on"); mic.setAttribute("aria-label","Arrêter et envoyer"); setStatus("Je t’écoute… Touche le micro rouge quand tu as fini."); }
   catch { setStatus("Le micro ne démarre pas. Dicte avec le clavier."); }
 };
@@ -601,7 +636,10 @@ function renderFix(d, after, onSkip){
     for (const c of list) {
       const li = el("li");
       if (c.original) li.append(el("span","wrong",c.original), document.createTextNode(" → "));
-      li.append(el("span","right",c.corrected));
+      const say = el("button","right say"); say.append(c.corrected, el("span","spk"));
+      say.setAttribute("aria-label", "Écouter : " + c.corrected);
+      say.onclick = e => { e.stopPropagation(); unlockAudio(); speak(c.corrected, null, null); };
+      li.append(say);
       if (c.explanation_fr) li.append(el("span","why",c.explanation_fr));
       ul.append(li);
     }
@@ -702,10 +740,12 @@ async function ask(learner, youEl, opts = {}){
     if (history.length > 20) history = history.slice(-20);
     lastHint = d.hint_en ? {en:d.hint_en, fr:d.hint_fr || ""} : null;
     $("hintBtn").disabled = !lastHint;
-    setStatus(learner ? "Lis les remarques, puis touche ▶ pour écouter." : "Touche ▶ pour écouter.");
+    setStatus(rec ? "À toi : touche le micro, ou dicte avec le clavier." : "À toi : dicte avec le micro du clavier.");
     scrollDown();
-    // Pas de lecture automatique : on prepare l'audio pendant que tu lis, pour que ▶ soit immediat.
+    // Phrase juste : "ding", puis la reponse est lue directement (l'audio se prepare pendant le ding).
     if (S.voice.startsWith("g:") && actx && S.key && !ttsGoogleKO) genAudioGoogle(t.text).catch(() => {});
+    t.play.classList.remove("ready");
+    (learner && !opts.force ? ding() : Promise.resolve()).then(() => speak(t.text, t.play, t.reveal));
   } catch (e) {
     dots.remove(); console.error(e);
     if (learner && !opts.force) { history.pop(); youEl?.remove(); input.value = learner; updateSend(); }

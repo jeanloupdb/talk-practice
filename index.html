@@ -26,7 +26,7 @@
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.4}
 button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
-button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 svg{width:24px;height:24px;flex:none}
 .app{display:flex;flex-direction:column;height:100%;max-width:620px;margin:0 auto}
 #stage{flex:1;min-height:0;display:flex;flex-direction:column;border-radius:0 0 34px 34px;
@@ -89,6 +89,14 @@ svg{width:24px;height:24px;flex:none}
 .motnote{background:var(--soft);border-radius:14px;padding:9px 13px;margin:0 0 10px;font-size:.93rem;color:var(--muted)}
 .ex{display:block;width:100%;text-align:left;background:var(--soft);border:none;border-radius:14px;padding:11px 14px;margin-top:8px}
 .exen{display:block;font-weight:600}
+#qa .sheet{display:flex;flex-direction:column;min-height:55%}
+#qaFeed{flex:1;display:flex;flex-direction:column;gap:12px;margin:12px 0;overflow-y:auto}
+.qaq{align-self:flex-end;text-align:right;color:var(--accent);font-weight:600;max-width:90%}
+.qaq.live{opacity:.6}
+.qar p{margin:0 0 8px;line-height:1.45}
+.qarow{margin-top:auto}
+#qaMic{width:72px;height:72px;background:var(--accent);color:var(--on-accent)}
+#qaMic.on{background:var(--live)}
 .exfr{display:block;color:var(--muted);font-size:.9rem}
 footer{padding:10px 18px 16px}
 .status{font-size:.88rem;color:var(--muted);min-height:1.2em;margin:0 0 10px;text-align:center}
@@ -96,11 +104,12 @@ footer{padding:10px 18px 16px}
 .hint b{display:block;font-size:1.05rem}
 .hint span{color:var(--muted);font-size:.92rem}
 .row{display:flex;gap:10px;align-items:flex-end}
-textarea{flex:1;resize:none;font:inherit;border:1px solid var(--line);border-radius:16px;padding:10px 12px;background:var(--bg);color:var(--ink);min-height:48px}
+.mainrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+.mainrow #hintBtn{justify-self:start}
+.qarow{justify-content:center}
 .round{width:48px;height:48px;flex:none;border-radius:50%;border:none;display:grid;place-items:center}
 #hintBtn{background:var(--soft)}
-#send{background:var(--accent);color:var(--on-accent)}
-#mic{width:56px;height:56px;background:var(--accent);color:var(--on-accent)}
+#mic{width:72px;height:72px;background:var(--accent);color:var(--on-accent)}
 #mic.on{background:var(--live)}
 .round:disabled{opacity:.4;cursor:default}
 .sheetwrap{position:fixed;inset:0;z-index:30;background:rgba(10,15,35,.45);display:flex;align-items:flex-end;justify-content:center}
@@ -121,6 +130,9 @@ textarea{flex:1;resize:none;font:inherit;border:1px solid var(--line);border-rad
     <div class="bar">
       <div><div class="title">Jeu de rôle <span class="serie" id="serie" hidden></span></div><div class="theme" id="themeName"></div></div>
       <div class="barbtns">
+        <button class="iconbtn" id="askBtn" aria-label="Poser une question en français">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2-2.4 3.4"/><path d="M12 16.6h.01"/></svg>
+        </button>
         <button class="iconbtn" id="gear" aria-label="Réglages">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
         </button>
@@ -141,10 +153,8 @@ textarea{flex:1;resize:none;font:inherit;border:1px solid var(--line);border-rad
   <footer>
     <p class="status" id="status"></p>
     <div class="hint" id="hintBox" hidden></div>
-    <div class="row">
+    <div class="row mainrow">
       <button class="round" id="hintBtn" disabled aria-label="Astuce"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></button>
-      <textarea id="input" rows="1" placeholder="Réponds en anglais…" aria-label="Ton message en anglais"></textarea>
-      <button class="round" id="send" aria-label="Envoyer" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
       <button class="round" id="mic" aria-label="Parler" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
     </div>
   </footer>
@@ -184,6 +194,17 @@ textarea{flex:1;resize:none;font:inherit;border:1px solid var(--line);border-rad
   </div>
 </div>
 <div class="pop" id="pop" hidden></div>
+<div class="sheetwrap" id="qa" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="qaTitle">
+    <div class="mothead"><h2 id="qaTitle">Une question ?</h2><button class="iconbtn" id="qaClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <p class="tip">Demande en français : le sens d’un mot, une règle, comment dire quelque chose… La conversation t’attend.</p>
+    <div id="qaFeed"></div>
+    <p class="status" id="qaStatus">Touche le micro et pose ta question.</p>
+    <div class="row qarow">
+      <button class="round" id="qaMic" aria-label="Poser la question au micro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+    </div>
+  </div>
+</div>
 <div class="sheetwrap" id="mot" hidden>
   <div class="sheet" role="dialog" aria-labelledby="motTitle">
     <div class="mothead"><h2 id="motTitle"></h2><button class="iconbtn" id="motClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -222,7 +243,7 @@ const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
 const TRANS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h9M8.5 3v2M11 5c-1 4-3.5 7-7 9M6 9c1.2 2 3 3.6 5 4.5M13 21l4-9 4 9M14.5 18h5"/></svg>';
 
 const $ = id => document.getElementById(id);
-const feed = $("feed"), input = $("input"), mic = $("mic"), statusEl = $("status"), pop = $("pop");
+const feed = $("feed"), mic = $("mic"), statusEl = $("status"), pop = $("pop");
 let theme = null, history = [], busy = false, started = false, lastHint = null;
 function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function setStatus(t){ statusEl.textContent = t || ""; }
@@ -402,6 +423,13 @@ let rec = null, listening = false, liveEl = null, heard = "", micErr = null, mic
 // On la relance aussitot en gardant ce qui a deja ete dit ("base"), jusqu'a ce que TU touches le micro.
 let base = "", stopVoulu = false, debutSession = 0, relancesVides = 0;
 const MICRO_MAX_MS = 90000;
+const MSG_MICRO = {
+  "not-allowed": "Micro refusé. Appui long sur l’icône de l’appli → Infos → Autorisations → Micro (ou dans Chrome : ⋮ → Paramètres → Paramètres des sites → Micro).",
+  "service-not-allowed": "La reconnaissance vocale est désactivée sur ce téléphone. Active « Saisie vocale Google » dans les paramètres Android.",
+  "network": "La reconnaissance vocale n’a pas pu joindre Google (réseau). Réessaie.",
+  "audio-capture": "Aucun micro disponible, ou il est utilisé par une autre appli.",
+  "language-not-supported": "L’anglais n’est pas disponible pour la dictée sur ce téléphone."
+};
 const ERREURS_FATALES = ["not-allowed", "service-not-allowed", "audio-capture", "language-not-supported", "network"];
 if (SR) {
   rec = new SR(); rec.lang = "en-GB"; rec.interimResults = true; rec.continuous = true;
@@ -426,13 +454,7 @@ if (SR) {
     liveEl.textContent = heard; scrollDown();
   };
   // L'erreur arrive AVANT onend : on la garde pour afficher la vraie cause au lieu de "rien entendu".
-  const MSG_MICRO = {
-    "not-allowed": "Micro refusé. Appui long sur l’icône de l’appli → Infos → Autorisations → Micro (ou dans Chrome : ⋮ → Paramètres → Paramètres des sites → Micro).",
-    "service-not-allowed": "La reconnaissance vocale est désactivée sur ce téléphone. Active « Saisie vocale Google » dans les paramètres Android, ou dicte avec le clavier.",
-    "network": "La reconnaissance vocale n’a pas pu joindre Google (réseau). Réessaie, ou dicte avec le clavier.",
-    "audio-capture": "Aucun micro disponible, ou il est utilisé par une autre appli.",
-    "language-not-supported": "L’anglais n’est pas disponible pour la dictée sur ce téléphone. Dicte avec le clavier."
-  };
+
   rec.onend = () => {
     // Garde-fou : si Chrome coupe en boucle sans rien entendre, on arrete au bout de 5 fois.
     const vide = heard === base && Date.now() - debutSession < 1000;
@@ -448,20 +470,20 @@ if (SR) {
     listening = false; mic.classList.remove("on"); mic.setAttribute("aria-label","Parler");
     liveEl?.remove(); liveEl = null;
     if (heard) submit(heard);
-    else if (micErr) setStatus(MSG_MICRO[micErr] || ("Le micro a coupé (" + micErr + "). Réessaie ou dicte avec le clavier."));
+    else if (micErr) setStatus(MSG_MICRO[micErr] || ("Le micro a coupé (" + micErr + "). Réessaie."));
     else if (Date.now() - micStart < 1500) setStatus("Le micro s’est coupé tout de suite, sans explication. Réessaie ; si ça continue, ferme et rouvre l’appli.");
     else setStatus("Je n’ai rien entendu. Appuie sur le micro et parle en anglais.");
     heard = ""; base = ""; micErr = null;
   };
   rec.onerror = e => { if (e.error !== "no-speech") micErr = e.error; };
-} else mic.hidden = true;
+} else { mic.hidden = true; setStatus("La dictée n’est pas disponible dans ce navigateur : ouvre l’appli dans Chrome."); }
 mic.onclick = () => {
   if (!rec) return;
   if (listening) { stopVoulu = true; rec.stop(); return; }
   stopSpeak(); unlockAudio(); hidePop();
   heard = ""; base = ""; stopVoulu = false; micErr = null; micStart = debutSession = Date.now(); relancesVides = 0;
   try { rec.start(); listening = true; mic.classList.add("on"); mic.setAttribute("aria-label","Arrêter et envoyer"); setStatus("Je t’écoute… Touche le micro rouge quand tu as fini."); }
-  catch { setStatus("Le micro ne démarre pas. Dicte avec le clavier."); }
+  catch { setStatus("Le micro ne démarre pas."); }
 };
 
 /* ---------- Traduction au toucher ---------- */
@@ -524,6 +546,104 @@ async function openMot(en, fr, phrase){
   }
 }
 $("mot").onclick = e => { if (e.target.id === "mot" || e.target.closest("#motClose")) { $("mot").hidden = true; motToken++; stopSpeak(); } };
+
+/* ---------- Question parallele (en francais, hors conversation) ---------- */
+const SCHEMA_QA = {
+  type:"OBJECT",
+  properties:{
+    reponse_fr:{type:"STRING"},
+    exemples:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}
+  },
+  required:["reponse_fr","exemples"], propertyOrdering:["reponse_fr","exemples"]
+};
+let qaHisto = [], qaBusy = false;
+function qaStatus(t){ $("qaStatus").textContent = t; }
+async function poserQuestion(q){
+  q = (q || "").trim();
+  if (!q || qaBusy) return;
+  qaBusy = true; qaStatus("Je réfléchis…");
+  const f = $("qaFeed");
+  f.append(el("div","qaq",q));
+  const dots = el("div","dots"); dots.append(el("i"), el("i"), el("i")); f.append(dots); f.scrollTop = f.scrollHeight;
+  const conv = history.slice(-6).map(h => (h.role === "user" ? "Learner: " : "Partner: ") + h.content).join("\n") || "(not started)";
+  const avant = qaHisto.slice(-3).map(x => "Q: " + x.q + "\nA: " + x.r).join("\n") || "(none)";
+  try {
+    const d = await llm(`You are a patient English teacher helping a French-speaking engineering student (intermediate level). He is in the middle of an English role-play and asks a side question, IN FRENCH (it was dictated, so ignore transcription errors).
+Role-play theme: ${theme ? theme.en : "free conversation"}.
+Recent role-play lines:
+${conv}
+
+Earlier side questions:
+${avant}
+
+His question: """${q}"""
+
+Answer IN FRENCH, simply and concretely, like a good teacher talking: 2 to 5 short sentences, no jargon, no lists, no markdown. If he asks how to say something, give the natural English wording. Quote English words inside « ».
+"exemples": 0 to 3 short natural English sentences that illustrate the answer, each with its French translation. Empty if not useful.`, SCHEMA_QA);
+    dots.remove();
+    qaHisto.push({q, r:d.reponse_fr});
+    const box = el("div","qar");
+    String(d.reponse_fr || "").split(/\n+/).filter(Boolean).forEach(t => box.append(el("p", null, t)));
+    for (const x of d.exemples || []) {
+      const b = el("button","ex"); b.append(el("span","exen",x.en), el("span","exfr",x.fr));
+      b.onclick = () => { unlockAudio(); speak(x.en, null, null); };
+      box.append(b);
+    }
+    f.append(box);
+    box.scrollIntoView({block:"start", behavior:"smooth"});
+  } catch (e) {
+    dots.remove(); console.error(e);
+    f.append(el("p","tip","Pas de réponse pour l’instant (" + (e?.code === "rate" ? "limite gratuite atteinte" : "réseau ou Google saturé") + "). Réessaie dans un moment."));
+  } finally { qaBusy = false; if (!qaEcoute) qaStatus("Touche le micro pour une autre question."); }
+}
+
+// Dictee en francais : meme principe que le micro principal (relance sur silence, envoi quand on retouche).
+let qaRec = null, qaEcoute = false, qaStop = false, qaBase = "", qaEntendu = "", qaLive = null, qaDebut = 0, qaVides = 0, qaErr = null;
+if (SR) {
+  qaRec = new SR(); qaRec.lang = "fr-FR"; qaRec.interimResults = true; qaRec.continuous = true;
+  qaRec.onresult = e => {
+    const norm = t => t.toLowerCase().replace(/[^\p{L}\p{N}' ]/gu, "").replace(/\s+/g, " ").trim();
+    const segs = [];
+    for (const r of e.results) {
+      const t = r[0].transcript.trim(); if (!t) continue;
+      const nt = norm(t), nd = segs.length ? norm(segs[segs.length - 1]) : null;
+      if (nd !== null && nt.startsWith(nd)) segs[segs.length - 1] = t;
+      else if (nd !== null && nd.startsWith(nt)) continue;
+      else segs.push(t);
+    }
+    qaEntendu = (qaBase + " " + segs.join(" ")).trim();
+    if (!qaLive) { qaLive = el("div","qaq live"); $("qaFeed").append(qaLive); }
+    qaLive.textContent = qaEntendu;
+  };
+  qaRec.onerror = e => { if (e.error !== "no-speech") qaErr = e.error; };
+  qaRec.onend = () => {
+    const vide = qaEntendu === qaBase && Date.now() - qaDebut < 1000;
+    qaVides = vide ? qaVides + 1 : 0;
+    if (qaEcoute && !qaStop && !ERREURS_FATALES.includes(qaErr) && qaVides < 5) {
+      qaBase = qaEntendu; qaErr = null;
+      setTimeout(() => { if (!qaEcoute || qaStop) return; try { qaDebut = Date.now(); qaRec.start(); } catch { qaEcoute = false; qaRec.onend(); } }, 120);
+      return;
+    }
+    qaEcoute = false; $("qaMic").classList.remove("on");
+    qaLive?.remove(); qaLive = null;
+    if (qaEntendu) poserQuestion(qaEntendu);
+    else qaStatus(qaErr ? (MSG_MICRO[qaErr] || "Le micro a coupé. Réessaie.") : "Je n’ai rien entendu. Touche le micro et pose ta question.");
+    qaEntendu = ""; qaBase = ""; qaErr = null;
+  };
+} else { $("qaMic").hidden = true; qaStatus("La dictée n’est pas disponible dans ce navigateur : ouvre l’appli dans Chrome."); }
+$("qaMic").onclick = () => {
+  if (!qaRec || qaBusy) return;
+  if (qaEcoute) { qaStop = true; qaRec.stop(); return; }
+  stopSpeak(); unlockAudio(); hidePop();
+  qaEntendu = ""; qaBase = ""; qaStop = false; qaErr = null; qaVides = 0; qaDebut = Date.now();
+  try { qaRec.start(); qaEcoute = true; $("qaMic").classList.add("on"); qaStatus("Je t’écoute… Touche le micro rouge quand tu as fini."); } catch { qaStatus("Le micro ne démarre pas. Réessaie."); }
+};
+$("askBtn").onclick = () => {
+  if (listening) { stopVoulu = true; rec.stop(); }
+  stopSpeak(); hidePop(); $("qa").hidden = false;
+};
+const fermerQa = () => { if (qaEcoute) { qaStop = true; qaRec.stop(); } $("qa").hidden = true; stopSpeak(); };
+$("qa").onclick = e => { if (e.target.id === "qa" || e.target.closest("#qaClose")) fermerQa(); };
 
 /* ---------- IA (Gemini) ---------- */
 // Modele de secours quand le modele principal est sature (503) : Flash-Lite est moins demande.
@@ -690,7 +810,7 @@ function setSerie(n){ serie = n; const b = $("serie"); b.textContent = n + " san
 
 async function ask(learner, youEl, opts = {}){
   if (busy) return;
-  busy = true; mic.disabled = true; updateSend(); hidePop();
+  busy = true; mic.disabled = true; hidePop();
   $("hintBox").hidden = true; $("hintBtn").disabled = true;
   const dots = el("div","dots"); dots.append(el("i"), el("i"), el("i"));
   feed.append(dots); scrollDown(); setStatus("");
@@ -743,7 +863,7 @@ async function ask(learner, youEl, opts = {}){
     if (history.length > 20) history = history.slice(-20);
     lastHint = d.hint_en ? {en:d.hint_en, fr:d.hint_fr || ""} : null;
     $("hintBtn").disabled = !lastHint;
-    setStatus(rec ? "À toi : touche le micro, ou dicte avec le clavier." : "À toi : dicte avec le micro du clavier.");
+    setStatus("À toi : touche le micro.");
     scrollDown();
     // Phrase juste : "ding", puis la reponse est lue directement (l'audio se prepare pendant le ding).
     if (S.voice.startsWith("g:") && actx && S.key && !ttsGoogleKO) genAudioGoogle(t.text).catch(() => {});
@@ -751,7 +871,7 @@ async function ask(learner, youEl, opts = {}){
     (learner && !opts.force ? ding() : Promise.resolve()).then(() => speak(t.text, t.play, t.reveal));
   } catch (e) {
     dots.remove(); console.error(e);
-    if (learner && !opts.force) { history.pop(); youEl?.remove(); input.value = learner; updateSend(); }
+    if (learner && !opts.force) { history.pop(); youEl?.remove(); }
     setStatus({
       key:"Clé API refusée. Vérifie-la dans les réglages ⚙️.",
       model:"Modèle introuvable. Change le nom du modèle dans les réglages ⚙️.",
@@ -763,15 +883,14 @@ async function ask(learner, youEl, opts = {}){
       http:"Erreur côté Google (" + (e?.detail || "").slice(0, 80) + "). Réessaie dans un instant."
     }[e?.code] || "La réponse n’est pas arrivée. Réessaie.");
   } finally {
-    busy = false; mic.disabled = !started; updateSend();
+    busy = false; mic.disabled = !started;
   }
 }
 
 function submit(text){
-  const t = (text ?? input.value).trim();
+  const t = (text || "").trim();
   if (!t || busy || !started) return;
   stopSpeak(); unlockAudio();
-  input.value = ""; input.style.height = ""; updateSend();
   const you = el("div","you",t); feed.append(you); scrollDown();
   history.push({role:"user", content:t});
   ask(t, you);
@@ -783,7 +902,6 @@ function begin(){
   feed.replaceChildren();
   ask(null);
 }
-function updateSend(){ $("send").disabled = busy || !started || !input.value.trim(); }
 
 /* ---------- Réglages UI ---------- */
 function openSettings(){
@@ -806,9 +924,6 @@ $("testVoice").onclick = async () => {
 };
 
 $("start").onclick = begin;
-$("send").onclick = () => submit();
-input.addEventListener("input", () => { updateSend(); input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 140) + "px"; });
-input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } });
 $("hintBtn").onclick = () => {
   const box = $("hintBox");
   if (!box.hidden) { box.hidden = true; return; }

@@ -37,7 +37,9 @@ svg{width:24px;height:24px;flex:none}
 .barbtns{display:flex}
 .themebtn{background:none;border:none;padding:4px 8px;margin:-4px -8px;border-radius:14px;text-align:left;display:block;min-width:0}
 .themebtn:active{background:color-mix(in srgb,var(--accent) 10%,transparent)}
-.themebtn .title,.themebtn .theme{display:flex;align-items:center;gap:2px}
+.themebtn .title{display:flex;align-items:center;gap:2px}
+.themebtn .theme{display:block}
+.themebtn .chev{display:inline-block;vertical-align:-4px}
 .chev{width:18px;height:18px;color:var(--accent);margin-left:2px}
 .create{display:flex;align-items:center;gap:14px;background:var(--soft);border-radius:18px;padding:12px 14px;margin:12px 0 6px}
 .create b{display:block}
@@ -156,7 +158,7 @@ footer{padding:10px 18px 16px}
 .avance summary{cursor:pointer;color:var(--muted);font-size:.88rem}
 .tip{font-size:.85rem;color:var(--muted);margin:6px 0 0}
 /* ---------- Mouvement (courbes "Material" : rapide au depart, douce a l'arrivee) ---------- */
-:root{--ease:cubic-bezier(.2,.8,.2,1);--pop:cubic-bezier(.34,1.56,.64,1)}
+:root{--ease:cubic-bezier(.2,.8,.2,1);--rebond:cubic-bezier(.34,1.56,.64,1)}
 @keyframes entre{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes entreG{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
 @keyframes popin{0%{opacity:0;transform:scale(.6)}70%{opacity:1;transform:scale(1.08)}100%{transform:scale(1)}}
@@ -170,11 +172,11 @@ footer{padding:10px 18px 16px}
 /* messages qui arrivent */
 .claude,.fix,.dots,.qar,.ex,.ritem,.card{animation:entre .38s var(--ease) both}
 .you,.qaq{animation:entreG .32s var(--ease) both}
-.fix.good{animation:popin .45s var(--pop) both}
+.fix.good{animation:popin .45s var(--rebond) both}
 .claude .msg{transition:filter .45s var(--ease),font-size .35s var(--ease),color .35s}
 .claude.old .msg{transition:font-size .35s var(--ease),color .35s}
-.serie.bump{animation:bump .45s var(--pop)}
-.pop:not([hidden]){animation:popin .22s var(--pop)}
+.serie.bump{animation:bump .45s var(--rebond)}
+.pop:not([hidden]){animation:fondu .18s ease both}
 /* fenetres qui montent / descendent */
 .sheetwrap:not([hidden]){animation:fondu .22s ease both}
 .sheetwrap:not([hidden]) .sheet{animation:monte .36s var(--ease) both}
@@ -191,8 +193,8 @@ button:not(:disabled):active{transform:scale(.94)}
 .round.on::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--live);opacity:.5;animation:vague 1.4s ease-out infinite}
 #mic,#qaMic,#roleMic{isolation:isolate}
 .round.on svg{opacity:0;transform:scale(.4)}
-.round svg{transition:opacity .2s,transform .25s var(--pop)}
-.round .stopico{position:absolute;width:20px;height:20px;border-radius:5px;background:currentColor;transform:scale(0);transition:transform .25s var(--pop)}
+.round svg{transition:opacity .2s,transform .25s var(--rebond)}
+.round .stopico{position:absolute;width:20px;height:20px;border-radius:5px;background:currentColor;transform:scale(0);transition:transform .25s var(--rebond)}
 .round.on .stopico{transform:scale(1)}
 /* barres d'onde dans ta bulle pendant l'enregistrement */
 .ondes{display:inline-flex;gap:3px;align-items:center;height:22px;margin-left:10px;vertical-align:-5px}

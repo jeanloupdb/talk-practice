@@ -159,7 +159,7 @@ footer{padding:10px 18px 16px}
     <p id="voiceStatus"></p>
     <div id="feed" aria-live="polite">
       <div class="empty" id="empty">
-        <p>Je te parle en anglais, tu réponds au micro. Si ta phrase a une erreur, tu la redis jusqu’à ce qu’elle soit juste. Touche un mot pour le traduire, une correction pour l’écouter.</p>
+        <p>Prêt à parler anglais ?</p>
         <button class="primary" id="start">Commencer</button>
       </div>
     </div>
@@ -825,7 +825,7 @@ function buildPrompt(learner, essai){
   const retry = essai ? `
 The learner is RETRYING their answer to your last line. Their previous attempt was: """${essai.prev}"""
 and you corrected: ${essai.corrections.map(c => `"${c.original}" -> "${c.corrected}"`).join("; ")}.
-Judge the new attempt on its own: it may be worded differently, that is fine.` : "";
+Judge the new attempt on its own: it may be worded differently, that is fine. If the mistakes above are now fixed and there is no NEW clear grammar mistake, ok MUST be true: do not nitpick style, word choice or relevance on a retry.` : "";
   const force = essai?.force ? `
 The learner chose to move on: set ok to true, corrections to [], and reply normally.` : "";
   return `You are a friendly English conversation partner for a French-speaking engineering student travelling in Ireland who wants to speak English fluently (intermediate level).
@@ -833,7 +833,7 @@ Theme: ${theme.en}. Play this role: ${theme.role}. Stay roughly on the theme, bu
 
 STEP 1, CHECK the learner's message. It is transcribed from SPEECH: ignore spelling, punctuation and capital letters. Look only for real mistakes a native speaker would notice: grammar, wrong word, missing word, wrong tense, word order, a French-style phrase that sounds wrong in English. If a word looks wrongly transcribed in a way that suggests a pronunciation problem, add a correction whose explanation starts with "Prononciation ?". Do not correct things that are merely less elegant.
 - "ok": true if there is no real mistake, false otherwise.
-- "corrections": the mistakes (at most 3), each with the exact wrong words, the corrected words, and a French explanation of 12 words max. Empty if ok.
+- "corrections": the mistakes (at most 3), each with the exact wrong words, the corrected words, and a French explanation of 12 words max, addressing the learner with « tu » (never « vous »). Empty if ok.
 ${retry}${force}
 
 STEP 2, only if ok is true, REPLY in your role. If ok is false, leave reply_en, reply_fr, hint_en and hint_fr empty and chunks [].
@@ -854,6 +854,7 @@ function renderFix(d, after, onSkip){
   const box = el("div", d.ok ? "fix good" : "fix");
   if (d.ok) box.append(el("div","right","✓ Parfait"));
   else {
+    feed.querySelectorAll(".skip").forEach(b => b.remove());
     box.append(el("div","fixtitle","À reprendre"));
     const ul = el("ul");
     for (const c of list) {

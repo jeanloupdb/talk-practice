@@ -155,7 +155,55 @@ footer{padding:10px 18px 16px}
 .avance{margin-top:10px}
 .avance summary{cursor:pointer;color:var(--muted);font-size:.88rem}
 .tip{font-size:.85rem;color:var(--muted);margin:6px 0 0}
-@media (prefers-reduced-motion:reduce){.play.ready{animation:none}.dots i{animation:none;opacity:.7}.msg{transition:none}}
+/* ---------- Mouvement (courbes "Material" : rapide au depart, douce a l'arrivee) ---------- */
+:root{--ease:cubic-bezier(.2,.8,.2,1);--pop:cubic-bezier(.34,1.56,.64,1)}
+@keyframes entre{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes entreG{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+@keyframes popin{0%{opacity:0;transform:scale(.6)}70%{opacity:1;transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes fondu{from{opacity:0}to{opacity:1}}
+@keyframes monte{from{transform:translateY(100%)}to{transform:none}}
+@keyframes descend{from{transform:none}to{transform:translateY(100%)}}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes vague{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 40%,transparent)}100%{box-shadow:0 0 0 18px transparent}}
+@keyframes barre{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+/* messages qui arrivent */
+.claude,.fix,.dots,.qar,.ex,.ritem,.card{animation:entre .38s var(--ease) both}
+.you,.qaq{animation:entreG .32s var(--ease) both}
+.fix.good{animation:popin .45s var(--pop) both}
+.claude .msg{transition:filter .45s var(--ease),font-size .35s var(--ease),color .35s}
+.claude.old .msg{transition:font-size .35s var(--ease),color .35s}
+.serie.bump{animation:bump .45s var(--pop)}
+.pop:not([hidden]){animation:popin .22s var(--pop)}
+/* fenetres qui montent / descendent */
+.sheetwrap:not([hidden]){animation:fondu .22s ease both}
+.sheetwrap:not([hidden]) .sheet{animation:monte .36s var(--ease) both}
+.sheetwrap.ferme{animation:fondu .2s ease reverse both}
+.sheetwrap.ferme .sheet{animation:descend .22s ease-in both}
+/* boutons : retour au toucher */
+button{transition:transform .15s var(--ease),background-color .2s,color .2s,opacity .2s}
+button:not(:disabled):active{transform:scale(.94)}
+.seg button{transition:background-color .25s var(--ease),color .25s}
+/* gros micro : halo qui suit ta voix, icone qui devient "stop" */
+.round.on{position:relative;--lvl:0}
+.round.on::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--live);opacity:.25;
+  transform:scale(calc(1 + var(--lvl) * .9));transition:transform .08s linear;z-index:-1}
+.round.on::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--live);opacity:.5;animation:vague 1.4s ease-out infinite}
+#mic,#qaMic,#roleMic{isolation:isolate}
+.round.on svg{opacity:0;transform:scale(.4)}
+.round svg{transition:opacity .2s,transform .25s var(--pop)}
+.round .stopico{position:absolute;width:20px;height:20px;border-radius:5px;background:currentColor;transform:scale(0);transition:transform .25s var(--pop)}
+.round.on .stopico{transform:scale(1)}
+/* barres d'onde dans ta bulle pendant l'enregistrement */
+.ondes{display:inline-flex;gap:3px;align-items:center;height:22px;margin-left:10px;vertical-align:-5px}
+.ondes i{width:4px;height:100%;border-radius:2px;background:var(--accent);transform:scaleY(.2);transition:transform .08s linear}
+/* en attente de Gemini : ta bulle "pulse" doucement */
+.you.pending{background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 18%,transparent),transparent);background-size:200% 100%;
+  animation:entreG .32s var(--ease) both,shimmer 1.4s linear infinite;border-radius:12px;padding:2px 10px;min-width:70px;min-height:1.4em}
+/* l'IA parle : ondes autour du bouton */
+.play.parle{animation:vague 1.2s ease-out infinite}
+.play.parle svg{animation:barre .9s ease-in-out infinite;transform-origin:center}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.play.ready{animation:none}.dots i{animation:none;opacity:.7}.msg{transition:none}}
 </style>
 </head>
 <body>
@@ -186,7 +234,7 @@ footer{padding:10px 18px 16px}
     <div class="hint" id="hintBox" hidden></div>
     <div class="row mainrow">
       <button class="round" id="hintBtn" disabled aria-label="Astuce"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></button>
-      <button class="round" id="mic" aria-label="Parler" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button class="round" id="mic" aria-label="Parler" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
       <button class="round" id="askBtn" aria-label="Poser une question en français">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2-2.4 3.4"/><path d="M12 16.6h.01"/></svg>
         </button>
@@ -253,7 +301,7 @@ footer{padding:10px 18px 16px}
   <div class="sheet" role="dialog" aria-labelledby="rolesTitle">
     <div class="mothead"><h2 id="rolesTitle">Jeu de rôle</h2><button class="iconbtn" id="rolesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="create">
-      <button class="round" id="roleMic" aria-label="Décrire un nouveau jeu de rôle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button class="round" id="roleMic" aria-label="Décrire un nouveau jeu de rôle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
       <div><b>Créer le tien</b><span id="roleStatus">Décris la situation en français, par exemple « je suis à la pharmacie et j’ai mal à la gorge ».</span></div>
     </div>
     <div id="rolesList"></div>
@@ -266,7 +314,7 @@ footer{padding:10px 18px 16px}
     <div id="qaFeed"></div>
     <p class="status" id="qaStatus">Touche le micro et pose ta question.</p>
     <div class="row qarow">
-      <button class="round" id="qaMic" aria-label="Poser la question au micro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button class="round" id="qaMic" aria-label="Poser la question au micro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
     </div>
   </div>
 </div>
@@ -314,6 +362,12 @@ const feed = $("feed"), mic = $("mic"), statusEl = $("status"), pop = $("pop");
 let theme = null, history = [], busy = false, started = false, lastHint = null;
 function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function setStatus(t){ statusEl.textContent = t || ""; }
+// Ferme une fenetre du bas en la faisant glisser (au lieu de la faire disparaitre d'un coup).
+function fermer(id){
+  const w = $(id); if (w.hidden || w.classList.contains("ferme")) return;
+  w.classList.add("ferme");
+  setTimeout(() => { w.hidden = true; w.classList.remove("ferme"); }, 210);
+}
 function setVoiceStatus(t){ $("voiceStatus").textContent = t || ""; }
 function scrollDown(){ feed.scrollTop = feed.scrollHeight; }
 function setTheme(t){ theme = t; $("themeName").textContent = t.fr; S.theme = t; saveS(); }
@@ -361,7 +415,7 @@ function playBuffer(a){
     currentSrc = src; src.start();
   });
 }
-function setPlay(btn, on){ if (!btn) return; btn.innerHTML = on ? PAUSE : PLAY; btn.setAttribute("aria-label", on ? "Pause" : "Écouter"); }
+function setPlay(btn, on){ if (!btn) return; btn.classList.toggle("parle", on); btn.innerHTML = on ? PAUSE : PLAY; btn.setAttribute("aria-label", on ? "Pause" : "Écouter"); }
 function stopSpeak(){
   playToken++;
   try { currentSrc?.stop(); } catch {}
@@ -627,14 +681,35 @@ async function basculerEnreg(){
     const blob = new Blob(morceaux, {type});
     const you = enregLive; enregLive = null;
     if (Date.now() - enregDebut < 700 || blob.size < 1200) { you?.remove(); setStatus("Trop court : touche le micro, parle, puis retouche-le."); return; }
-    you.className = "you pending"; you.textContent = "…";
+    you.className = "you pending"; you.textContent = "";
     setStatus("");
     ask(null, you, {audio:{data: await blobB64(blob), mime:type}});
   };
+  // Niveau de la voix en direct : le halo du micro et les barres de ta bulle bougent avec toi.
+  let analyse = null, source = null, raf = 0;
+  try {
+    source = actx.createMediaStreamSource(flux); analyse = actx.createAnalyser(); analyse.fftSize = 256;
+    source.connect(analyse);
+  } catch { analyse = null; }
+  const niveaux = new Uint8Array(128);
+  const anime = () => {
+    if (!analyse || !enregLive) return;
+    analyse.getByteTimeDomainData(niveaux);
+    let somme = 0; for (const v of niveaux) somme += (v - 128) * (v - 128);
+    const lvl = Math.min(1, Math.sqrt(somme / niveaux.length) / 40);
+    mic.style.setProperty("--lvl", lvl.toFixed(3));
+    const barres = enregLive.querySelectorAll(".ondes i");
+    barres.forEach((b, i) => { const k = [0.55, 0.85, 1, 0.8, 0.6][i] || 1; b.style.transform = "scaleY(" + Math.max(.18, Math.min(1, lvl * k * 1.6 + Math.random() * .08)).toFixed(2) + ")"; });
+    raf = requestAnimationFrame(anime);
+  };
+  const stopAnalyse = () => { cancelAnimationFrame(raf); try { source?.disconnect(); } catch {} mic.style.removeProperty("--lvl"); };
+  enreg.addEventListener("stop", stopAnalyse);
   enreg.start(); enregDebut = Date.now();
   mic.classList.add("on"); mic.setAttribute("aria-label", "Arrêter et envoyer");
-  enregLive = el("div", "you live"); const dot = el("span", "recdot"), tps = el("span", null, "0:00");
-  enregLive.append(dot, tps); feed.append(enregLive); scrollDown();
+  enregLive = el("div", "you live"); const dot = el("span", "recdot"), tps = el("span", null, "0:00"), ondes = el("span", "ondes");
+  for (let i = 0; i < 5; i++) ondes.append(el("i"));
+  enregLive.append(dot, tps, ondes); feed.append(enregLive); scrollDown();
+  raf = requestAnimationFrame(anime);
   setStatus("Je t’écoute… Touche le micro rouge quand tu as fini.");
   enregTimer = setInterval(() => {
     const sec = Math.floor((Date.now() - enregDebut) / 1000);
@@ -706,7 +781,7 @@ async function openMot(en, fr, phrase){
     box.replaceChildren(el("p","motfr",fr || ""), el("p","tip","Exemples indisponibles pour l’instant (" + (e?.code === "rate" ? "limite gratuite atteinte" : "réseau ou Google saturé") + "). Réessaie dans un moment."));
   }
 }
-$("mot").onclick = e => { if (e.target.id === "mot" || e.target.closest("#motClose")) { $("mot").hidden = true; motToken++; stopSpeak(); } };
+$("mot").onclick = e => { if (e.target.id === "mot" || e.target.closest("#motClose")) { fermer("mot"); motToken++; stopSpeak(); } };
 
 /* ---------- Choix / creation du jeu de role ---------- */
 const SCHEMA_ROLE = {
@@ -716,7 +791,7 @@ const SCHEMA_ROLE = {
 };
 let roleBusy = false;
 function roleStatus(t){ $("roleStatus").textContent = t; }
-function lancerTheme(t){ setTheme(t); $("roles").hidden = true; stopSpeak(); if (started) begin(); else setStatus("Touche « Commencer » quand tu es prêt."); }
+function lancerTheme(t){ setTheme(t); fermer("roles"); stopSpeak(); if (started) begin(); else setStatus("Touche « Commencer » quand tu es prêt."); }
 function afficherRoles(){
   const l = $("rolesList"); l.replaceChildren();
   const ligne = (t, perso) => {
@@ -761,7 +836,7 @@ $("themeBtn").onclick = () => {
     done: t => creerRole(t)
   });
 };
-$("roles").onclick = e => { if (e.target.id === "roles" || e.target.closest("#rolesClose")) { roleDictee?.arreter(); $("roles").hidden = true; } };
+$("roles").onclick = e => { if (e.target.id === "roles" || e.target.closest("#rolesClose")) { roleDictee?.arreter(); fermer("roles"); } };
 
 /* ---------- Question parallele (en francais, hors conversation) ---------- */
 const SCHEMA_QA = {
@@ -877,7 +952,7 @@ $("askBtn").onclick = () => {
   if (listening) { stopVoulu = true; rec.stop(); }
   stopSpeak(); hidePop(); $("qa").hidden = false;
 };
-const fermerQa = () => { qaDictee?.arreter(); $("qa").hidden = true; stopSpeak(); };
+const fermerQa = () => { qaDictee?.arreter(); fermer("qa"); stopSpeak(); };
 $("qa").onclick = e => { if (e.target.id === "qa" || e.target.closest("#qaClose")) fermerQa(); };
 
 /* ---------- IA (Gemini) ---------- */
@@ -1097,7 +1172,10 @@ function renderClaude(chunks, replyFr){
 const RETRY_LINES = ["Not quite. Have another go!", "Almost! Try that again.", "Close! Fix those bits and say it again.", "Nearly there. One more time!"];
 let essai = null;         // tentative en cours de correction : {prev, corrections, youEl, first}
 let serie = 0;            // reponses justes du premier coup, d'affilee
-function setSerie(n){ serie = n; const b = $("serie"); b.textContent = n + " sans faute"; b.hidden = n === 0; }
+function setSerie(n){
+  const monte = n > serie; serie = n; const b = $("serie"); b.textContent = n + " sans faute"; b.hidden = n === 0;
+  if (monte) { b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump"); }
+}
 
 async function ask(learner, youEl, opts = {}){
   if (busy) return;
@@ -1273,13 +1351,13 @@ function lireReglages(){
   S.speed = Number($("speedSel").value);
 }
 $("gear").onclick = openSettings;
-$("setClose").onclick = () => { $("settings").hidden = true; };
+$("setClose").onclick = () => { fermer("settings"); };
 $("memoClear").onclick = () => { if (confirm("Oublier tout ce que l’appli sait de toi ?")) { S.memo = []; saveS(); afficherMemo(); } };
 $("saveSettings").onclick = () => {
-  lireReglages(); saveS(); $("settings").hidden = true;
+  lireReglages(); saveS(); fermer("settings");
   if (!started && S.key) setStatus("C’est prêt. Touche « Commencer ».");
 };
-$("settings").onclick = e => { if (e.target.id === "settings") $("settings").hidden = true; };
+$("settings").onclick = e => { if (e.target.id === "settings") fermer("settings"); };
 $("testVoice").onclick = async () => {
   lireReglages(); unlockAudio();
   $("voixUtilisee").textContent = "Lecture en cours…";

@@ -60,6 +60,8 @@ svg{width:24px;height:24px;flex:none}
 .primary:disabled{opacity:.45;cursor:default}
 .you{align-self:flex-end;text-align:right;color:var(--accent);font-weight:600;font-size:1.25rem;line-height:1.3;max-width:92%}
 .you.live{opacity:.6}
+.you.pending{opacity:.5;letter-spacing:.2em}
+.recdot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--live);margin-right:8px;vertical-align:1px;animation:b 1s infinite}
 .fix{background:var(--card);border:1px solid var(--card-line);border-radius:18px;padding:12px 16px 10px;font-size:.95rem;backdrop-filter:blur(6px)}
 .fix ul{margin:0;padding:0;list-style:none}
 .fix li{padding:8px 0;border-top:1px solid var(--card-line)}
@@ -188,7 +190,13 @@ footer{padding:10px 18px 16px}
     <p class="tip">Flash-Lite répond plus vite et est moins souvent saturé que Flash. Si tu as une erreur « modèle introuvable », mets un modèle listé dans AI Studio.</p>
     <label for="voiceSel">Voix</label>
     <select id="voiceSel">
-      <optgroup label="Google, rapide (avec ta clé, gratuit)">
+      <optgroup label="Azure, instantanée (clé Azure, gratuit)">
+        <option value="az:en-IE-EmilyNeural">Emily – irlandaise</option>
+        <option value="az:en-IE-ConnorNeural">Connor – irlandais</option>
+        <option value="az:en-GB-SoniaNeural">Sonia – britannique</option>
+        <option value="az:en-US-JennyNeural">Jenny – américaine</option>
+      </optgroup>
+      <optgroup label="Google (avec ta clé Gemini)">
         <option value="g:Kore">Kore – femme, posée</option>
         <option value="g:Aoede">Aoede – femme, enjouée</option>
         <option value="g:Puck">Puck – homme, vif</option>
@@ -204,7 +212,11 @@ footer{padding:10px 18px 16px}
         <option value="sys">Voix système (qualité moindre)</option>
       </optgroup>
     </select>
-    <p class="tip">Si la voix Google atteint sa limite gratuite, l’appli bascule toute seule sur la voix du téléphone.</p>
+    <p class="tip">Si une voix atteint sa limite gratuite, l’appli passe toute seule à la suivante (Azure → Google → téléphone).</p>
+    <label for="azKeyIn">Clé Azure Speech (pour les voix Azure)</label>
+    <input id="azKeyIn" type="password" autocomplete="off" placeholder="Colle ta clé Azure ici">
+    <label for="azRegionIn">Région Azure</label>
+    <input id="azRegionIn" autocomplete="off" placeholder="westeurope">
     <label for="speedSel">Vitesse</label>
     <select id="speedSel"><option value="0.8">Lente</option><option value="0.9">Un peu lente</option><option value="1">Normale</option></select>
     <label>Ce que l’appli sait de toi</label>
@@ -352,13 +364,68 @@ const MODELES_TTS = ["gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts", "gemin
 const ttsModelesKO = new Set(); // modeles de voix dont le quota du jour est epuise
 const STYLE_VITESSE = {0.8:"Speak slowly and very clearly, for a language learner: ", 0.9:"Speak clearly, a little slowly: ", 1:""};
 let ttsGoogleKO = false; // passe a true quand la limite gratuite est atteinte (jusqu'au prochain lancement)
+// PCM 16 bits, dans un WAV (Gemini 3.8, Azure) ou brut (audio/L16;rate=24000).
+// On lit l'en-tete WAV a la main : plus simple et plus fiable que decodeAudioData.
+async function lireAudio(bytes, mime){
+  let rate = Number((mime.match(/rate=(\d+)/) || [])[1]) || 24000, canaux = 1, debut = 0, fin = bytes.length;
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), tag = o => String.fromCharCode(bytes[o], bytes[o+1], bytes[o+2], bytes[o+3]);
+  if (tag(0) === "RIFF" && tag(8) === "WAVE") {
+    let o = 12, bits = 16;
+    while (o + 8 <= bytes.length) {
+      const id = tag(o), taille = dv.getUint32(o + 4, true);
+      if (id === "fmt ") { canaux = dv.getUint16(o + 10, true); rate = dv.getUint32(o + 12, true); bits = dv.getUint16(o + 22, true); }
+      if (id === "data") { debut = o + 8; fin = Math.min(bytes.length, debut + taille); break; }
+      o += 8 + taille + (taille & 1);
+    }
+    if (bits !== 16) { const buf = await actx.decodeAudioData(bytes.buffer.slice(0)); return {audio: buf.getChannelData(0), sampling_rate: buf.sampleRate}; }
+  }
+  const n = Math.floor((fin - debut) / 2 / canaux), f32 = new Float32Array(n);
+  for (let i = 0; i < n; i++) f32[i] = dv.getInt16(debut + i * 2 * canaux, true) / 32768;
+  return {audio: f32, sampling_rate: rate};
+}
+
+/* Voix Azure : demarre en moins d'une seconde, voix irlandaises, 500 000 caracteres gratuits par mois. */
+let azureKO = false;
+async function genAudioAzure(text){
+  const k = "az|" + S.voice + "|" + S.speed + "|" + text;
+  if (audioCache.has(k)) return audioCache.get(k);
+  const voix = S.voice.slice(3), lang = voix.slice(0, 5);
+  const rate = {0.8:"-20%", 0.9:"-10%", 1:"0%"}[S.speed] || "0%";
+  const esc = t => t.replace(/[<>&'"]/g, c => ({"<":"&lt;", ">":"&gt;", "&":"&amp;", "'":"&apos;", '"':"&quot;"}[c]));
+  const p = (async () => {
+    const r = await fetch("https://" + S.azRegion + ".tts.speech.microsoft.com/cognitiveservices/v1", {
+      method:"POST",
+      headers:{"Ocp-Apim-Subscription-Key":S.azKey, "Content-Type":"application/ssml+xml", "X-Microsoft-OutputFormat":"riff-24khz-16bit-mono-pcm"},
+      body:`<speak version="1.0" xml:lang="${lang}"><voice name="${voix}"><prosody rate="${rate}">${esc(text)}</prosody></voice></speak>`
+    });
+    if (!r.ok) {
+      if (r.status === 401 || r.status === 403) { azureKO = true; setVoiceStatus("Clé ou région Azure refusée : vérifie-les dans ⚙️. J’utilise la voix Google en attendant."); }
+      if (r.status === 429) setVoiceStatus("Limite gratuite Azure atteinte pour l’instant : voix Google en attendant.");
+      throw new Error("Azure HTTP " + r.status);
+    }
+    return lireAudio(new Uint8Array(await r.arrayBuffer()), "audio/wav");
+  })();
+  audioCache.set(k, p);
+  p.catch(() => audioCache.delete(k));
+  if (audioCache.size > 80) audioCache.delete(audioCache.keys().next().value);
+  return p;
+}
+const voixAzure = () => S.voice.startsWith("az:") && S.azKey && S.azRegion && !azureKO;
+const voixGoogle = () => (S.voice.startsWith("g:") || S.voice.startsWith("az:")) && S.key && !ttsGoogleKO;
+// prepare l'audio en avance (pendant le ding ou la lecture des remarques)
+function prechargerVoix(text){
+  if (!actx) return;
+  if (voixAzure()) genAudioAzure(text).catch(() => {});
+  else if (voixGoogle()) genAudioGoogle(text).catch(() => {});
+}
+
 async function genAudioGoogle(text){
-  const k = "g|" + S.voice + "|" + S.speed + "|" + text;
+  const k = "g|" + (S.voice.startsWith("g:") ? S.voice : "g:Kore") + "|" + S.speed + "|" + text;
   if (audioCache.has(k)) return audioCache.get(k);
   const p = (async () => {
     const body = JSON.stringify({
       contents:[{parts:[{text:(STYLE_VITESSE[S.speed] || "") + text}]}],
-      generationConfig:{responseModalities:["AUDIO"], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:S.voice.slice(2)}}}}
+      generationConfig:{responseModalities:["AUDIO"], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:S.voice.startsWith("g:") ? S.voice.slice(2) : "Kore"}}}}
     });
     let r = null;
     for (const m of MODELES_TTS) {
@@ -380,24 +447,7 @@ async function genAudioGoogle(text){
     if (!part) throw new Error("TTS Google : pas d'audio");
     const bin = atob(part.inlineData.data), bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const mime = part.inlineData.mimeType || "";
-    // Google renvoie du PCM 16 bits, soit dans un WAV (3.8), soit brut (audio/L16;rate=24000).
-    // On lit l'en-tete WAV a la main : plus simple et plus fiable que decodeAudioData.
-    let rate = Number((mime.match(/rate=(\d+)/) || [])[1]) || 24000, canaux = 1, debut = 0, fin = bytes.length;
-    const dv = new DataView(bytes.buffer), tag = o => String.fromCharCode(bytes[o], bytes[o+1], bytes[o+2], bytes[o+3]);
-    if (tag(0) === "RIFF" && tag(8) === "WAVE") {
-      let o = 12, bits = 16;
-      while (o + 8 <= bytes.length) {
-        const id = tag(o), taille = dv.getUint32(o + 4, true);
-        if (id === "fmt ") { canaux = dv.getUint16(o + 10, true); rate = dv.getUint32(o + 12, true); bits = dv.getUint16(o + 22, true); }
-        if (id === "data") { debut = o + 8; fin = Math.min(bytes.length, debut + taille); break; }
-        o += 8 + taille + (taille & 1);
-      }
-      if (bits !== 16) { const buf = await actx.decodeAudioData(bytes.buffer); return {audio: buf.getChannelData(0), sampling_rate: buf.sampleRate}; }
-    }
-    const n = Math.floor((fin - debut) / 2 / canaux), f32 = new Float32Array(n);
-    for (let i = 0; i < n; i++) f32[i] = dv.getInt16(debut + i * 2 * canaux, true) / 32768;
-    return {audio: f32, sampling_rate: rate};
+    return lireAudio(bytes, part.inlineData.mimeType || "");
   })();
   audioCache.set(k, p);
   p.catch(() => audioCache.delete(k));
@@ -411,8 +461,16 @@ async function speak(text, btn, reveal){
   speakingBtn = btn; setPlay(btn, true);
   const done = () => { if (speakingBtn === btn && token === playToken) { setPlay(btn, false); speakingBtn = null; } };
   const parts = splitSentences(text);
-  // 1) Voix Google : un seul appel pour toute la reponse.
-  if (S.voice.startsWith("g:") && actx && S.key && !ttsGoogleKO) {
+  // 1) Voix Azure (rapide), si choisie et configuree.
+  if (voixAzure() && actx) {
+    try {
+      const a = await genAudioAzure(text); if (token !== playToken) return;
+      await playBuffer(a); if (token !== playToken) return;
+      return done();
+    } catch (e) { console.warn("voix Azure indisponible, secours Google", e); }
+  }
+  // 2) Voix Google : un seul appel pour toute la reponse.
+  if (voixGoogle() && actx) {
     try {
       const a = await genAudioGoogle(text); if (token !== playToken) return;
       await playBuffer(a); if (token !== playToken) return;
@@ -516,6 +574,50 @@ mic.onclick = () => {
   try { rec.start(); listening = true; mic.classList.add("on"); mic.setAttribute("aria-label","Arrêter et envoyer"); setStatus("Je t’écoute… Touche le micro rouge quand tu as fini."); }
   catch { setStatus("Le micro ne démarre pas."); }
 };
+
+/* ---------- Micro principal : on enregistre ta voix et on l'envoie a Gemini ----------
+   Gemini entend ta vraie prononciation (Chrome, lui, devinait les mots et effacait tes fautes),
+   et ne coupe jamais au milieu d'une phrase : l'envoi part quand tu retouches le micro. */
+const ENREG_OK = !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
+let enreg = null, enregDebut = 0, enregTimer = null, enregLive = null;
+function blobB64(b){ return new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = ko; r.readAsDataURL(b); }); }
+async function basculerEnreg(){
+  if (enreg && enreg.state === "recording") { enreg.stop(); return; }
+  if (busy || !started) return;
+  stopSpeak(); unlockAudio(); hidePop(); $("hintBox").hidden = true;
+  let flux;
+  try { flux = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, channelCount:1}}); }
+  catch (e) { setStatus(e.name === "NotAllowedError" ? MSG_MICRO["not-allowed"] : "Micro indisponible (" + e.name + ")."); return; }
+  const mime = ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4"].find(m => MediaRecorder.isTypeSupported?.(m)) || "";
+  const morceaux = [];
+  enreg = new MediaRecorder(flux, mime ? {mimeType:mime, audioBitsPerSecond:32000} : undefined);
+  enreg.ondataavailable = e => { if (e.data.size) morceaux.push(e.data); };
+  enreg.onstop = async () => {
+    clearInterval(enregTimer); mic.classList.remove("on"); mic.setAttribute("aria-label", "Parler");
+    flux.getTracks().forEach(t => t.stop());              // libere le micro (le voyant Android s'eteint)
+    const type = (enreg.mimeType || mime || "audio/webm").split(";")[0];
+    const blob = new Blob(morceaux, {type});
+    const you = enregLive; enregLive = null;
+    if (Date.now() - enregDebut < 700 || blob.size < 1200) { you?.remove(); setStatus("Trop court : touche le micro, parle, puis retouche-le."); return; }
+    you.className = "you pending"; you.textContent = "…";
+    setStatus("");
+    ask(null, you, {audio:{data: await blobB64(blob), mime:type}});
+  };
+  enreg.start(); enregDebut = Date.now();
+  mic.classList.add("on"); mic.setAttribute("aria-label", "Arrêter et envoyer");
+  enregLive = el("div", "you live"); const dot = el("span", "recdot"), tps = el("span", null, "0:00");
+  enregLive.append(dot, tps); feed.append(enregLive); scrollDown();
+  setStatus("Je t’écoute… Touche le micro rouge quand tu as fini.");
+  enregTimer = setInterval(() => {
+    const sec = Math.floor((Date.now() - enregDebut) / 1000);
+    tps.textContent = Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+    if (sec >= 90) enreg.stop();
+  }, 250);
+}
+if (ENREG_OK) {
+  mic.hidden = false; mic.onclick = basculerEnreg;
+  if (statusEl.textContent.startsWith("La dictée")) setStatus("");
+}
 
 /* ---------- Traduction au toucher ---------- */
 let selChunk = null;
@@ -755,19 +857,19 @@ $("qa").onclick = e => { if (e.target.id === "qa" || e.target.closest("#qaClose"
 const MODELE_SECOURS = "gemini-flash-lite-latest";
 const pause = ms => new Promise(ok => setTimeout(ok, ms));
 
-async function appelGemini(model, prompt, schema){
+async function appelGemini(model, prompt, schema, audio){
   const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent";
   try {
     return await fetch(url, {
       method:"POST",
       headers:{"Content-Type":"application/json","x-goog-api-key":S.key},
-      body: JSON.stringify({contents:[{role:"user", parts:[{text:prompt}]}], generationConfig:{responseMimeType:"application/json", responseSchema:schema, temperature:0.6}})
+      body: JSON.stringify({contents:[{role:"user", parts:[...(audio ? [{inlineData:{mimeType:audio.mime, data:audio.data}}] : []), {text:prompt}]}], generationConfig:{responseMimeType:"application/json", responseSchema:schema, temperature:0.6}})
     });
   } catch (e) { throw {code:"net", detail:String(e)}; }
 }
 
 let modeleEpuise = null; // modele dont le quota gratuit du jour est epuise (retenu pour la session)
-async function llm(prompt, schema = SCHEMA){
+async function llm(prompt, schema = SCHEMA, audio = null){
   // Google renvoie souvent 503 ("modele tres demande") sur le niveau gratuit : on retente
   // avec une pause, puis on bascule sur le modele de secours si ca ne passe toujours pas.
   // Un 429 "par jour" = quota du jour epuise sur ce modele : on passe au secours direct.
@@ -780,7 +882,7 @@ async function llm(prompt, schema = SCHEMA){
     const {model, attente} = essais[i];
     const dernier = i === essais.length - 1;
     if (attente) { setStatus(model === S.model ? "Google est saturé, nouvel essai…" : "Toujours saturé, j’essaie le modèle de secours…"); await pause(attente); }
-    r = await appelGemini(model, prompt, schema);
+    r = await appelGemini(model, prompt, schema, audio);
     if (r.ok) break;
     if (r.status === 503 && !dernier) continue;
     if (r.status === 429) {
@@ -790,7 +892,7 @@ async function llm(prompt, schema = SCHEMA){
         if (parJour) {
           modeleEpuise = S.model;
           setStatus("Quota gratuit du jour épuisé pour " + S.model + ", je passe sur " + secours + "…");
-          r = await appelGemini(secours, prompt, schema);
+          r = await appelGemini(secours, prompt, schema, audio);
           if (r.ok) break;
           if (r.status === 429) throw {code:"rate", detail: await r.text().catch(() => "")};
           continue;
@@ -859,6 +961,7 @@ function afficherMemo(){
 const SCHEMA = {
   type:"OBJECT",
   properties:{
+    heard:{type:"STRING"},
     ok:{type:"BOOLEAN"},
     corrections:{type:"ARRAY", items:{type:"OBJECT", properties:{original:{type:"STRING"}, corrected:{type:"STRING"}, explanation_fr:{type:"STRING"}}, required:["original","corrected","explanation_fr"], propertyOrdering:["original","corrected","explanation_fr"]}},
     reply_en:{type:"STRING"},
@@ -868,11 +971,11 @@ const SCHEMA = {
     hint_fr:{type:"STRING"},
     fait:{type:"STRING"}
   },
-  required:["ok","corrections","reply_en","chunks","reply_fr","hint_en","hint_fr","fait"],
-  propertyOrdering:["ok","corrections","reply_en","chunks","reply_fr","hint_en","hint_fr","fait"]
+  required:["heard","ok","corrections","reply_en","chunks","reply_fr","hint_en","hint_fr","fait"],
+  propertyOrdering:["heard","ok","corrections","reply_en","chunks","reply_fr","hint_en","hint_fr","fait"]
 };
 
-function buildPrompt(learner, essai){
+function buildPrompt(learner, essai, audio){
   const transcript = history.map(h => (h.role === "user" ? "Learner: " : "You: ") + h.content).join("\n") || "(nothing yet)";
   const retry = essai ? `
 The learner is RETRYING their answer to your last line. Their previous attempt was: """${essai.prev}"""
@@ -883,7 +986,9 @@ The learner chose to move on: set ok to true, corrections to [], and reply norma
   return `You are a friendly English conversation partner for a French-speaking engineering student travelling in Ireland who wants to speak English fluently (intermediate level).
 Theme: ${theme.en}. Play this role: ${theme.role}. Stay roughly on the theme, but follow the learner if they go elsewhere.
 
-STEP 1, CHECK the learner's message. It is transcribed from SPEECH: ignore spelling, punctuation and capital letters. Look only for real mistakes a native speaker would notice: grammar, wrong word, missing word, wrong tense, word order, a French-style phrase that sounds wrong in English. If a word looks wrongly transcribed in a way that suggests a pronunciation problem, add a correction whose explanation starts with "Prononciation ?". Do not correct things that are merely less elegant.
+STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDIO recording.
+- "heard": write exactly what he said, word for word, KEEPING his grammar mistakes (never fix them here). If nothing intelligible was said, write "" and set ok to true with empty fields.
+- You can HEAR his pronunciation: if a word is clearly mispronounced, so that a native speaker could misunderstand it, add a correction: "original" = the word, "corrected" = the same word, explanation in French starting with "Prononciation :" saying how to say it (e.g. "Prononciation : le « th » se fait langue entre les dents"). Never correct the French accent itself, only real mispronunciations. At most one pronunciation correction.` : `It is transcribed from SPEECH: ignore spelling, punctuation and capital letters. "heard": "".`} Look only for real mistakes a native speaker would notice: grammar, wrong word, missing word, wrong tense, word order, a French-style phrase that sounds wrong in English. If a word looks wrongly transcribed in a way that suggests a pronunciation problem, add a correction whose explanation starts with "Prononciation ?". Do not correct things that are merely less elegant.
 - "ok": true if there is no real mistake, false otherwise.
 - "corrections": the mistakes (at most 3), each with the exact wrong words, the corrected words, and a French explanation of 12 words max, addressing the learner with « tu » (never « vous »). Empty if ok.
 ${retry}${force}
@@ -903,7 +1008,7 @@ Use it naturally to make the talk personal: now and then (especially early in a 
 Conversation so far:
 ${transcript}
 
-${learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to [], and start the conversation: greet the learner in your role and ask a first, easy question. If you already know facts about him (see above), pick one that fits your role and build your first question on it, to dig deeper."}`;
+${audio ? "The learner's answer is in the attached audio." : learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to [], and start the conversation: greet the learner in your role and ask a first, easy question. If you already know facts about him (see above), pick one that fits your role and build your first question on it, to dig deeper."}`;
 }
 
 function renderFix(d, after, onSkip){
@@ -978,7 +1083,13 @@ async function ask(learner, youEl, opts = {}){
     let d, chunks;
     for (let n = 0; n < 2; n++) {
       try {
-        d = await llm(buildPrompt(learner, ctx));
+        d = await llm(buildPrompt(learner, ctx, !!opts.audio), SCHEMA, opts.audio || null);
+        if (opts.audio) {
+          const h = String(d?.heard || "").trim();
+          if (!h) throw {code:"inaudible"};
+          learner = h; youEl.textContent = h; youEl.classList.remove("pending");
+          history.push({role:"user", content:h});
+        }
         if (opts.force) d.ok = true;
         chunks = Array.isArray(d?.chunks) ? d.chunks.filter(c => c && typeof c.en === "string" && c.en.trim()) : [];
         if (d.ok && !chunks.length) throw {code:"shape", detail:JSON.stringify(d)};
@@ -986,6 +1097,7 @@ async function ask(learner, youEl, opts = {}){
         break;
       } catch (e) {
         if (n === 1 || (e?.code !== "parse" && e?.code !== "shape")) throw e;
+        if (opts.audio && learner) { history.pop(); learner = null; }
         console.warn("reponse IA inexploitable, nouvel essai", e);
       }
     }
@@ -1025,18 +1137,20 @@ async function ask(learner, youEl, opts = {}){
     setStatus("À toi : touche le micro.");
     scrollDown();
     // Phrase juste : "ding", puis la reponse est lue directement (l'audio se prepare pendant le ding).
-    if (S.voice.startsWith("g:") && actx && S.key && !ttsGoogleKO) genAudioGoogle(t.text).catch(() => {});
+    prechargerVoix(t.text);
     t.play.classList.remove("ready");
     (learner && !opts.force ? ding() : Promise.resolve()).then(() => speak(t.text, t.play, t.reveal));
   } catch (e) {
     dots.remove(); console.error(e);
-    if (learner && !opts.force) { history.pop(); youEl?.remove(); }
+    if (opts.audio) { if (learner) history.pop(); youEl?.remove(); }
+    else if (learner && !opts.force) { history.pop(); youEl?.remove(); }
     setStatus({
       key:"Clé API refusée. Vérifie-la dans les réglages ⚙️.",
       model:"Modèle introuvable. Change le nom du modèle dans les réglages ⚙️.",
       rate:/per_day|PerDay|retry in \d+h/i.test(e?.detail || "") ? "Quota gratuit du jour épuisé, même sur le modèle de secours. Mets un autre modèle dans les réglages ⚙️, ou reviens demain." : "Limite gratuite par minute atteinte. Attends une minute et renvoie.",
       net:"Pas de réseau : la requête n’est pas partie. Vérifie ta connexion et renvoie.",
       busy:"Google est saturé, même avec le modèle de secours. Attends 30 secondes et renvoie.",
+      inaudible:"Je n’ai pas compris ce que tu as dit. Rapproche-toi du micro et réessaie.",
       parse:"L’IA a répondu dans un format inattendu. Renvoie, en une phrase plus simple si possible.",
       shape:"L’IA a répondu dans un format inattendu. Renvoie, en une phrase plus simple si possible.",
       http:"Erreur côté Google (" + (e?.detail || "").slice(0, 80) + "). Réessaie dans un instant."
@@ -1065,6 +1179,7 @@ function begin(){
 /* ---------- Réglages UI ---------- */
 function openSettings(){
   afficherMemo();
+  $("azKeyIn").value = S.azKey || ""; $("azRegionIn").value = S.azRegion || "";
   $("keyIn").value = S.key; $("modelIn").value = S.model; $("voiceSel").value = S.voice; $("speedSel").value = String(S.speed);
   $("settings").hidden = false;
 }
@@ -1072,12 +1187,21 @@ $("gear").onclick = openSettings;
 $("memoClear").onclick = () => { if (confirm("Oublier tout ce que l’appli sait de toi ?")) { S.memo = []; saveS(); afficherMemo(); } };
 $("saveSettings").onclick = () => {
   S.key = $("keyIn").value.trim(); S.model = $("modelIn").value.trim() || DEFAULTS.model;
+  lireAzure();
+  // premiere cle Azure : on passe directement sur la voix irlandaise si la voix etait celle par defaut
+  if (S.azKey && S.voice === DEFAULTS.voice && $("voiceSel").value === DEFAULTS.voice) $("voiceSel").value = "az:en-IE-EmilyNeural";
   S.voice = $("voiceSel").value; S.speed = Number($("speedSel").value);
   saveS(); $("settings").hidden = true;
   if (!started && S.key) setStatus("C’est prêt. Touche « Commencer ».");
 };
 $("settings").onclick = e => { if (e.target.id === "settings") $("settings").hidden = true; };
+function lireAzure(){
+  const k = $("azKeyIn").value.trim(), r = $("azRegionIn").value.trim().toLowerCase().replace(/\s+/g, "");
+  if (k !== (S.azKey || "") || r !== (S.azRegion || "")) { azureKO = false; audioCache.clear(); }
+  S.azKey = k; S.azRegion = r || "westeurope";
+}
 $("testVoice").onclick = async () => {
+  lireAzure();
   S.voice = $("voiceSel").value; S.speed = Number($("speedSel").value);
   unlockAudio(); if (voixKokoro()) loadTTS();
   if (ttsState === "loading") setStatus("La voix IA se télécharge, l’essai utilise la voix du téléphone en attendant.");

@@ -49,6 +49,7 @@ svg{width:24px;height:24px;flex:none}
 .rbtn{flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none;border:none;text-align:left;padding:13px 4px;border-bottom:1px solid var(--line);font-size:1rem}
 .rbtn.cur{color:var(--accent);font-weight:700}
 .rbtn.cur::after{content:"✓";font-weight:700}
+.memofait{flex:1;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.95rem}
 .rdel{background:none;border:none;color:var(--muted);padding:8px;font-size:1.2rem;line-height:1}
 .iconbtn{background:none;border:none;padding:8px;border-radius:50%;display:grid;place-items:center;color:var(--accent)}
 #voiceStatus{margin:0 18px;font-size:.85rem;color:var(--muted)}
@@ -121,6 +122,7 @@ footer{padding:10px 18px 16px}
 .row{display:flex;gap:10px;align-items:flex-end}
 .mainrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
 .mainrow #hintBtn{justify-self:start}
+.mainrow #askBtn{justify-self:end;width:52px;height:52px;background:var(--soft);color:var(--accent)}
 .qarow{justify-content:center}
 .round{width:48px;height:48px;flex:none;border-radius:50%;border:none;display:grid;place-items:center}
 #hintBtn{background:var(--soft)}
@@ -145,9 +147,6 @@ footer{padding:10px 18px 16px}
     <div class="bar">
       <button class="themebtn" id="themeBtn" aria-label="Choisir le jeu de rôle"><span class="title">Jeu de rôle <span class="serie" id="serie" hidden></span></span><span class="theme"><span id="themeName"></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></button>
       <div class="barbtns">
-        <button class="iconbtn" id="askBtn" aria-label="Poser une question en français">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2-2.4 3.4"/><path d="M12 16.6h.01"/></svg>
-        </button>
         <button class="iconbtn" id="gear" aria-label="Réglages">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
         </button>
@@ -171,6 +170,9 @@ footer{padding:10px 18px 16px}
     <div class="row mainrow">
       <button class="round" id="hintBtn" disabled aria-label="Astuce"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></button>
       <button class="round" id="mic" aria-label="Parler" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button class="round" id="askBtn" aria-label="Poser une question en français">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2-2.4 3.4"/><path d="M12 16.6h.01"/></svg>
+        </button>
     </div>
   </footer>
 </div>
@@ -205,6 +207,9 @@ footer{padding:10px 18px 16px}
     <p class="tip">Si la voix Google atteint sa limite gratuite, l’appli bascule toute seule sur la voix du téléphone.</p>
     <label for="speedSel">Vitesse</label>
     <select id="speedSel"><option value="0.8">Lente</option><option value="0.9">Un peu lente</option><option value="1">Normale</option></select>
+    <label>Ce que l’appli sait de toi</label>
+    <div id="memoList"></div>
+    <button class="skip" id="memoClear" hidden>Tout oublier</button>
     <div class="sheetbtns"><button class="ghostbtn" id="testVoice">Tester la voix</button><button class="primary" id="saveSettings">Enregistrer</button></div>
   </div>
 </div>
@@ -343,7 +348,7 @@ function ding(){
 }
 
 /* Voix Google (Gemini TTS) : toute la reponse en un appel, ~4 s, avec la meme cle. */
-const MODELES_TTS = ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts", "gemini-2.5-flash-preview-tts"];
+const MODELES_TTS = ["gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts", "gemini-2.5-flash-preview-tts"];
 const ttsModelesKO = new Set(); // modeles de voix dont le quota du jour est epuise
 const STYLE_VITESSE = {0.8:"Speak slowly and very clearly, for a language learner: ", 0.9:"Speak clearly, a little slowly: ", 1:""};
 let ttsGoogleKO = false; // passe a true quand la limite gratuite est atteinte (jusqu'au prochain lancement)
@@ -803,6 +808,52 @@ async function llm(prompt, schema = SCHEMA){
   catch (e) { throw {code:"parse", detail:txt}; }
 }
 
+/* ---------- Memoire : quelques faits sur toi, plafonnes pour garder des reponses rapides ---------- */
+// Au-dela de MEMO_MAX faits, Gemini les fusionne en MEMO_CIBLE au plus (en arriere-plan) :
+// la taille envoyee a chaque reponse reste la meme apres 1 heure ou 50 heures de conversation.
+const MEMO_MAX = 20, MEMO_CIBLE = 12;
+let memoEnCompaction = false;
+function memo(){ return Array.isArray(S.memo) ? S.memo : (S.memo = []); }
+function memoTexte(){ return memo().length ? memo().map(f => "- " + f.t).join("\n") : "(nothing yet: get to know him)"; }
+function ajouterFait(t){
+  t = String(t || "").trim();
+  if (!t || t.length > 160) return;
+  const n = x => x.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, "").trim();
+  if (memo().some(f => n(f.t) === n(t))) return;
+  memo().push({t, d:Date.now()}); saveS();
+  if (memo().length > MEMO_MAX) compacterMemo();
+}
+async function compacterMemo(){
+  if (memoEnCompaction) return;
+  memoEnCompaction = true;
+  const avant = memo().slice();
+  try {
+    const d = await llm(`Here are notes about a French-speaking engineering student, collected over many English conversations (oldest first):
+${avant.map(f => "- " + f.t).join("\n")}
+Merge them into at most ${MEMO_CIBLE} short French sentences (15 words max each, "Il ..."): combine related facts, drop duplicates and trivial details, keep what helps to have personal, interesting conversations with him. When facts contradict, keep the most recent.`,
+      {type:"OBJECT", properties:{faits:{type:"ARRAY", items:{type:"STRING"}}}, required:["faits"]});
+    const faits = (d.faits || []).map(x => String(x).trim()).filter(Boolean).slice(0, MEMO_CIBLE);
+    if (faits.length) {
+      // les faits ajoutes pendant la fusion sont conserves
+      const nouveaux = memo().filter(f => !avant.includes(f));
+      S.memo = [...faits.map(t => ({t, d:Date.now()})), ...nouveaux]; saveS();
+    }
+  } catch (e) { console.warn("fusion de la memoire reportee", e); }
+  finally { memoEnCompaction = false; }
+}
+function afficherMemo(){
+  const l = $("memoList"); l.replaceChildren();
+  if (!memo().length) { l.append(el("p","tip","Rien pour l’instant : ça se remplit au fil des conversations.")); $("memoClear").hidden = true; return; }
+  $("memoClear").hidden = false;
+  for (const f of memo()) {
+    const it = el("div","ritem");
+    it.append(el("span","memofait",f.t));
+    const x = el("button","rdel","×"); x.setAttribute("aria-label","Oublier : " + f.t);
+    x.onclick = () => { S.memo = memo().filter(m => m !== f); saveS(); afficherMemo(); };
+    it.append(x); l.append(it);
+  }
+}
+
 // Format impose a Gemini : l'ordre des champs compte (il ecrit la phrase entiere AVANT de la decouper,
 // et chaque morceau porte sa traduction juste a cote : c'est ce qui evite les traductions decalees).
 const SCHEMA = {
@@ -814,10 +865,11 @@ const SCHEMA = {
     chunks:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}},
     reply_fr:{type:"STRING"},
     hint_en:{type:"STRING"},
-    hint_fr:{type:"STRING"}
+    hint_fr:{type:"STRING"},
+    fait:{type:"STRING"}
   },
-  required:["ok","corrections","reply_en","chunks","reply_fr","hint_en","hint_fr"],
-  propertyOrdering:["ok","corrections","reply_en","chunks","reply_fr","hint_en","hint_fr"]
+  required:["ok","corrections","reply_en","chunks","reply_fr","hint_en","hint_fr","fait"],
+  propertyOrdering:["ok","corrections","reply_en","chunks","reply_fr","hint_en","hint_fr","fait"]
 };
 
 function buildPrompt(learner, essai){
@@ -842,11 +894,16 @@ STEP 2, only if ok is true, REPLY in your role. If ok is false, leave reply_en, 
   "fr" = the French meaning of THAT piece only (never of the next or previous piece). Example: {"en":"Are you looking","fr":"Tu cherches"},{"en":"for a pub?","fr":"un pub ?"}
 - "reply_fr": French translation of reply_en.
 - "hint_en": a short, simple answer the learner could give; "hint_fr": its French translation.
+- "fait": if the learner's message reveals a NEW lasting fact about his REAL life (studies, work, family, hobbies, tastes, projects, places he knows, opinions...) that is not already known above, write it as one short French sentence of 15 words max, about him ("Il ..."). Ignore what only belongs to the role-play (ordering food, buying a ticket...). Otherwise "".
+
+What you already know about the learner from earlier conversations (real life, not role-play):
+${memoTexte()}
+Use it naturally to make the talk personal: now and then (especially early in a conversation) refer to one of these facts or ask a follow-up question that digs deeper, while staying in your role. Never list them, never mention that you have notes.
 
 Conversation so far:
 ${transcript}
 
-${learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to [], and start the conversation: greet the learner in your role and ask a first, easy question."}`;
+${learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to [], and start the conversation: greet the learner in your role and ask a first, easy question. If you already know facts about him (see above), pick one that fits your role and build your first question on it, to dig deeper."}`;
 }
 
 function renderFix(d, after, onSkip){
@@ -963,6 +1020,7 @@ async function ask(learner, youEl, opts = {}){
     history.push({role:"assistant", content:t.text});
     if (history.length > 20) history = history.slice(-20);
     lastHint = d.hint_en ? {en:d.hint_en, fr:d.hint_fr || ""} : null;
+    if (learner && d.fait) ajouterFait(d.fait);
     $("hintBtn").disabled = !lastHint;
     setStatus("À toi : touche le micro.");
     scrollDown();
@@ -1006,10 +1064,12 @@ function begin(){
 
 /* ---------- Réglages UI ---------- */
 function openSettings(){
+  afficherMemo();
   $("keyIn").value = S.key; $("modelIn").value = S.model; $("voiceSel").value = S.voice; $("speedSel").value = String(S.speed);
   $("settings").hidden = false;
 }
 $("gear").onclick = openSettings;
+$("memoClear").onclick = () => { if (confirm("Oublier tout ce que l’appli sait de toi ?")) { S.memo = []; saveS(); afficherMemo(); } };
 $("saveSettings").onclick = () => {
   S.key = $("keyIn").value.trim(); S.model = $("modelIn").value.trim() || DEFAULTS.model;
   S.voice = $("voiceSel").value; S.speed = Number($("speedSel").value);

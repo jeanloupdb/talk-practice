@@ -258,7 +258,18 @@ button:not(:disabled):active{transform:scale(.94)}
         <label for="azKeyIn">Clé Azure Speech</label>
         <input id="azKeyIn" type="password" autocomplete="off" placeholder="Colle ta KEY 1 ici">
         <label for="azRegionIn">Région</label>
-        <input id="azRegionIn" autocomplete="off" placeholder="swedencentral">
+        <select id="azRegionIn">
+          <option value="swedencentral">Suède – Sweden Central</option>
+          <option value="francecentral">France – France Central</option>
+          <option value="northeurope">Irlande – North Europe</option>
+          <option value="westeurope">Pays-Bas – West Europe</option>
+          <option value="germanywestcentral">Allemagne – Germany West Central</option>
+          <option value="uksouth">Royaume-Uni – UK South</option>
+          <option value="switzerlandnorth">Suisse – Switzerland North</option>
+          <option value="eastus">États-Unis – East US</option>
+          <option value="westus2">États-Unis – West US 2</option>
+        </select>
+        <p class="tip">Celle choisie à la création de ta ressource Azure.</p>
       </div>
       <div id="voiceBox">
         <label for="voiceSel">Voix</label>
@@ -1328,7 +1339,8 @@ function majReglages(){
 }
 function openSettings(){
   afficherMemo();
-  $("azKeyIn").value = S.azKey || ""; $("azRegionIn").value = S.azRegion || "";
+  $("azKeyIn").value = S.azKey || ""; $("azRegionIn").value = S.azRegion || "swedencentral";
+  if (!$("azRegionIn").value) $("azRegionIn").value = "swedencentral";
   $("keyIn").value = S.key; $("modelIn").value = S.model; $("speedSel").value = String(S.speed);
   provChoisi = provDe(S.voice); voixParProv = {[provChoisi]: S.voice};
   // une cle Azure est la, mais on etait reste sur Google par defaut : on propose Azure d'emblee
@@ -1343,7 +1355,7 @@ document.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
 $("voiceSel").onchange = () => { voixParProv[provChoisi] = $("voiceSel").value; };
 ["azKeyIn","keyIn"].forEach(id => $(id).addEventListener("input", majReglages));
 function lireReglages(){
-  const k = $("azKeyIn").value.trim(), r = $("azRegionIn").value.trim().toLowerCase().replace(/\s+/g, "");
+  const k = $("azKeyIn").value.trim(), r = $("azRegionIn").value;
   if (k !== (S.azKey || "") || r !== (S.azRegion || "")) { azureKO = false; audioCache.clear(); }
   S.azKey = k; S.azRegion = r || "swedencentral";
   S.key = $("keyIn").value.trim(); S.model = $("modelIn").value.trim() || DEFAULTS.model;

@@ -69,10 +69,10 @@ svg{width:24px;height:24px;flex:none}
 .splitchev{flex:none;width:60px;padding:0;border-radius:8px 999px 999px 8px}
 .splitchev .chev{width:22px;height:22px}
 .titleblock{min-width:0}
-.reprendre{max-width:420px;margin:28px auto 0;text-align:left}
-.rephead{display:flex;align-items:center;justify-content:space-between;margin:0 6px 6px}
-.rephead b{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.lien{background:none;border:none;color:var(--accent);font-weight:600;font-size:.88rem;padding:4px}
+.reprise{display:inline-flex;align-items:center;gap:7px;max-width:100%;margin:20px auto 0;background:none;border:none;color:var(--muted);font-size:.9rem;padding:8px 12px;border-radius:999px}
+.reprise svg{width:16px;height:16px;flex:none}
+.reprise span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reprise:active{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .conv{display:flex;align-items:center;gap:8px}
 .convbtn{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none;border:none;border-bottom:1px solid var(--line);border-radius:0;padding:13px 6px;text-align:left}
 .convbtn b{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -246,6 +246,7 @@ button:not(:disabled):active{transform:scale(.94)}
     <div class="bar">
       <div class="titleblock"><span class="title"><span id="modeName">Talk Practice</span> <span class="serie" id="serie" hidden></span></span><span class="theme" id="themeName"></span></div>
       <div class="barbtns">
+        <button class="iconbtn" id="toutVoir" aria-label="Historique des conversations" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
         <button class="iconbtn" id="gear" aria-label="Réglages">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
         </button>
@@ -265,10 +266,7 @@ button:not(:disabled):active{transform:scale(.94)}
             <button class="gros second splitchev" id="topicBtn" aria-label="Changer de sujet"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           </div>
         </div>
-        <div class="reprendre" id="reprendre" hidden>
-          <div class="rephead"><b>Reprendre</b><button class="lien" id="toutVoir">Tout voir</button></div>
-          <div id="repList"></div>
-        </div>
+        <button class="reprise" id="reprendre" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span id="repList"></span></button>
       </div>
     </div>
   </section>
@@ -364,7 +362,7 @@ button:not(:disabled):active{transform:scale(.94)}
 </div>
 <div class="sheetwrap" id="histo" hidden>
   <div class="sheet" role="dialog" aria-labelledby="histoTitle">
-    <div class="mothead"><h2 id="histoTitle">Tes conversations</h2><button class="iconbtn" id="histoClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="mothead"><h2 id="histoTitle">Historique</h2><button class="iconbtn" id="histoClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="histoList"></div>
   </div>
 </div>
@@ -1439,10 +1437,12 @@ function ligneConv(c, avecSuppr){
   return it;
 }
 function afficherReprendre(){
-  const l = convs();
-  REF.reprendre.hidden = !l.length;
-  REF.repList.replaceChildren(...l.slice(0, 3).map(c => ligneConv(c, false)));
-  REF.toutVoir.hidden = l.length <= 3;
+  const l = convs(), c = l[0];
+  REF.reprendre.hidden = !c;
+  REF.toutVoir.hidden = !l.length || !document.body.classList.contains("home");
+  if (!c) return;
+  REF.repList.textContent = "Reprendre « " + c.titre + " » · " + quand(c.d);
+  REF.reprendre.onclick = () => reprendreConv(c);
 }
 function afficherHisto(){
   const l = convs();
@@ -1498,7 +1498,7 @@ function reprendreConv(c){
 // Accueil <-> conversation
 const accueil = $("empty");
 function modeConversation(libre){
-  document.body.classList.remove("home");
+  document.body.classList.remove("home"); REF.toutVoir.hidden = true;
   $("modeName").textContent = libre ? "Sujet libre" : "Conversation";
   $("newTheme").hidden = false;
 }

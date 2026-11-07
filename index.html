@@ -1886,8 +1886,8 @@ function begin(){
 function commencerLibre(){
   if (!S.key) { openSettings(); return; }
   setTheme(LIBRE);
-  ouvrirFil(true); mic.disabled = false;
-  mic.onclick();
+  ouvrirFil(true); mic.disabled = false;   // le fil s'ouvre, a toi de toucher le micro quand tu veux
+  if (mainsLibres) ecouterAuto();         // sauf en mains libres, ou l'ecoute demarre seule
 }
 
 /* ---------- Réglages : une liste, des sous-pages, enregistrement immédiat (pas de bouton Enregistrer) ---------- */

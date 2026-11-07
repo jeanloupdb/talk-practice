@@ -72,12 +72,15 @@ svg{width:24px;height:24px;flex:none}
 .splitchev .chev{width:24px;height:24px;color:inherit}
 .sujetligne{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;border-bottom:1px solid var(--line);padding:16px 4px;font-size:1.05rem;font-weight:500;text-align:left;color:var(--ink)}
 .sujetligne:last-child{border-bottom:none}
-.sujetgrille{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 14px}
-.gros.parler{margin-top:4px}
-.sujetcarte{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:72px;padding:8px 14px;border:none;border-radius:18px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);font-size:1rem;font-weight:600;text-align:center;line-height:1.2}
-.sujetcarte small{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
-.sujetcarte:active{transform:scale(.97)}
+.gros.parler{margin:4px 0 10px}
 #rolesList .rgroup{margin:18px 4px 2px}
+.convbtn{width:100%;-webkit-touch-callout:none;user-select:none}
+.convbtn.selmode small{width:22px;text-align:right;color:var(--accent);font-weight:700;font-size:1rem}
+.convbtn.sel b{color:var(--accent)}
+.selbar{display:flex;align-items:center;gap:14px;padding:6px 4px 10px}
+.selbar span{flex:1;font-weight:600}
+.selbar button{background:none;border:none;font-weight:600;color:var(--accent);padding:6px 2px}
+.selbar button.danger{color:var(--bad)}
 .sujetligne.reprise{color:var(--muted);font-weight:500}
 .sujetligne .ico{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:9px;vertical-align:-3px;color:var(--accent)}
 .sujetligne .ico svg{width:18px;height:18px}
@@ -187,15 +190,21 @@ footer{padding:10px 18px 16px}
 .sheet a{color:var(--accent)}
 .sheetbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 .ghostbtn{background:var(--soft);border:none;border-radius:999px;padding:12px 22px;font-weight:600}
-.card{background:var(--soft);border-radius:18px;padding:14px 16px;margin-top:14px}
-.cardhead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.cardhead b{display:block;font-size:1.02rem}
-.cardhead span{display:block;color:var(--muted);font-size:.85rem}
-.card label{margin-top:12px}
-.card input,.card select{background:var(--bg)}
-.etat{flex:none;font-size:.78rem;font-weight:700;border-radius:999px;padding:3px 10px;background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--muted)}
-.etat.ok{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
-.etat.ko{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+.motheadl{display:flex;align-items:center;gap:2px;min-width:0}
+.regrow{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;border-bottom:1px solid var(--line);padding:15px 4px;font-size:1.02rem;text-align:left;color:var(--ink)}
+.regrow:last-child{border-bottom:none}
+.reglabel{flex:1;min-width:0;font-weight:500}
+.reglabel small{display:block;color:var(--muted);font-size:.82rem;font-weight:400}
+.regval{color:var(--muted);font-size:.92rem;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.regrow .fl{color:var(--muted);font-size:1.3rem;line-height:1}
+.regrow .check{width:22px;text-align:right;color:var(--accent);font-weight:700}
+.regrow.cur .reglabel{color:var(--accent);font-weight:600}
+.regrow.alerte .reglabel{color:var(--bad)}
+.regfield{margin-top:14px}
+.regfield label{display:block;font-size:.85rem;color:var(--muted);margin:0 0 6px}
+.reglink{display:inline-block;margin:8px 0 2px;color:var(--accent);font-size:.9rem}
+#setBody .seg{margin:4px 0 10px}
+#setBody .ghostbtn.full{margin-top:18px}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:4px;margin-top:12px}
 .seg button{border:none;background:none;border-radius:999px;padding:9px 6px;font-weight:600;color:var(--muted)}
 .seg button[aria-checked="true"]{background:var(--accent);color:var(--on-accent)}
@@ -216,7 +225,7 @@ footer{padding:10px 18px 16px}
 @keyframes barre{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 /* messages qui arrivent */
-.claude,.dots,.qar,.ex,.ritem,.card{animation:entre .38s var(--ease) both}
+.claude,.dots,.qar,.ex,.ritem{animation:entre .38s var(--ease) both}
 .you,.qaq{animation:entreG .32s var(--ease) both}
 .claude .msg{transition:filter .45s var(--ease),font-size .35s var(--ease),color .35s}
 .claude.old .msg{transition:font-size .35s var(--ease),color .35s}
@@ -296,67 +305,8 @@ button:not(:disabled):active{transform:scale(.94)}
 
 <div class="sheetwrap" id="settings" hidden>
   <div class="sheet" role="dialog" aria-labelledby="setTitle">
-    <div class="mothead"><h2 id="setTitle">Réglages</h2><button class="iconbtn" id="setClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-
-    <section class="card">
-      <div class="cardhead"><div><b>Voix</b><span>Ce que tu entends</span></div><span class="etat" id="voixEtat"></span></div>
-      <div class="seg" role="radiogroup" aria-label="Service de voix">
-        <button role="radio" data-prov="az">Azure</button>
-        <button role="radio" data-prov="g">Google</button>
-        <button role="radio" data-prov="sys">Téléphone</button>
-      </div>
-      <p class="tip" id="provTip"></p>
-      <div id="azBox">
-        <label for="azKeyIn">Clé Azure Speech</label>
-        <input id="azKeyIn" type="password" autocomplete="off" placeholder="Colle ta KEY 1 ici">
-        <label for="azRegionIn">Région</label>
-        <select id="azRegionIn">
-          <option value="swedencentral">Suède – Sweden Central</option>
-          <option value="francecentral">France – France Central</option>
-          <option value="northeurope">Irlande – North Europe</option>
-          <option value="westeurope">Pays-Bas – West Europe</option>
-          <option value="germanywestcentral">Allemagne – Germany West Central</option>
-          <option value="uksouth">Royaume-Uni – UK South</option>
-          <option value="switzerlandnorth">Suisse – Switzerland North</option>
-          <option value="eastus">États-Unis – East US</option>
-          <option value="westus2">États-Unis – West US 2</option>
-        </select>
-        <p class="tip">Celle choisie à la création de ta ressource Azure.</p>
-      </div>
-      <div id="voiceBox">
-        <label for="voiceSel">Voix</label>
-        <select id="voiceSel"></select>
-      </div>
-      <label for="speedSel">Vitesse</label>
-      <select id="speedSel"><option value="0.8">Lente</option><option value="0.9">Un peu lente</option><option value="1">Normale</option></select>
-      <button class="ghostbtn full" id="testVoice">Tester la voix</button>
-      <p class="tip" id="voixUtilisee"></p>
-    </section>
-
-    <section class="card">
-      <div class="cardhead"><div><b>Écoute</b><span>Ce qui t’entend quand tu parles</span></div><span class="etat ok" id="ecouteEtat"></span></div>
-      <p class="tip" id="ecouteTip"></p>
-    </section>
-
-    <section class="card">
-      <div class="cardhead"><div><b>Gemini</b><span>Corrige, répond et t’écoute</span></div><span class="etat" id="gemEtat"></span></div>
-      <label for="keyIn">Clé API Gemini</label>
-      <input id="keyIn" type="password" autocomplete="off" placeholder="Colle ta clé ici">
-      <p class="tip">Gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Elle reste sur ce téléphone.</p>
-      <details class="avance"><summary>Avancé</summary>
-        <label for="modelIn">Modèle</label>
-        <input id="modelIn" autocomplete="off">
-        <p class="tip">Laisse « gemini-flash-lite-latest » sauf erreur « modèle introuvable ».</p>
-      </details>
-    </section>
-
-    <section class="card">
-      <div class="cardhead"><div><b>Ce que l’appli sait de toi</b><span>Pour personnaliser les conversations</span></div></div>
-      <div id="memoList"></div>
-      <button class="skip" id="memoClear" hidden>Tout oublier</button>
-    </section>
-
-    <div class="sheetbtns"><button class="primary" id="saveSettings">Enregistrer</button></div>
+    <div class="mothead"><div class="motheadl"><button class="iconbtn back" id="setBack" aria-label="Retour" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2 id="setTitle">Réglages</h2></div><button class="iconbtn" id="setClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div id="setBody"></div>
   </div>
 </div>
 <div class="pop" id="pop" hidden></div>
@@ -439,6 +389,8 @@ function ouvrir(id){ navDedans(); $(id).hidden = false; }
 window.addEventListener("popstate", () => {
   const ouverte = FENETRES.find(id => !$(id).hidden && !$(id).classList.contains("ferme"));
   if (ouverte) {
+    if (ouverte === "settings" && pageReg !== "main") { setPage("main"); navDedans(); return; }
+    if (ouverte === "roles" && selection) { annulerSelection(); navDedans(); return; }
     if (ouverte === "qa") qaDictee?.arreter();
     fermer(ouverte); stopSpeak();
     if (started) navDedans();          // on reste dans la conversation : on remet l'entree
@@ -1007,30 +959,29 @@ function majDepart(){
   GO.btn.setAttribute("aria-label", "Practice");
 }
 const ICO_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
-let sujetsTires = [];
 function afficherRoles(){
-  // 4 sujets differents a chaque ouverture, pour en decouvrir
-  const tirer = (liste, n) => { const p = liste.slice(), r = []; while (r.length < n && p.length) r.push(p.splice(Math.floor(Math.random() * p.length), 1)[0]); return r; };
-  sujetsTires = [...tirer(THEMES.filter(t => !t.mission), 3), ...tirer(THEMES.filter(t => t.mission), 1)];
-  const grille = el("div", "sujetgrille");
-  for (const t of sujetsTires) {
-    const b = el("button", "sujetcarte", t.fr.replace(/^Mission : /, ""));
-    if (t.mission) b.prepend(el("small", null, "Mission"));
-    b.onclick = () => { fermer("roles"); setTheme(t); begin(); };
-    grille.append(b);
+  const l = convs();
+  if (selection) {
+    const bar = el("div", "selbar");
+    const n = el("span", null, selection.size + " sélectionnée" + (selection.size > 1 ? "s" : ""));
+    const suppr = el("button", "danger", "Supprimer"), annule = el("button", null, "Annuler");
+    suppr.onclick = () => { S.convs = l.filter(c => !selection.has(c.id)); saveS(); selection = null; afficherRoles(); };
+    annule.onclick = annulerSelection;
+    bar.append(n, annule, suppr);
+    $("rolesList").replaceChildren(bar, ...convs().map(c => ligneConv(c)));
+    return;
   }
   const premier = el("button", "gros second parler");
   premier.innerHTML = ICO_MIC; premier.append("Parler en premier");
   premier.onclick = () => { fermer("roles"); commencerLibre(); };
-  const l = convs();
-  $("rolesList").replaceChildren(premier, grille, ...l.map(c => ligneConv(c, false)));
+  $("rolesList").replaceChildren(premier, ...l.map(c => ligneConv(c)));
 }
 // "Je commence" : l'IA ouvre tout de suite sur un sujet (different du dernier) ; "Parler en premier" est dans le deroule.
 GO.btn.onclick = () => {
   const pool = THEMES.filter(t => !t.mission && !t.inverse && t.fr !== S.theme?.fr);
   setTheme(pool[Math.floor(Math.random() * pool.length)]); begin();
 };
-$("topicBtn").onclick = () => { if (busy) return; hidePop(); afficherRoles(); ouvrir("roles"); };
+$("topicBtn").onclick = () => { if (busy) return; hidePop(); selection = null; afficherRoles(); ouvrir("roles"); };
 $("roles").onclick = e => { if (e.target.id === "roles" || e.target.closest("#rolesClose")) fermer("roles"); };
 
 /* ---------- Question parallele (en francais, hors conversation) ---------- */
@@ -1692,20 +1643,23 @@ function quand(t){
   const h = Math.round(m / 60); if (h < 24) return h + "h";
   const j = Math.round(h / 24); return j === 1 ? "hier" : j + "j";
 }
-function ligneConv(c, avecSuppr){
-  const it = el("div","conv");
-  const b = el("button","convbtn");
-  const dernier = [...(c.msgs || [])].reverse().find(m => m.role === "assistant")?.content || "";
-  b.append(el("b", null, c.titre), el("small", null, quand(c.d)));
-  b.onclick = () => { fermer("roles"); reprendreConv(c); };
-  it.append(b);
-  if (avecSuppr) {
-    const x = el("button","rdel","×"); x.setAttribute("aria-label","Supprimer « " + c.titre + " »");
-    x.onclick = () => { S.convs = convs().filter(v => v.id !== c.id); saveS(); afficherRoles(); };
-    it.append(x);
-  }
-  return it;
+let selection = null;   // mode selection dans l'historique (appui long) : Set d'identifiants
+function ligneConv(c){
+  const b = el("button", "convbtn" + (selection ? " selmode" : "") + (selection?.has(c.id) ? " sel" : ""));
+  b.append(el("b", null, c.titre), el("small", null, selection ? (selection.has(c.id) ? "✓" : "") : quand(c.d)));
+  let timer;
+  const debut = () => { timer = setTimeout(() => { timer = null; if (!selection) { selection = new Set([c.id]); try { navigator.vibrate?.(15); } catch {} afficherRoles(); } }, 500); };
+  const fin = () => { if (timer) clearTimeout(timer); };
+  b.addEventListener("pointerdown", debut); b.addEventListener("pointerup", fin); b.addEventListener("pointercancel", fin); b.addEventListener("pointerleave", fin);
+  b.oncontextmenu = e => e.preventDefault();
+  b.onclick = () => {
+    if (timer === null) { timer = undefined; return; }        // le clic qui suit un appui long ne compte pas
+    if (selection) { selection.has(c.id) ? selection.delete(c.id) : selection.add(c.id); afficherRoles(); }
+    else { fermer("roles"); reprendreConv(c); }
+  };
+  return b;
 }
+function annulerSelection(){ selection = null; afficherRoles(); }
 // Bouton historique (en bas a gauche sur l'accueil) : il laisse voir la derniere conversation.
 function afficherReprendre(){}
 // Anciennes repliques enregistrees sans decoupage : Gemini les redecoupe en expressions (un seul appel),
@@ -1800,88 +1754,94 @@ function commencerLibre(){
   if (ENREG_OK) basculerEnreg({auto: mainsLibres}); else mic.onclick();
 }
 
-/* ---------- Réglages UI ----------
-   Trois blocs : Voix (ce que tu entends), Ecoute (ce qui t'entend), Gemini (le cerveau).
-   Pour la voix, on choisit d'abord le SERVICE, puis la voix de ce service. */
+/* ---------- Réglages : une liste, des sous-pages, enregistrement immédiat (pas de bouton Enregistrer) ---------- */
 const VOIX = {
-  az: [["az:en-US-AvaMultilingualNeural","Ava – américaine (la plus naturelle)"], ["az:en-US-AndrewMultilingualNeural","Andrew – américain"],
-       ["az:en-GB-SoniaNeural","Sonia – britannique"], ["az:en-GB-RyanNeural","Ryan – britannique"],
-       ["az:en-IE-EmilyNeural","Emily – irlandaise"], ["az:en-IE-ConnorNeural","Connor – irlandais"]],
-  g:  [["g:Kore","Kore – femme, posée"], ["g:Aoede","Aoede – femme, enjouée"], ["g:Puck","Puck – homme, vif"], ["g:Charon","Charon – homme, grave"]],
-  sys:[["sys","Voix du téléphone"]]
+  az: [["az:en-US-AvaMultilingualNeural","Ava", "américaine, la plus naturelle"], ["az:en-US-AndrewMultilingualNeural","Andrew","américain"],
+       ["az:en-GB-SoniaNeural","Sonia","britannique"], ["az:en-GB-RyanNeural","Ryan","britannique"],
+       ["az:en-IE-EmilyNeural","Emily","irlandaise"], ["az:en-IE-ConnorNeural","Connor","irlandais"]],
+  g:  [["g:Kore","Kore","femme, posée"], ["g:Aoede","Aoede","femme, enjouée"], ["g:Puck","Puck","homme, vif"], ["g:Charon","Charon","homme, grave"]],
+  sys:[["sys","Voix du téléphone",""]]
 };
 const NOM_PROV = {az:"Azure", g:"Google", sys:"Téléphone"};
+const VITESSES = [["0.8","Lente"], ["0.9","Un peu lente"], ["1","Normale"]];
+const REGIONS = [["swedencentral","Suède"], ["francecentral","France"], ["northeurope","Irlande"], ["westeurope","Pays-Bas"], ["germanywestcentral","Allemagne"], ["uksouth","Royaume-Uni"], ["switzerlandnorth","Suisse"], ["eastus","États-Unis Est"], ["westus2","États-Unis Ouest"]];
 const provDe = v => v.startsWith("az:") ? "az" : v.startsWith("g:") ? "g" : "sys";
-const nomVoix = v => (Object.values(VOIX).flat().find(x => x[0] === v) || [v, v])[1].split(" – ")[0];
-let provChoisi = "az", voixParProv = {};
-let derniereVoix = "";          // voix reellement utilisee a la derniere lecture (affichee dans les reglages)
-
-function majReglages(){
-  // segment
-  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.prov === provChoisi)));
-  // liste des voix du service choisi
-  const sel = $("voiceSel"); sel.replaceChildren(...VOIX[provChoisi].map(([v, n]) => { const o = el("option", null, n); o.value = v; return o; }));
-  sel.value = voixParProv[provChoisi] || VOIX[provChoisi][0][0];
-  $("voiceBox").hidden = provChoisi === "sys";
-  $("azBox").hidden = provChoisi !== "az";
-  const azOk = $("azKeyIn").value.trim().length > 10, gemOk = $("keyIn").value.trim().length > 10;
-  $("provTip").textContent = {
-    az: "Démarre en moins d’une seconde. Gratuite jusqu’à environ 50 h par mois.",
-    g: "Utilise ta clé Gemini. Environ 4 s avant de parler, quota gratuit par jour.",
-    sys: "Instantanée et sans limite, mais moins naturelle."
-  }[provChoisi] + (provChoisi !== "sys" ? " Si elle échoue : " + (provChoisi === "az" ? "Google, puis téléphone." : "téléphone.") : "");
-  const etat = $("voixEtat");
-  const pret = provChoisi === "sys" || (provChoisi === "az" ? azOk : gemOk);
-  etat.textContent = pret ? NOM_PROV[provChoisi] + " ✓" : (provChoisi === "az" ? "Clé Azure manquante" : "Clé Gemini manquante");
-  etat.className = "etat " + (pret ? "ok" : "ko");
-  $("voixUtilisee").textContent = derniereVoix ? "Dernière lecture : " + derniereVoix + "." : "";
-  // ecoute
-  $("ecouteEtat").textContent = ENREG_OK ? "Gemini ✓" : "Chrome";
-  $("ecouteTip").textContent = ENREG_OK
-    ? "Ta voix est envoyée à Gemini, qui entend ta vraie prononciation. Rien à régler : il utilise ta clé Gemini."
-    : "Ce navigateur ne permet pas d’enregistrer : c’est la dictée de Chrome qui t’écoute (elle ne voit pas ta prononciation).";
-  // gemini
-  $("gemEtat").textContent = gemOk ? "Clé ✓" : "Clé manquante";
-  $("gemEtat").className = "etat " + (gemOk ? "ok" : "ko");
+const nomVoix = v => (Object.values(VOIX).flat().find(x => x[0] === v) || [v, v])[1];
+let derniereVoix = "";          // voix reellement utilisee a la derniere lecture
+let pageReg = "main";
+function ligneReg(label, valeur, onclick, cls){
+  const b = el("button", "regrow" + (cls ? " " + cls : ""));
+  b.append(el("span", "reglabel", label), el("span", "regval", valeur || ""), el("span", "fl", "›"));
+  b.onclick = onclick; return b;
 }
-function openSettings(){
-  afficherMemo();
-  $("azKeyIn").value = S.azKey || ""; $("azRegionIn").value = S.azRegion || "swedencentral";
-  if (!$("azRegionIn").value) $("azRegionIn").value = "swedencentral";
-  $("keyIn").value = S.key; $("modelIn").value = S.model; $("speedSel").value = String(S.speed);
-  provChoisi = provDe(S.voice); voixParProv = {[provChoisi]: S.voice};
-  // une cle Azure est la, mais on etait reste sur Google par defaut : on propose Azure d'emblee
-  if (S.azKey && provChoisi === "g" && S.voice === DEFAULTS.voice) provChoisi = "az";
-  majReglages();
-  ouvrir("settings");
+function ligneRadio(label, sub, actif, onclick){
+  const b = el("button", "regrow" + (actif ? " cur" : ""));
+  const t = el("span", "reglabel", label); if (sub) t.append(el("small", null, sub));
+  b.append(t, el("span", "check", actif ? "✓" : "")); b.onclick = onclick; return b;
 }
-document.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
-  voixParProv[provChoisi] = $("voiceSel").value;
-  provChoisi = b.dataset.prov; majReglages();
-});
-$("voiceSel").onchange = () => { voixParProv[provChoisi] = $("voiceSel").value; };
-["azKeyIn","keyIn"].forEach(id => $(id).addEventListener("input", majReglages));
-function lireReglages(){
-  const k = $("azKeyIn").value.trim(), r = $("azRegionIn").value;
-  if (k !== (S.azKey || "") || r !== (S.azRegion || "")) { azureKO = false; audioCache.clear(); }
-  S.azKey = k; S.azRegion = r || "swedencentral";
-  S.key = $("keyIn").value.trim(); S.model = $("modelIn").value.trim() || DEFAULTS.model;
-  S.voice = provChoisi === "sys" ? "sys" : $("voiceSel").value;
-  S.speed = Number($("speedSel").value);
+function champReg(label, id, valeur, type, placeholder, onInput){
+  const w = el("div", "regfield"), l = el("label", null, label), i = el("input");
+  l.htmlFor = id; i.id = id; i.type = type; i.value = valeur || ""; i.placeholder = placeholder; i.autocomplete = "off";
+  i.oninput = () => onInput(i.value.trim()); w.append(l, i); return w;
 }
+function rendreReglages(){
+  const body = $("setBody"), titre = $("setTitle");
+  $("setBack").hidden = pageReg === "main";
+  const prov = provDe(S.voice);
+  const voixLabel = prov === "sys" ? "Téléphone" : nomVoix(S.voice) + " · " + NOM_PROV[prov];
+  const vit = (VITESSES.find(v => Number(v[0]) === Number(S.speed)) || VITESSES[1])[1];
+  if (pageReg === "main") {
+    titre.textContent = "Réglages";
+    body.replaceChildren(
+      ligneReg("Voix", voixLabel, () => setPage("voix")),
+      ligneReg("Vitesse", vit, () => setPage("vitesse")),
+      ligneReg("Clés", S.key ? (S.azKey ? "Gemini, Azure" : "Gemini") : "Gemini manquante", () => setPage("cles"), S.key ? "" : "alerte"),
+      ligneReg("Mémoire", memo().length ? memo().length + " faits" : "vide", () => setPage("memo"))
+    );
+  } else if (pageReg === "voix") {
+    titre.textContent = "Voix";
+    const seg = el("div", "seg");
+    for (const k of ["az", "g", "sys"]) {
+      const b = el("button", null, NOM_PROV[k]); b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(k === prov));
+      b.onclick = () => { S.voice = VOIX[k][0][0]; saveS(); rendreReglages(); };
+      seg.append(b);
+    }
+    const rows = prov === "sys" ? [] : VOIX[prov].map(([v, n, sub]) => ligneRadio(n, sub, v === S.voice, () => { S.voice = v; saveS(); rendreReglages(); }));
+    const alertes = [];
+    if (prov === "az" && !S.azKey) alertes.push(ligneReg("Clé Azure manquante", "", () => setPage("cles"), "alerte"));
+    if (prov === "g" && !S.key) alertes.push(ligneReg("Clé Gemini manquante", "", () => setPage("cles"), "alerte"));
+    const test = el("button", "ghostbtn full", "Tester la voix");
+    test.onclick = async () => { unlockAudio(); test.textContent = "…"; await speak("Hi there! How are you getting on? Is this voice easy to understand?", null, null); test.textContent = derniereVoix ? "Testé : " + derniereVoix : "Tester la voix"; };
+    body.replaceChildren(seg, ...alertes, ...rows, test);
+  } else if (pageReg === "vitesse") {
+    titre.textContent = "Vitesse";
+    body.replaceChildren(...VITESSES.map(([v, n]) => ligneRadio(n, "", Number(S.speed) === Number(v), () => { S.speed = Number(v); saveS(); rendreReglages(); })));
+  } else if (pageReg === "cles") {
+    titre.textContent = "Clés";
+    const gem = champReg("Gemini", "keyIn", S.key, "password", "Clé API Gemini", v => { S.key = v; saveS(); });
+    const lien = el("a", "reglink", "Obtenir une clé Gemini gratuite"); lien.href = "https://aistudio.google.com/apikey"; lien.target = "_blank"; lien.rel = "noopener";
+    const az = champReg("Azure Speech", "azKeyIn", S.azKey || "", "password", "KEY 1 (facultatif, voix Azure)", v => { if (v !== (S.azKey || "")) { azureKO = false; audioCache.clear(); } S.azKey = v; saveS(); });
+    const regW = el("div", "regfield"), rl = el("label", null, "Région Azure"), rs = el("select"); rl.htmlFor = "azRegionIn"; rs.id = "azRegionIn";
+    for (const [v, n] of REGIONS) { const o = el("option", null, n); o.value = v; rs.append(o); }
+    rs.value = S.azRegion || "swedencentral"; rs.onchange = () => { S.azRegion = rs.value; azureKO = false; audioCache.clear(); saveS(); };
+    regW.append(rl, rs);
+    const det = el("details", "avance"); det.append(el("summary", null, "Avancé"));
+    det.append(champReg("Modèle Gemini", "modelIn", S.model, "text", DEFAULTS.model, v => { S.model = v || DEFAULTS.model; saveS(); }));
+    body.replaceChildren(gem, lien, az, regW, det);
+  } else if (pageReg === "memo") {
+    titre.textContent = "Mémoire";
+    const l = el("div"); l.id = "memoList";
+    const clear = el("button", "skip", "Tout oublier"); clear.id = "memoClear";
+    clear.onclick = () => { if (confirm("Oublier tout ce que l’appli sait de toi ?")) { S.memo = []; saveS(); afficherMemo(); } };
+    body.replaceChildren(l, clear); afficherMemo();
+  }
+}
+function setPage(pg){ pageReg = pg; rendreReglages(); $("settings").querySelector(".sheet").scrollTop = 0; }
+function openSettings(){ pageReg = "main"; rendreReglages(); ouvrir("settings"); }
 $("gear").onclick = openSettings;
-$("setClose").onclick = () => { fermer("settings"); };
-$("memoClear").onclick = () => { if (confirm("Oublier tout ce que l’appli sait de toi ?")) { S.memo = []; saveS(); afficherMemo(); } };
-$("saveSettings").onclick = () => {
-  lireReglages(); saveS(); fermer("settings");
-};
+$("setBack").onclick = () => setPage("main");
+$("setClose").onclick = () => fermer("settings");
 $("settings").onclick = e => { if (e.target.id === "settings") fermer("settings"); };
-$("testVoice").onclick = async () => {
-  lireReglages(); unlockAudio();
-  $("voixUtilisee").textContent = "Lecture en cours…";
-  await speak("Hi there! How are you getting on? Is this voice easy to understand?", null, null);
-  majReglages();
-};
 
 $("newTheme").onclick = allerAccueil;
 majDepart();

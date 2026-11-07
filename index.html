@@ -71,6 +71,12 @@ svg{width:24px;height:24px;flex:none}
 .splitchev .chev{width:24px;height:24px;color:inherit}
 .sujetligne{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;border-bottom:1px solid var(--line);padding:16px 4px;font-size:1.05rem;font-weight:500;text-align:left;color:var(--ink)}
 .sujetligne:last-child{border-bottom:none}
+.sujetgrille{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 6px}
+.sujetcarte{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:2px;min-height:84px;padding:14px 16px;border:none;border-radius:20px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);font-size:1.05rem;font-weight:700;text-align:left;line-height:1.2}
+.sujetcarte.mission{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
+.sujetcarte small{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.8}
+.sujetcarte:active{transform:scale(.97)}
+#rolesList .rgroup{margin:18px 4px 2px}
 .sujetligne.reprise{color:var(--muted);font-weight:500}
 .sujetligne .ico{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:9px;vertical-align:-3px;color:var(--accent)}
 .sujetligne .ico svg{width:18px;height:18px}
@@ -360,14 +366,8 @@ button:not(:disabled):active{transform:scale(.94)}
 <div class="pop" id="pop" hidden></div>
 <div class="sheetwrap" id="roles" hidden>
   <div class="sheet" role="dialog" aria-labelledby="rolesTitle">
-    <div class="mothead"><h2 id="rolesTitle">L’IA lance un sujet</h2><button class="iconbtn" id="rolesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="mothead"><h2 id="rolesTitle">Un sujet ?</h2><button class="iconbtn" id="rolesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="rolesList"></div>
-  </div>
-</div>
-<div class="sheetwrap" id="histo" hidden>
-  <div class="sheet" role="dialog" aria-labelledby="histoTitle">
-    <div class="mothead"><h2 id="histoTitle">Historique</h2><button class="iconbtn" id="histoClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div id="histoList"></div>
   </div>
 </div>
 <div class="sheetwrap" id="qa" hidden>
@@ -436,7 +436,7 @@ function setStatus(t){ statusEl.textContent = t || ""; }
 /* Bouton retour du telephone (historique du navigateur) : une seule entree "dedans" posee des qu'on entre
    dans une conversation ou qu'on ouvre une fenetre. Retour = fermer la fenetre ouverte, sinon revenir a
    l'accueil ; on ne quitte l'appli qu'en faisant retour depuis l'accueil. */
-const FENETRES = ["settings", "mot", "roles", "qa", "histo"];
+const FENETRES = ["settings", "mot", "roles", "qa"];
 function navDedans(){ if (window.history.state?.tp !== "in") window.history.pushState({tp:"in"}, ""); }
 function ouvrir(id){ navDedans(); $(id).hidden = false; }
 window.addEventListener("popstate", () => {
@@ -1010,18 +1010,20 @@ function majDepart(){
   GO.btn.setAttribute("aria-label", "Je commence, sujet libre");
 }
 const ICO_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+let sujetsTires = [];
 function afficherRoles(){
-  const ligne = (label, onclick, cls, ico) => {
-    const b = el("button", "sujetligne" + (cls ? " " + cls : ""));
-    const t = el("span"); if (ico) { const i = el("span", "ico"); i.innerHTML = ico; t.append(i); } t.append(label);
-    b.append(t, el("span", "fl", "›")); b.onclick = onclick; return b;
-  };
-  const der = convs()[0];
-  $("rolesList").replaceChildren(
-    ...(der ? [ligne("Reprendre « " + der.titre + " »", () => { fermer("roles"); reprendreConv(der); }, "reprise", ICO_CLOCK)] : []),
-    ...THEMES.map(t => ligne(t.fr, () => { fermer("roles"); setTheme(t); begin(); })),
-    ...(convs().length ? [ligne("Historique", () => { fermer("roles"); afficherHisto(); ouvrir("histo"); }, "reprise")] : [])
-  );
+  // 4 sujets differents a chaque ouverture, pour en decouvrir
+  const pool = THEMES.slice(); sujetsTires = [];
+  while (sujetsTires.length < 4 && pool.length) sujetsTires.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  const grille = el("div", "sujetgrille");
+  for (const t of sujetsTires) {
+    const b = el("button", "sujetcarte" + (t.mission ? " mission" : ""), t.fr.replace(/^Mission : /, ""));
+    if (t.mission) b.prepend(el("small", null, "Mission"));
+    b.onclick = () => { fermer("roles"); setTheme(t); begin(); };
+    grille.append(b);
+  }
+  const l = convs();
+  $("rolesList").replaceChildren(grille, ...(l.length ? [el("div", "rgroup", "Historique"), ...l.map(c => ligneConv(c, true))] : []));
 }
 GO.btn.onclick = commencerLibre;
 $("topicBtn").onclick = () => { if (busy) return; hidePop(); afficherRoles(); ouvrir("roles"); };
@@ -1593,22 +1595,17 @@ function ligneConv(c, avecSuppr){
   const b = el("button","convbtn");
   const dernier = [...(c.msgs || [])].reverse().find(m => m.role === "assistant")?.content || "";
   b.append(el("b", null, c.titre), el("small", null, quand(c.d)));
-  b.onclick = () => { fermer("histo"); reprendreConv(c); };
+  b.onclick = () => { fermer("roles"); reprendreConv(c); };
   it.append(b);
   if (avecSuppr) {
     const x = el("button","rdel","×"); x.setAttribute("aria-label","Supprimer « " + c.titre + " »");
-    x.onclick = () => { S.convs = convs().filter(v => v.id !== c.id); saveS(); afficherHisto(); };
+    x.onclick = () => { S.convs = convs().filter(v => v.id !== c.id); saveS(); afficherRoles(); };
     it.append(x);
   }
   return it;
 }
 // Bouton historique (en bas a gauche sur l'accueil) : il laisse voir la derniere conversation.
 function afficherReprendre(){}
-function afficherHisto(){
-  const l = convs();
-  $("histoList").replaceChildren(...(l.length ? l.map(c => ligneConv(c, true)) : [el("p","tip","Aucune conversation pour l’instant.")]));
-}
-$("histo").onclick = e => { if (e.target.id === "histo" || e.target.closest("#histoClose")) fermer("histo"); };
 // Anciennes repliques enregistrees sans decoupage : Gemini les redecoupe en expressions (un seul appel),
 // exactement comme en direct, et on garde le resultat dans l'historique pour ne pas le refaire.
 const SCHEMA_DECOUPE = {type:"OBJECT", properties:{repliques:{type:"ARRAY", items:{type:"OBJECT",

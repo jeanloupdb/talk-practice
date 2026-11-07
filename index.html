@@ -37,11 +37,18 @@ svg{width:24px;height:24px;flex:none}
 .title{font-weight:600;font-size:1.05rem}
 .theme{font-size:.9rem;color:var(--muted)}
 .leconchip{display:flex;align-items:center;gap:8px}
-.leconchip .phase{font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:999px;padding:2px 8px}
 /* cartes de seance : une consigne, rien d'autre */
 .carte{align-self:stretch;background:var(--card);border:1px solid var(--card-line);border-radius:22px;padding:16px 18px;backdrop-filter:blur(6px);animation:entre .38s var(--ease) both}
 .carte.consigne{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,transparent),color-mix(in srgb,#6A5AE0 14%,transparent))}
-.cpill{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.cdots{display:flex;align-items:center;gap:6px;margin-bottom:10px;min-height:16px}
+.cdots i{width:8px;height:8px;border-radius:50%;background:color-mix(in srgb,var(--accent) 22%,transparent)}
+.cdots i.fait{background:color-mix(in srgb,var(--accent) 55%,transparent)}
+.cdots i.on{background:var(--accent);transform:scale(1.25)}
+.cdots .cico{width:16px;height:16px;color:var(--accent);margin-right:2px}
+.cdots .cico svg{width:16px;height:16px}
+.carte.attendu{display:flex;align-items:center;gap:14px}
+.cplay{flex:none;width:44px;height:44px;border-radius:50%;border:none;background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good);display:flex;align-items:center;justify-content:center}
+.cplay svg{width:20px;height:20px}
 .ctexte{margin:0;font-size:clamp(1.3rem,5.6vw,1.6rem);font-weight:600;line-height:1.3}
 .carte.attendu .ctexte{color:var(--good)}
 .cmot{margin:0 0 10px;font-size:clamp(1.9rem,9vw,2.4rem);font-weight:800;letter-spacing:-.01em}
@@ -49,7 +56,11 @@ svg{width:24px;height:24px;flex:none}
 .cex b{display:block;font-size:1.1rem}
 .cex span{display:block;color:var(--muted);font-size:.9rem}
 .cfaits div{padding:6px 0;font-weight:600;color:var(--good)}
-.cstat{margin:10px 0 0;color:var(--muted);font-size:.9rem}
+.cpart{display:flex;align-items:center;gap:10px;margin:12px 0 0}
+.cpart .cico{width:18px;height:18px;color:var(--accent)}
+.cpart .cico svg{width:18px;height:18px}
+.cjauge{flex:1;height:8px;border-radius:4px;background:color-mix(in srgb,var(--muted) 22%,transparent);overflow:hidden}
+.cjauge i{display:block;height:100%;border-radius:4px;background:var(--accent)}
 .cfin{margin-top:14px}
 .leconchip .pts{color:var(--accent);letter-spacing:2px;font-size:.8rem}
 .barbtns{display:flex}
@@ -1437,8 +1448,7 @@ function choisirLecon(){
 function majLeconChip(){
   const chip = $("leconChip"), l = lecon();
   if (!l || !started) { chip.hidden = true; return; }
-  const phase = seance ? ({prep:"", rappel:"Rappel", modele:"Nouveau", guide:"Guidé", libre:"Libre", bilan:"Bilan"}[seance.phase] || "") : "";
-  chip.replaceChildren(el("span", "lbl", l.cible.fr), el("span", "pts", "●".repeat(l.points) + "○".repeat(Math.max(0, 3 - l.points))), ...(phase ? [el("span", "phase", phase)] : []));
+  chip.replaceChildren(el("span", "lbl", l.cible.fr), el("span", "pts", "●".repeat(l.points) + "○".repeat(Math.max(0, 3 - l.points))));
   chip.hidden = false;
 }
 // Apres chaque phrase jugee : la cible a-t-elle ete utilisee ?
@@ -1561,7 +1571,7 @@ function contexteSeance(learner){
   if (seance.phase === "rappel" || seance.phase === "guide") {
     const e = etapeCourante(); if (!e) return null;
     return {
-      cible: `GUIDED STEP: the learner was asked in French: "${e.fr}". Expected English (any natural equivalent is fine): "${e.en}". "ok" if his sentence says that correctly (it may be worded differently), "ko" if he tried but the target is wrong, "non" if he said something unrelated.`,
+      cible: `GUIDED STEP: the learner was asked in French: "${e.fr}". Expected English (any natural equivalent is fine): "${e.en}". "ok" if his sentence says that correctly (it may be worded differently), "ko" if he tried but the target is wrong, "non" if he said something unrelated. IMPORTANT: every correction must bring his sentence CLOSER TO THE EXPECTED SENTENCE (same tense, same meaning); never correct towards another tense or another sentence.`,
       reponse: `GUIDED STEP: reply with ONLY a 2-5 word feedback ("Perfect.", "Yes, that's it.", "Nice one."), no question, nothing else.`,
       ouverture: ""
     };
@@ -1576,16 +1586,24 @@ function etapeCourante(){
   return null;
 }
 function carte(cls, enfants){ const c = el("div", "carte " + cls); c.append(...enfants); feed.append(c); scrollDown(); return c; }
-function pastille(txt){ return el("span", "cpill", txt); }
+const ICO_RAPPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
+// l'etape en cours : des points (un par consigne), pas de titre
+function points(i, n, rappel){
+  const w = el("div", "cdots");
+  if (rappel) { const ic = el("span", "cico"); ic.innerHTML = ICO_RAPPEL; w.append(ic); }
+  for (let k = 0; k < n; k++) w.append(el("i", k < i ? "fait" : k === i ? "on" : ""));
+  return w;
+}
 function afficherEtape(){
   const e = etapeCourante(); if (!e) return;
   const total = seance.phase === "rappel" ? seance.rappels.length : seance.guide.length;
-  carte("consigne", [pastille((seance.phase === "rappel" ? "Rappel " : "") + (seance.etape + 1) + "/" + total), el("p", "ctexte", e.fr)]);
+  seance.essais = 0;
+  carte("consigne", [points(seance.etape, total, seance.phase === "rappel"), el("p", "ctexte", e.fr)]);
   mic.disabled = false; mlApres();
 }
 async function afficherModele(){
   const m = seance.modele || {mot:(lecon() || choisirLecon()).cible.fr, exemples:[]};
-  const c = carte("modele", [pastille("Nouveau"), el("p", "cmot", m.mot)]);
+  const c = carte("modele", [el("p", "cmot", m.mot)]);
   for (const ex of m.exemples || []) { const l = el("div", "cex"); l.append(el("b", null, ex.en), el("span", null, ex.fr)); c.append(l); }
   busy = true; mic.disabled = true;
   try { await speak((m.exemples || []).map(x => x.en).join(" "), null, null); } catch {}
@@ -1594,11 +1612,12 @@ async function afficherModele(){
 }
 function afficherBilan(){
   seance.phase = "bilan"; majLeconChip();
-  const c = carte("bilan", [pastille("Bilan")]);
+  const c = carte("bilan", []);
   const faits = seance.faits.slice(-3);
   if (faits.length) { const ul = el("div", "cfaits"); faits.forEach(f => ul.append(el("div", null, "✓ " + f))); c.append(ul); }
   const st = stats(); const part = st.moi + st.ia ? Math.round(100 * st.moi / (st.moi + st.ia)) : 0;
-  c.append(el("p", "cstat", "Toi " + part + " %" + (seance.rappels.length ? ", rappel " + seance.rappelsOk + "/" + seance.rappels.length : "")));
+  // part de parole : une barre (toi en couleur), pas de chiffre
+  const barre = el("div", "cpart"); const ic = el("span", "cico"); ic.innerHTML = ICO_MIC; const jauge = el("div", "cjauge"); const moi = el("i"); moi.style.width = part + "%"; jauge.append(moi); barre.append(ic, jauge); c.append(barre);
   const fin = el("button", "gros second cfin", "Terminer"); fin.onclick = allerAccueil; c.append(fin);
   mic.disabled = true; mlStop();
   ding();
@@ -1622,12 +1641,13 @@ function etapeRatee(){
   const e = etapeCourante();
   if (seance.phase === "rappel") noterRappel(e.item, false);
   // on montre la phrase attendue, on la dit, et on passe a la suite
-  const c = carte("attendu", [pastille("Écoute"), el("p", "ctexte", e.en)]);
+  const c = carte("attendu", [el("p", "ctexte", e.en)]);
+  const b = el("button", "cplay"); b.innerHTML = PLAY; b.onclick = () => { unlockAudio(); speak(e.en, null, null); }; c.prepend(b);
   seance.etape++;
   speak(e.en, null, null).then(() => etapeSuivante());
 }
 async function lancerSeance(){
-  seance = {phase:"prep", etape:0, rappels:[], guide:[], modele:null, faits:[], rappelsOk:0, libreTours:0};
+  seance = {phase:"prep", etape:0, rappels:[], guide:[], modele:null, faits:[], rappelsOk:0, libreTours:0, essais:0};
   const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); feed.append(dots);
   busy = true; mic.disabled = true;
   try {
@@ -1892,7 +1912,7 @@ async function ask(learner, youEl, opts = {}){
       // Erreur : on montre ce qui ne va pas, on le dit a l'oral, et on attend un nouvel essai.
       history.pop();                                   // la tentative ratee ne fait pas partie de la conversation
       if ((d.corrections || []).length) ajouterRappel({type:"faute", en:phraseCorrigee(learner, d.corrections)});
-      if (enCarte && essai && (essai.tries || 1) >= 1) {
+      if (enCarte && ++seance.essais >= 2) {
         // deux essais rates sur une carte : on montre la reponse et on avance
         youEl.classList.add("attempt"); renderFix(d, youEl, () => {}); feed.querySelectorAll(".skip").forEach(x => x.remove()); essai = null;
         journal.push({role:"user", content:learner, ok:false, tried:true, corrections:d.corrections || [], t:Date.now()}); sauverConv();

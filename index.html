@@ -261,10 +261,10 @@ body:not(.home) .blobs{opacity:.28}
   background:radial-gradient(closest-side,#6A5AE0,transparent 72%);opacity:calc(var(--vox) * 1.1);transition:transform .1s linear,opacity .15s linear,background .4s;animation:none}
 body.home .voix{display:none}
 /* vagues qui s'etendent la ou l'on touche le fond de l'accueil */
-.vagues{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;filter:blur(8px);-webkit-mask-image:linear-gradient(to bottom,transparent 6%,#000 22%,#000 80%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 6%,#000 22%,#000 80%,transparent 100%)}
+.vagues{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;filter:blur(14px);-webkit-mask-image:linear-gradient(to bottom,transparent 6%,#000 22%,#000 80%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 6%,#000 22%,#000 80%,transparent 100%)}
 .vague{position:absolute;width:30vw;height:30vw;max-width:220px;max-height:220px;border-radius:50%;transform:translate(-50%,-50%) scale(.15);opacity:0;
-  background:radial-gradient(circle,transparent 52%,var(--c) 64%,transparent 76%);animation:vague-spread 1.9s cubic-bezier(.15,.6,.25,1) forwards}
-@keyframes vague-spread{0%{transform:translate(-50%,-50%) scale(.15);opacity:0}8%{opacity:.75}100%{transform:translate(-50%,-50%) scale(5.5);opacity:0}}
+  background:radial-gradient(circle,transparent 56%,var(--c) 64%,transparent 72%);animation:vague-spread 2.2s cubic-bezier(.15,.6,.25,1) forwards}
+@keyframes vague-spread{0%{transform:translate(-50%,-50%) scale(.15);opacity:0}10%{opacity:.22}100%{transform:translate(-50%,-50%) scale(5.5);opacity:0}}
 body.ecoute .voix{background:radial-gradient(closest-side,#2457C5,transparent 72%)}
 
 /* ---------- Mouvement (courbes "Material" : rapide au depart, douce a l'arrivee) ---------- */

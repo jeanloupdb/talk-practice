@@ -425,7 +425,7 @@ const feed = $("feed"), mic = $("mic"), statusEl = $("status"), pop = $("pop");
 let theme = null, history = [], busy = false, started = false, lastHint = null;
 // "history" = ce que le modele voit (phrases acceptees) ; "journal" = tout ce qui s'est affiche
 // (essais rates avec leurs fautes, conseils, repliques decoupees), pour retrouver la conversation entiere.
-let journal = [];
+let journal = [], dernierConseil = -99;
 function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 const homeNote = document.getElementById("homeNote");
 function setStatus(t){ statusEl.textContent = t || ""; homeNote.textContent = t || ""; }
@@ -1107,9 +1107,9 @@ Create a topic for a REAL conversation with you, his AI English conversation par
 
 // Dictee reutilisable (fenetres question et jeu de role), meme principe que le micro principal :
 // relance sur silence, envoi quand on retouche le bouton.
-function creerDictee(lang, btn, cb){
-  if (!SR) { btn.hidden = true; cb.status("La dictée n’est pas disponible dans ce navigateur : ouvre l’appli dans Chrome."); return null; }
-  const r = new SR(); r.lang = lang; r.interimResults = true; r.continuous = true;
+function creerDictee(lang, btn, cb, Moteur = SR){
+  if (!Moteur) { btn.hidden = true; cb.status("La dictée n’est pas disponible dans ce navigateur : ouvre l’appli dans Chrome."); return null; }
+  const r = new Moteur(); r.lang = lang; r.interimResults = true; r.continuous = true;
   const st = {ecoute:false, stop:false, base:"", entendu:"", debut:0, vides:0, err:null};
   r.onresult = e => {
     const norm = t => t.toLowerCase().replace(/[^\p{L}\p{N}' ]/gu, "").replace(/\s+/g, " ").trim();
@@ -1125,7 +1125,16 @@ function creerDictee(lang, btn, cb){
     cb.live(st.entendu);
   };
   r.onerror = e => { if (e.error !== "no-speech") st.err = e.error; };
+  // Chrome Android met parfois plusieurs secondes a rendre la main apres stop(), ou ne la rend pas :
+  // on force avec abort() au bout de 1,5 s (ce qui a ete dit est deja dans st.entendu).
+  const stopper = () => {
+    st.stop = true; btn.classList.remove("on"); cb.status("");
+    try { r.stop(); } catch {}
+    clearTimeout(st.timer); st.timer = setTimeout(() => { if (st.ecoute) { try { r.abort(); } catch {} r.onend(); } }, 1500);
+  };
   r.onend = () => {
+    if (!st.ecoute) return;              // deja finalise (arret force puis vrai onend)
+    clearTimeout(st.timer);
     const vide = st.entendu === st.base && Date.now() - st.debut < 1000;
     st.vides = vide ? st.vides + 1 : 0;
     if (st.ecoute && !st.stop && !ERREURS_FATALES.includes(st.err) && st.vides < 5) {
@@ -1140,9 +1149,9 @@ function creerDictee(lang, btn, cb){
   };
   const ctl = {
     get ecoute(){ return st.ecoute; },
-    arreter(){ if (st.ecoute) { st.stop = true; r.stop(); } },
+    arreter(){ if (st.ecoute) stopper(); },
     basculer(){
-      if (st.ecoute) { st.stop = true; r.stop(); return; }
+      if (st.ecoute) { stopper(); return; }
       if (listening) { stopVoulu = true; rec.stop(); }
       stopSpeak(); unlockAudio(); hidePop();
       Object.assign(st, {entendu:"", base:"", stop:false, err:null, vides:0, debut:Date.now()});
@@ -1284,7 +1293,8 @@ const SCHEMA = {
     heard:{type:"STRING"},
     ok:{type:"BOOLEAN"},
     learner_asked:{type:"BOOLEAN"},
-    corrections:{type:"ARRAY", items:{type:"OBJECT", properties:{original:{type:"STRING"}, corrected:{type:"STRING"}, explanation_fr:{type:"STRING"}}, required:["original","corrected","explanation_fr"], propertyOrdering:["original","corrected","explanation_fr"]}},
+    corrections:{type:"ARRAY", items:{type:"OBJECT", properties:{original:{type:"STRING"}, corrected:{type:"STRING"}, explanation_fr:{type:"STRING"}, type:{type:"STRING"}}, required:["original","corrected","explanation_fr","type"], propertyOrdering:["original","corrected","explanation_fr","type"]}},
+    obs:{type:"OBJECT", properties:{structures:{type:"ARRAY", items:{type:"STRING"}}, verbs:{type:"ARRAY", items:{type:"STRING"}}, level:{type:"INTEGER"}}, required:["structures","verbs","level"], propertyOrdering:["structures","verbs","level"]},
     conseil:{type:"OBJECT", properties:{original:{type:"STRING"}, better:{type:"STRING"}, why_fr:{type:"STRING"}}, required:["original","better","why_fr"], propertyOrdering:["original","better","why_fr"]},
     reply_en:{type:"STRING"},
     chunks:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}},
@@ -1294,13 +1304,76 @@ const SCHEMA = {
     fait:{type:"STRING"},
     command:{type:"STRING"}
   },
-  required:["heard","ok","learner_asked","corrections","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command"],
-  propertyOrdering:["heard","ok","learner_asked","corrections","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command"]
+  required:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command"],
+  propertyOrdering:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command"]
 };
 
 /* Equilibre des roles : l'apprenant doit aussi POSER des questions (en Irlande, c'est lui qui ira chercher l'info).
    On regarde ses derniers tours : s'il ne fait que repondre, l'IA arrete de l'interroger et lui tend une amorce
    ou l'invite a lui poser une question. */
+/* ---------- Profil d'apprenant : invisible, mis a jour a chaque tour ----------
+   Ce que l'IA observe (structures utilisees, verbes, niveau, type des fautes) est cumule sur le telephone.
+   A chaque conversation, l'appli en tire un CAP : une structure a faire utiliser, une faute a surveiller,
+   les verbes dont il abuse. Tous les 20 tours, Gemini fait un bilan (niveau, acquis, a travailler). */
+const STRUCTURES = ["present simple", "past simple", "present perfect", "future", "conditional", "modals", "passive", "relative clauses", "indirect questions", "phrasal verbs", "comparatives", "linking words"];
+// ordre d'acquisition : on vise la premiere structure peu utilisee qui correspond au niveau
+const PARCOURS = [["past simple", 1], ["future", 1], ["comparatives", 2], ["modals", 3], ["present perfect", 4], ["phrasal verbs", 4], ["conditional", 5], ["indirect questions", 5], ["linking words", 6], ["relative clauses", 6], ["passive", 7]];
+const MOUV_STRUCTURE = {"past simple":"story", "present perfect":"story", "future":"opinion", "conditional":"hypo", "comparatives":"compare", "modals":"opinion", "indirect questions":"invite", "phrasal verbs":"story", "linking words":"opinion", "relative clauses":"explain", "passive":"explain"};
+const NIVEAUX = ["", "very short simple sentences and the most common words", "short simple sentences, common words", "simple everyday English, short sentences", "everyday English with some phrasal verbs, occasionally a longer sentence", "natural everyday English, some idioms, varied sentences", "natural idiomatic English, varied vocabulary, longer sentences", "rich natural English with idioms and nuance", "rich, nuanced English, humour, less common vocabulary", "native-like English, subtle vocabulary", "native-like English, subtle vocabulary"];
+function profil(){
+  if (!S.profil || typeof S.profil !== "object") S.profil = {niveau:4, niveaux:[], fautes:{}, structures:{}, verbes:{}, prononc:{}, acquis:[], aTravailler:[], tours:0, depuisBilan:0};
+  return S.profil;
+}
+const topN = (o, n) => Object.fromEntries(Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n));
+function observer(d){
+  const p = profil(); p.tours++; p.depuisBilan++;
+  for (const c of d.corrections || []) {
+    const t = String(c.type || "").toLowerCase().trim(); if (!t) continue;
+    if (/prononc/.test(t)) { const m = String(c.original || "").toLowerCase().trim(); if (m) p.prononc[m] = (p.prononc[m] || 0) + 1; }
+    else p.fautes[t] = (p.fautes[t] || 0) + 1;
+  }
+  const o = d.obs || {};
+  for (const st of o.structures || []) { const k = String(st).toLowerCase().trim(); if (STRUCTURES.includes(k)) p.structures[k] = (p.structures[k] || 0) + 1; }
+  for (const v of o.verbs || []) { const k = String(v).toLowerCase().trim(); if (k && k.length < 20) p.verbes[k] = (p.verbes[k] || 0) + 1; }
+  if (o.level > 0) { p.niveaux.push(Math.min(10, Math.max(1, o.level))); p.niveaux = p.niveaux.slice(-30); p.niveau = Math.round(p.niveaux.reduce((a, b) => a + b, 0) / p.niveaux.length); }
+  p.fautes = topN(p.fautes, 15); p.verbes = topN(p.verbes, 40); p.prononc = topN(p.prononc, 15);
+  saveS();
+  if (p.depuisBilan >= 20) bilanProfil();
+}
+let focus = null;
+function choisirFocus(){
+  const p = profil();
+  const candidates = PARCOURS.filter(([st, min]) => p.niveau >= min && !p.acquis.includes(st)).sort((a, b) => (p.structures[a[0]] || 0) - (p.structures[b[0]] || 0));
+  const structure = (p.aTravailler.find(st => STRUCTURES.includes(st)) || candidates[0]?.[0] || "past simple");
+  const faute = Object.entries(p.fautes).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+  const verbes = Object.entries(p.verbes).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([v]) => v);
+  focus = {structure, faute, verbes};
+}
+function profilTexte(){
+  const p = profil(); if (!focus) choisirFocus();
+  const n = Math.min(10, Math.max(1, p.niveau || 4));
+  return `LEARNER PROFILE (never mention it): spoken level ${n}/10. Speak ONE notch above him: ${NIVEAUX[Math.min(10, n + 1)]}.
+Today's coaching focus: steer naturally so he has to use "${focus.structure}" (your moves and questions should call for it), and use it yourself in your replies.${focus.faute ? ` Watch for his recurring mistake "${focus.faute}": be strict on it.` : ""}${focus.verbes.length >= 3 ? ` He overuses the verbs ${focus.verbes.join(", ")}: when a richer verb would fit, suggest it through "conseil".` : ""}${p.acquis.length ? ` He already masters: ${p.acquis.join(", ")}.` : ""} Introduce in your own replies one useful expression slightly above his level, naturally.`;
+}
+async function bilanProfil(){
+  const p = profil(); p.depuisBilan = 0; saveS();
+  try {
+    const d = await llm(`Here is the record of a French-speaking learner of spoken English, collected over his last conversations.
+Average message level: ${p.niveau}/10 (recent: ${p.niveaux.slice(-10).join(", ")}).
+Structures used correctly (counts): ${JSON.stringify(p.structures)}.
+Recurring mistakes (counts): ${JSON.stringify(p.fautes)}.
+Previously mastered: ${JSON.stringify(p.acquis)}.
+Decide: "niveau" = his overall level 1 to 10; "acquis" = structures from ${JSON.stringify(STRUCTURES)} he now masters (used correctly several times, no related mistakes); "a_travailler" = the 3 structures from that list he should work on next, easiest first; "fautes_actives" = the recurring mistake labels still relevant (drop the rare ones).`,
+      {type:"OBJECT", properties:{niveau:{type:"INTEGER"}, acquis:{type:"ARRAY", items:{type:"STRING"}}, a_travailler:{type:"ARRAY", items:{type:"STRING"}}, fautes_actives:{type:"ARRAY", items:{type:"STRING"}}}, required:["niveau","acquis","a_travailler","fautes_actives"]});
+    if (d.niveau > 0) p.niveau = Math.min(10, Math.max(1, d.niveau));
+    p.acquis = (d.acquis || []).map(x => String(x).toLowerCase()).filter(x => STRUCTURES.includes(x));
+    p.aTravailler = (d.a_travailler || []).map(x => String(x).toLowerCase()).filter(x => STRUCTURES.includes(x) && !p.acquis.includes(x));
+    const actives = new Set((d.fautes_actives || []).map(x => String(x).toLowerCase()));
+    if (actives.size) p.fautes = Object.fromEntries(Object.entries(p.fautes).filter(([k]) => actives.has(k)));
+    saveS();
+  } catch (e) { console.warn("bilan du profil reporte", e); }
+}
+
 /* Le coach : a chaque tour, l'appli impose un MOUVEMENT a l'IA, comme un bon coach de conversation.
    - jamais de question fermee ni de question qui appelle trois mots : on demande un recit, un avis a defendre,
      une explication, une hypothese, une comparaison (de quoi parler 3 ou 4 phrases) ;
@@ -1322,7 +1395,7 @@ let mouvPrec = "", nbTours = 0;
 function choisirFin(learner){
   if (theme.mission) return "mission";
   if (theme.inverse) return "invite";
-  if (!learner) { mouvPrec = "story"; nbTours = 0; return "story"; }
+  if (!learner) { mouvPrec = "story"; nbTours = 0; choisirFocus(); return focus && MOUV_STRUCTURE[focus.structure] || "story"; }
   nbTours++;
   const recents = history.filter(h => h.role === "user").slice(-4, -1);
   const posees = recents.filter(h => h.asked).length;
@@ -1330,7 +1403,11 @@ function choisirFin(learner){
   let m;
   if (passif && nbTours % 2 === 0) m = mouvPrec === "invite" ? "hook" : "invite";      // il ne pose jamais de question : on lui tend la perche
   else if (nbTours % 3 === 0) m = Math.random() < 0.5 ? "switch" : "hook";              // on ne tourne pas en rond
-  else { const pool = OUVERTS.filter(x => x !== mouvPrec); m = pool[Math.floor(Math.random() * pool.length)]; }
+  else {
+    const pool = OUVERTS.filter(x => x !== mouvPrec);
+    const prefere = focus && MOUV_STRUCTURE[focus.structure];
+    m = (prefere && prefere !== mouvPrec && Math.random() < 0.6) ? prefere : pool[Math.floor(Math.random() * pool.length)];
+  }
   mouvPrec = m; return m;
 }
 const FINS = MOUVEMENTS;
@@ -1354,8 +1431,9 @@ STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDI
 - QUESTIONS deserve special care, they are where French speakers slip: missing do/does/did ("Where you go?"), wrong word order ("Where you are going?"), indirect questions ("Can you tell me where is the station?" -> "where the station is"), missing auxiliary. These ARE mistakes.
 - "learner_asked": true if his message contains a real question to you (even a short one), false otherwise.
 - "ok": true if there is no real mistake in his English, false otherwise.
-- "conseil": only when ok is true but a question or phrase is correct yet sounds blunt or unnatural in Ireland: "original" = his exact words concerned, "better" = a more natural or polite version (e.g. "Would you mind telling me...", "Do you know if..."), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".
-- "corrections": the mistakes (at most 3), each with the exact wrong words, the corrected words, and a French explanation of 12 words max, addressing the learner with « tu » (never « vous »). Empty if ok.
+- "conseil": only when ok is true and EITHER a phrase sounds blunt or unnatural in Ireland, OR his sentence is correct but basic for his level (an overused verb, a very simple structure where the focus structure would fit): "original" = his exact words concerned, "better" = the same idea one notch above (more natural, richer verb, the focus structure), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".
+- "corrections": the mistakes (at most 3), each with the exact wrong words, the corrected words, a French explanation of 12 words max, addressing the learner with « tu » (never « vous »), and "type" = the category in 2 or 3 French words, reused consistently (e.g. "prétérit oublié", "question sans do", "article", "préposition", "pluriel", "ordre des mots", "accord sujet-verbe", "vocabulaire", "prononciation"). Empty if ok.
+- "obs" (about his message, even when ok): "structures" = the grammar structures he used CORRECTLY, only from this list: ${STRUCTURES.join(", ")} (empty if none); "verbs" = the main verbs he used, base form, 6 max; "level" = the level of this message from 1 (A1) to 10 (C2). For an empty or inaudible message: [], [], 0.
 ${retry}${force}
 
 STEP 2, only if ok is true, REPLY. If ok is false, leave reply_en, reply_fr, hint_en and hint_fr empty and chunks [].
@@ -1367,6 +1445,8 @@ STEP 2, only if ok is true, REPLY. If ok is false, leave reply_en, reply_fr, hin
 - "hint_en": ${OUVERTS.includes(fin) || fin === "switch" ? "the first sentence of a developed answer he could give" : "a natural QUESTION the learner could ask you now (well formed, polite)"}; "hint_fr": its French translation.
 - "fait": if the learner's message reveals a NEW lasting fact about his REAL life (studies, work, family, hobbies, tastes, projects, places he knows, opinions...) that is not already known above, write it as one short French sentence of 15 words max, about him ("Il ..."). Otherwise "".
 - "command": "pause" ONLY if his whole message is a request to pause or stop the conversation (in English or French: "pause", "stop", "on arrête", "let's stop here", "I need a break"); then also set ok to true and corrections to []. Otherwise "".
+
+${profilTexte()}
 
 What you already know about the learner from earlier conversations:
 ${memoTexte()}
@@ -1421,7 +1501,7 @@ function renderFix(d, youEl, onSkip){
   if (d.ok) {
     youEl.classList.add("juste");
     const c = d.conseil;
-    if (c && c.better && c.better.trim()) marquer(youEl, [c], "mieux");
+    if (c && c.better && c.better.trim() && journal.length - dernierConseil >= 6) { dernierConseil = journal.length; marquer(youEl, [c], "mieux"); }
     return youEl;
   }
   marquer(youEl, list, "faute");
@@ -1520,6 +1600,7 @@ async function ask(learner, youEl, opts = {}){
       essai = {prev:learner, corrections:d.corrections, youEl, first:false};
       if (first) setSerie(0);
       journal.push({role:"user", content:learner, ok:false, tried:true, corrections:d.corrections || []}); sauverConv();
+      if (first) observer(d);                 // la 1re tentative compte dans le profil, pas les reprises
       renderFix(d, youEl, () => {
         // "Passer" : on garde la phrase telle quelle et la conversation continue.
         history.push({role:"user", content:learner});
@@ -1541,6 +1622,7 @@ async function ask(learner, youEl, opts = {}){
       if (!essai && !opts.force) setSerie(serie + 1);
       const moi = [...history].reverse().find(h => h.role === "user");
       if (d.learner_asked && moi) { moi.asked = true; compterQuestion(); }
+      observer(d);
       feed.querySelectorAll(".you.attempt").forEach(x => x.classList.add("tried"));
     }
     essai = null;

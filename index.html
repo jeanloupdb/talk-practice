@@ -261,10 +261,10 @@ body:not(.home) .blobs{opacity:.28}
   background:radial-gradient(closest-side,#6A5AE0,transparent 72%);opacity:calc(var(--vox) * 1.1);transition:transform .1s linear,opacity .15s linear,background .4s;animation:none}
 body.home .voix{display:none}
 /* vagues qui s'etendent la ou l'on touche le fond de l'accueil */
-.vagues{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;filter:blur(14px);-webkit-mask-image:linear-gradient(to bottom,transparent 6%,#000 22%,#000 80%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 6%,#000 22%,#000 80%,transparent 100%)}
-.vague{position:absolute;width:30vw;height:30vw;max-width:220px;max-height:220px;border-radius:50%;transform:translate(-50%,-50%) scale(.15);opacity:0;
-  background:radial-gradient(circle,transparent 56%,var(--c) 64%,transparent 72%);animation:vague-spread 2.2s cubic-bezier(.15,.6,.25,1) forwards}
-@keyframes vague-spread{0%{transform:translate(-50%,-50%) scale(.15);opacity:0}10%{opacity:.22}100%{transform:translate(-50%,-50%) scale(5.5);opacity:0}}
+.vagues{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;filter:blur(36px);-webkit-mask-image:linear-gradient(to bottom,transparent 6%,#000 22%,#000 80%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 6%,#000 22%,#000 80%,transparent 100%)}
+.vague{position:absolute;width:36vw;height:36vw;max-width:260px;max-height:260px;border-radius:50%;transform:translate(-50%,-50%) scale(.7);opacity:0;
+  background:radial-gradient(circle,var(--c) 0%,transparent 70%);animation:tache 1.8s ease-out forwards}
+@keyframes tache{0%{transform:translate(-50%,-50%) scale(.7);opacity:0}25%{opacity:.28}100%{transform:translate(-50%,-50%) scale(1.5);opacity:0}}
 body.ecoute .voix{background:radial-gradient(closest-side,#2457C5,transparent 72%)}
 
 /* ---------- Mouvement (courbes "Material" : rapide au depart, douce a l'arrivee) ---------- */
@@ -948,13 +948,11 @@ $("stage").addEventListener("pointerdown", e => {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const couche = document.querySelector(".vagues"), r = couche.getBoundingClientRect();
   const c = COULEURS_ONDE[Math.floor(Math.random() * COULEURS_ONDE.length)];
-  // deux cercles qui s'etendent, le second un peu apres : l'onde se propage
-  [0, 220].forEach(delai => setTimeout(() => {
-    const o = el("span", "vague");
-    o.style.left = (e.clientX - r.left) + "px"; o.style.top = (e.clientY - r.top) + "px"; o.style.setProperty("--c", c);
-    couche.append(o); o.addEventListener("animationend", () => o.remove());
-    if (couche.children.length > 8) couche.firstChild.remove();
-  }, delai));
+  // une tache de couleur qui s'etend a peine puis s'efface
+  const o = el("span", "vague");
+  o.style.left = (e.clientX - r.left) + "px"; o.style.top = (e.clientY - r.top) + "px"; o.style.setProperty("--c", c);
+  couche.append(o); o.addEventListener("animationend", () => o.remove());
+  if (couche.children.length > 6) couche.firstChild.remove();
 });
 
 /* ---------- Traduction au toucher ---------- */
@@ -2071,6 +2069,8 @@ majDepart();
 
 if (!S.key) setStatus("Première fois ? Ajoute ta clé Gemini gratuite dans les réglages ⚙️.");
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+// portrait seulement (effectif une fois l'appli installee ; le manifest le demande aussi)
+try { screen.orientation?.lock?.("portrait").catch(() => {}); } catch {}
 </script>
 </body>
 </html>

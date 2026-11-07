@@ -703,19 +703,22 @@ if (SR) {
   };
   rec.onerror = e => { if (e.error !== "no-speech") micErr = e.error; };
 } else { mic.hidden = true; setStatus("La dictée n’est pas disponible dans ce navigateur : ouvre l’appli dans Chrome."); }
-mic.onclick = () => {
+function micChrome(){
   if (!rec) return;
   if (listening) { stopVoulu = true; rec.stop(); return; }
   stopSpeak(); unlockAudio(); hidePop();
   heard = ""; base = ""; stopVoulu = false; micErr = null; micStart = debutSession = Date.now(); relancesVides = 0;
   try { rec.start(); listening = true; mic.classList.add("on"); mic.setAttribute("aria-label","Arrêter et envoyer"); setStatus(""); }
   catch { setStatus("Le micro ne démarre pas."); }
-};
+}
+mic.onclick = micChrome;
 
 /* ---------- Micro principal : on enregistre ta voix et on l'envoie a Gemini ----------
    Gemini entend ta vraie prononciation (Chrome, lui, devinait les mots et effacait tes fautes),
    et ne coupe jamais au milieu d'une phrase : l'envoi part quand tu retouches le micro. */
 const ENREG_OK = !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
+// Qui t'ecoute : Gemini (enregistrement, entend la prononciation) ou la dictee de Chrome (texte seulement)
+function ecouteGemini(){ return ENREG_OK && S.ecoute !== "chrome"; }
 let enreg = null, enregDebut = 0, enregTimer = null, enregLive = null, jeterEnreg = false;
 function blobB64(b){ return new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = ko; r.readAsDataURL(b); }); }
 async function basculerEnreg(opts = {}){
@@ -809,7 +812,7 @@ async function basculerEnreg(opts = {}){
   }, 250);
 }
 if (ENREG_OK) {
-  mic.hidden = false; mic.onclick = () => basculerEnreg({auto: mainsLibres});
+  mic.hidden = false; mic.onclick = () => { if (ecouteGemini()) basculerEnreg({auto: mainsLibres}); else micChrome(); };
   if (statusEl.textContent.startsWith("La dictée")) setStatus("");
 }
 
@@ -827,7 +830,7 @@ async function mlWake(on){
   } catch {}
 }
 function mlMaj(){
-  mlBtn.hidden = !started || !ENREG_OK;
+  mlBtn.hidden = !started || !ecouteGemini();
   mlBtn.classList.toggle("actif", mainsLibres);
   mlBtn.setAttribute("aria-label", mainsLibres ? "Quitter le mode mains libres" : "Mode mains libres");
   mic.classList.toggle("ml", mainsLibres);
@@ -839,7 +842,7 @@ function ecouterAuto(){
   basculerEnreg({auto:true});
 }
 function mlStart(){
-  if (!ENREG_OK || !started) return;
+  if (!ecouteGemini() || !started) return;
   mainsLibres = true; S.mainsLibres = true; saveS(); mlEchecs = 0; mlVides = 0; mlMaj(); mlWake(true);
   if (enreg && enreg.state === "recording") { setStatus("Mains libres"); return; }
   if (busy || enLecture) setStatus("Mains libres");
@@ -1751,7 +1754,7 @@ function commencerLibre(){
   started = true; history = []; journal = []; lastHint = null; essai = null; nbQuestions = 0; setSerie(0); convId = null;
   modeConversation(true);
   feed.replaceChildren(); mic.disabled = false;
-  if (ENREG_OK) basculerEnreg({auto: mainsLibres}); else mic.onclick();
+  mic.onclick();
 }
 
 /* ---------- Réglages : une liste, des sous-pages, enregistrement immédiat (pas de bouton Enregistrer) ---------- */
@@ -1768,7 +1771,7 @@ const REGIONS = [["swedencentral","Suède"], ["francecentral","France"], ["north
 const provDe = v => v.startsWith("az:") ? "az" : v.startsWith("g:") ? "g" : "sys";
 const nomVoix = v => (Object.values(VOIX).flat().find(x => x[0] === v) || [v, v])[1];
 let derniereVoix = "";          // voix reellement utilisee a la derniere lecture
-let pageReg = "main";
+let pageReg = "main", provVue = null;   // onglet affiche dans la page Voix (ne change pas la voix tant qu'on ne touche pas une voix)
 function ligneReg(label, valeur, onclick, cls){
   const b = el("button", "regrow" + (cls ? " " + cls : ""));
   b.append(el("span", "reglabel", label), el("span", "regval", valeur || ""), el("span", "fl", "›"));
@@ -1794,25 +1797,32 @@ function rendreReglages(){
     titre.textContent = "Réglages";
     body.replaceChildren(
       ligneReg("Voix", voixLabel, () => setPage("voix")),
+      ligneReg("Écoute", ecouteGemini() ? "Gemini" : "Dictée Chrome", () => setPage("ecoute")),
       ligneReg("Vitesse", vit, () => setPage("vitesse")),
       ligneReg("Clés", S.key ? (S.azKey ? "Gemini, Azure" : "Gemini") : "Gemini manquante", () => setPage("cles"), S.key ? "" : "alerte"),
-      ligneReg("Mémoire", memo().length ? memo().length + " faits" : "vide", () => setPage("memo"))
+      ligneReg("Mémoire", memo().length ? memo().length + (memo().length > 1 ? " faits" : " fait") : "vide", () => setPage("memo"))
     );
   } else if (pageReg === "voix") {
     titre.textContent = "Voix";
+    const vue = provVue || prov;
     const seg = el("div", "seg");
     for (const k of ["az", "g", "sys"]) {
-      const b = el("button", null, NOM_PROV[k]); b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(k === prov));
-      b.onclick = () => { S.voice = VOIX[k][0][0]; saveS(); rendreReglages(); };
+      const b = el("button", null, NOM_PROV[k] + (k === prov ? " •" : "")); b.setAttribute("role", "tab"); b.setAttribute("aria-checked", String(k === vue));
+      b.onclick = () => { provVue = k; rendreReglages(); };
       seg.append(b);
     }
-    const rows = prov === "sys" ? [] : VOIX[prov].map(([v, n, sub]) => ligneRadio(n, sub, v === S.voice, () => { S.voice = v; saveS(); rendreReglages(); }));
+    const rows = VOIX[vue].map(([v, n, sub]) => ligneRadio(n, sub, v === S.voice, () => { S.voice = v; saveS(); rendreReglages(); }));
     const alertes = [];
-    if (prov === "az" && !S.azKey) alertes.push(ligneReg("Clé Azure manquante", "", () => setPage("cles"), "alerte"));
-    if (prov === "g" && !S.key) alertes.push(ligneReg("Clé Gemini manquante", "", () => setPage("cles"), "alerte"));
+    if (vue === "az" && !S.azKey) alertes.push(ligneReg("Clé Azure manquante", "", () => setPage("cles"), "alerte"));
+    if (vue === "g" && !S.key) alertes.push(ligneReg("Clé Gemini manquante", "", () => setPage("cles"), "alerte"));
     const test = el("button", "ghostbtn full", "Tester la voix");
     test.onclick = async () => { unlockAudio(); test.textContent = "…"; await speak("Hi there! How are you getting on? Is this voice easy to understand?", null, null); test.textContent = derniereVoix ? "Testé : " + derniereVoix : "Tester la voix"; };
     body.replaceChildren(seg, ...alertes, ...rows, test);
+  } else if (pageReg === "ecoute") {
+    titre.textContent = "Écoute";
+    const gem = ligneRadio("Gemini", ENREG_OK ? "entend ta vraie prononciation" : "indisponible dans ce navigateur", ecouteGemini(), () => { if (ENREG_OK) { S.ecoute = "gemini"; saveS(); rendreReglages(); } });
+    const chr = ligneRadio("Dictée Chrome", SR ? "texte seulement, un peu plus rapide" : "indisponible dans ce navigateur", !ecouteGemini(), () => { if (SR) { S.ecoute = "chrome"; if (mainsLibres) mlStop("", true); saveS(); rendreReglages(); } });
+    body.replaceChildren(gem, chr);
   } else if (pageReg === "vitesse") {
     titre.textContent = "Vitesse";
     body.replaceChildren(...VITESSES.map(([v, n]) => ligneRadio(n, "", Number(S.speed) === Number(v), () => { S.speed = Number(v); saveS(); rendreReglages(); })));
@@ -1836,7 +1846,7 @@ function rendreReglages(){
     body.replaceChildren(l, clear); afficherMemo();
   }
 }
-function setPage(pg){ pageReg = pg; rendreReglages(); $("settings").querySelector(".sheet").scrollTop = 0; }
+function setPage(pg){ pageReg = pg; provVue = null; rendreReglages(); $("settings").querySelector(".sheet").scrollTop = 0; }
 function openSettings(){ pageReg = "main"; rendreReglages(); ouvrir("settings"); }
 $("gear").onclick = openSettings;
 $("setBack").onclick = () => setPage("main");

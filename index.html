@@ -124,8 +124,12 @@ body.home .mainrow #mic,body.home .mainrow #hintBtn{visibility:hidden}
 .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
 @keyframes b{50%{opacity:1}}
 .pop{position:fixed;z-index:20;max-width:min(80vw,320px);background:var(--pop);color:var(--on-pop);padding:9px 13px;border-radius:12px;font-size:.98rem;box-shadow:0 6px 24px rgba(10,20,50,.25)}
-.pop small{display:block;opacity:.7;font-size:.8rem}
-.popmore{display:block;margin-top:6px;background:none;border:none;padding:0;color:inherit;font-weight:700;font-size:.85rem;text-decoration:underline}
+.pop{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 13px}
+.popmot{background:none;border:none;padding:4px 0;color:inherit;text-align:left;font-size:.98rem}
+.popfr{display:block;font-weight:600}
+.pop small{display:block;opacity:.7;font-size:.8rem;text-decoration:underline;text-underline-offset:2px}
+.popplay{flex:none;width:40px;height:40px;border-radius:50%;border:none;display:grid;place-items:center;background:color-mix(in srgb,var(--on-pop) 18%,transparent);color:var(--on-pop)}
+.popplay svg{width:18px;height:18px}
 .mothead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .motfr{margin:4px 0 10px;font-size:1.1rem}
 .motfr small{display:block;color:var(--muted);font-size:.85rem;font-weight:400}
@@ -788,9 +792,14 @@ let selChunk = null;
 function hidePop(){ pop.hidden = true; selChunk?.classList.remove("sel"); selChunk = null; }
 function showPop(span, en, fr){
   hidePop(); selChunk = span; span.classList.add("sel");
-  const more = el("button","popmore","Exemples ›");
-  more.onclick = e => { e.stopPropagation(); hidePop(); openMot(en, fr, span.closest(".msg")?.textContent || ""); };
-  pop.replaceChildren(document.createTextNode(fr || "—"), el("small", null, en), more);
+  // le mot (et sa traduction) se touche pour voir des exemples ; le bouton a droite le fait ecouter
+  const mot = el("button","popmot");
+  mot.append(el("span","popfr",fr || "—"), el("small", null, en + " ›"));
+  mot.setAttribute("aria-label","Voir des exemples avec « " + en + " »");
+  mot.onclick = e => { e.stopPropagation(); hidePop(); openMot(en, fr, span.closest(".msg")?.textContent || ""); };
+  const ecoute = el("button","popplay"); ecoute.innerHTML = PLAY; ecoute.setAttribute("aria-label","Écouter « " + en + " »");
+  ecoute.onclick = e => { e.stopPropagation(); unlockAudio(); speak(en.replace(/[.,!?;:"]+$/,""), ecoute, null); };
+  pop.replaceChildren(mot, ecoute);
   pop.hidden = false;
   const r = span.getBoundingClientRect(), p = pop.getBoundingClientRect();
   const left = Math.min(Math.max(8, r.left + r.width/2 - p.width/2), window.innerWidth - p.width - 8);

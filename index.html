@@ -37,6 +37,15 @@ svg{width:24px;height:24px;flex:none}
 .title{font-weight:600;font-size:1.05rem}
 .theme{font-size:.9rem;color:var(--muted)}
 .leconchip{display:flex;align-items:center;gap:8px}
+/* la scene : un exercice par ecran, qui glisse */
+.scene{position:relative;flex:1;min-height:100%;display:flex;flex-direction:column}
+.etape{position:absolute;inset:0;display:flex;flex-direction:column;gap:16px;padding-top:4vh;animation:glisse .42s var(--ease) both}
+.etape .reponses{display:flex;flex-direction:column;gap:14px;align-items:flex-end}
+.etape .reponses .carte{align-self:stretch}
+.etape.sort{animation:sortie .34s var(--ease) both;pointer-events:none}
+@keyframes glisse{from{opacity:0;transform:translateX(70px)}to{opacity:1;transform:none}}
+@keyframes sortie{to{opacity:0;transform:translateX(-70px)}}
+.etape .carte{animation:none}
 /* cartes de seance : une consigne, rien d'autre */
 .carte{align-self:stretch;background:var(--card);border:1px solid var(--card-line);border-radius:22px;padding:16px 18px;backdrop-filter:blur(6px);animation:entre .38s var(--ease) both}
 .carte.consigne{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,transparent),color-mix(in srgb,#6A5AE0 14%,transparent))}
@@ -130,7 +139,13 @@ body.home #stage::after{content:"";position:absolute;left:0;right:0;bottom:0;hei
 .primary{background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:14px 28px;font-weight:600;font-size:1.05rem}
 .primary:disabled{opacity:.45;cursor:default}
 .you{align-self:flex-end;text-align:right;color:var(--accent);font-weight:600;font-size:1.25rem;line-height:1.3;max-width:92%}
-.you.live{opacity:.6}
+.you.live{opacity:1;color:var(--muted)}
+.you.live.fort{color:var(--accent)}
+.you.live .ondes i{background:color-mix(in srgb,var(--muted) 45%,transparent)}
+.you.live.fort .ondes i{background:var(--accent)}
+.you.bas{display:inline-flex;align-items:center;gap:8px;color:var(--bad);font-weight:600;animation:entre .25s var(--ease) both}
+.you.bas .cico{width:20px;height:20px}
+.you.bas .cico svg{width:20px;height:20px}
 .you.pending{opacity:.5;letter-spacing:.2em}
 .recdot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--live);margin-right:8px;vertical-align:1px;animation:b 1s infinite}
 .wrong{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--bad);text-decoration-thickness:2px}
@@ -330,7 +345,7 @@ button:not(:disabled):active{transform:scale(.94)}
 .round .stopico{position:absolute;width:20px;height:20px;border-radius:5px;background:currentColor;transform:scale(0);transition:transform .25s var(--rebond)}
 .round.on .stopico{transform:scale(1)}
 /* barres d'onde dans ta bulle pendant l'enregistrement */
-.ondes{display:inline-flex;gap:3px;align-items:center;height:22px;margin-left:10px;vertical-align:-5px}
+.ondes{display:inline-flex;gap:3px;align-items:center;height:30px;margin-left:10px;vertical-align:-9px}
 .ondes i{width:4px;height:100%;border-radius:2px;background:var(--accent);transform:scaleY(.2);transition:transform .08s linear}
 /* en attente de Gemini : ta bulle "pulse" doucement */
 .you.pending{background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 18%,transparent),transparent);background-size:200% 100%;
@@ -850,10 +865,11 @@ async function basculerEnreg(opts = {}){
       }
       return;
     }
-    if (Date.now() - enregDebut < 700 || blob.size < 1200) {
-      you?.remove();
+    const q = enreg.qualite ? enreg.qualite() : {pic:99, voix:99};
+    if (Date.now() - enregDebut < 700 || blob.size < 1200 || (analyse && (q.pic < 7 || q.voix < 5))) {
+      // trop court ou trop bas : rien n'est envoye, la bulle le dit d'un coup d'oeil
+      if (you) { you.className = "you bas"; you.replaceChildren(); const ic = el("span", "cico"); ic.innerHTML = ICO_BAS; you.append(ic, el("span", null, q.pic < 7 || q.voix < 5 ? "Trop bas" : "Trop court")); setTimeout(() => you.remove(), 2200); }
       if (auto && mainsLibres) setTimeout(ecouterAuto, 400);
-      else setStatus("Trop court");
       return;
     }
     mlVides = 0;
@@ -871,17 +887,20 @@ async function basculerEnreg(opts = {}){
   const niveaux = new Uint8Array(128);
   // Detection de fin de phrase (mode auto) : on apprend le bruit de fond au debut, puis on considere
   // qu'on parle au-dessus de 3x ce bruit, et que la phrase est finie apres 1,3 s de silence.
-  let bruit = 0, parleDepuis = 0, dernierSon = 0, aParle = false;
+  let bruit = 0, parleDepuis = 0, dernierSon = 0, aParle = false, pic = 0, voix = 0;
   const anime = () => {
     if (!analyse || !enregLive) return;
     analyse.getByteTimeDomainData(niveaux);
     let somme = 0; for (const v of niveaux) somme += (v - 128) * (v - 128);
     const rms = Math.sqrt(somme / niveaux.length);
     const lvl = Math.min(1, rms / 40);
+    // qualite de la prise : on retient le pic et le nombre d'images ou on entend vraiment une voix
+    if (Date.now() - enregDebut < 250) bruit = bruit ? bruit * 0.8 + rms * 0.2 : rms;
+    else if (rms > Math.max(bruit * 2.5, 6)) { voix++; pic = Math.max(pic, rms); }
+    enregLive.classList.toggle("fort", rms > Math.max(bruit * 2.5, 6));
     if (auto) {
       const now = Date.now();
-      if (now - enregDebut < 250) bruit = bruit ? bruit * 0.8 + rms * 0.2 : rms;
-      else {
+      if (now - enregDebut >= 250) {
         const seuilParole = Math.max(bruit * 3, 6), seuilSilence = Math.max(bruit * 1.8, 3.5);
         if (rms > seuilParole) { if (!parleDepuis) parleDepuis = now; dernierSon = now; }
         else if (rms < seuilSilence && !parleDepuis) bruit = bruit * 0.97 + rms * 0.03;
@@ -894,19 +913,20 @@ async function basculerEnreg(opts = {}){
     }
     mic.style.setProperty("--lvl", lvl.toFixed(3)); setVox(lvl);
     const barres = enregLive.querySelectorAll(".ondes i");
-    barres.forEach((b, i) => { const k = [0.55, 0.85, 1, 0.8, 0.6][i] || 1; b.style.transform = "scaleY(" + Math.max(.18, Math.min(1, lvl * k * 1.6 + Math.random() * .08)).toFixed(2) + ")"; });
+    barres.forEach((b, i) => { const k = [0.45, 0.7, 0.9, 1, 0.9, 0.7, 0.45][i] || 1; b.style.transform = "scaleY(" + Math.max(.18, Math.min(1, lvl * k * 1.6 + Math.random() * .08)).toFixed(2) + ")"; });
     raf = requestAnimationFrame(anime);
   };
   const stopAnalyse = () => { cancelAnimationFrame(raf); try { source?.disconnect(); } catch {} mic.style.removeProperty("--lvl"); setVox(0); document.body.classList.remove("ecoute"); };
   enreg.addEventListener("stop", stopAnalyse);
   enreg.forcer = () => { aParle = true; };
+  enreg.qualite = () => ({pic, voix});
   if (auto && !analyse) aParle = true;   // sans analyse audio : pas de detection, envoi manuel ou a 20 s
   reflouter();
   enreg.start(); enregDebut = Date.now(); document.body.classList.add("ecoute");
   mic.classList.add("on"); mic.setAttribute("aria-label", auto ? "Envoyer maintenant" : "Arrêter et envoyer");
   enregLive = el("div", "you live"); const dot = el("span", "recdot"), tps = el("span", null, "0:00"), ondes = el("span", "ondes");
-  for (let i = 0; i < 5; i++) ondes.append(el("i"));
-  enregLive.append(dot, tps, ondes); feed.append(enregLive); scrollDown();
+  for (let i = 0; i < 7; i++) ondes.append(el("i"));
+  enregLive.append(dot, tps, ondes); zone().append(enregLive); scrollDown();
   raf = requestAnimationFrame(anime);
   setStatus(auto ? "Mains libres" : "");
   enregTimer = setInterval(() => {
@@ -1072,6 +1092,7 @@ const SCHEMA_ROLE = {
   properties:{ fr:{type:"STRING"}, en:{type:"STRING"}, role:{type:"STRING"} },
   required:["fr","en","role"], propertyOrdering:["fr","en","role"]
 };
+const ICO_BAS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5"/></svg>';
 const ICO_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
 const GO = {btn: document.getElementById("go"), label: document.getElementById("goLabel"), pts: document.getElementById("goPts"), niv: document.getElementById("goNiv")};
 // Le bouton reste "Je commence" (sujet libre). Le ▾ ouvre la liste des sujets : un toucher lance l'IA dessus.
@@ -1592,7 +1613,20 @@ function etapeCourante(){
   if (seance.phase === "guide") return seance.guide[seance.etape] || null;
   return null;
 }
-function carte(cls, enfants){ const c = el("div", "carte " + cls); c.append(...enfants); feed.append(c); scrollDown(); return c; }
+function carte(cls, enfants){ const c = el("div", "carte " + cls); c.append(...enfants); return c; }
+/* La scene : pendant la seance, un exercice occupe l'ecran, la carte en haut, tes reponses dessous ;
+   l'exercice suivant glisse par la droite et le precedent s'efface par la gauche. */
+let scene = null;
+function nouvelleEtape(carteEl){
+  if (!scene || !scene.isConnected) { scene = el("div", "scene"); feed.replaceChildren(scene); }
+  const prec = scene.querySelector(".etape.on");
+  if (prec) { prec.classList.remove("on"); prec.classList.add("sort"); setTimeout(() => prec.remove(), 380); }
+  const e = el("div", "etape on"); e.append(carteEl, el("div", "reponses")); scene.append(e);
+  feed.scrollTop = 0; return e;
+}
+// ou vont les bulles (ta phrase, l'attente) : dans l'exercice en cours, sinon dans le fil
+function zone(){ const r = scene?.isConnected ? scene.querySelector(".etape.on .reponses") : null; return r || feed; }
+function quitterScene(){ scene = null; feed.replaceChildren(); afficherEchanges(0); }
 const ICO_RAPPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
 // l'etape en cours : des points (un par consigne), pas de titre
 function points(i, n, rappel){
@@ -1605,13 +1639,14 @@ function afficherEtape(){
   const e = etapeCourante(); if (!e) return;
   const total = seance.phase === "rappel" ? seance.rappels.length : seance.guide.length;
   seance.essais = 0;
-  carte("consigne", [points(seance.etape, total, seance.phase === "rappel"), el("p", "ctexte", e.fr)]);
+  nouvelleEtape(carte("consigne", [points(seance.etape, total, seance.phase === "rappel"), el("p", "ctexte", e.fr)]));
   mic.disabled = false; mlApres();
 }
 async function afficherModele(){
   const m = seance.modele || {mot:(lecon() || choisirLecon()).cible.fr, exemples:[]};
   const c = carte("modele", [el("p", "cmot", m.mot)]);
   for (const ex of m.exemples || []) { const l = el("div", "cex"); l.append(el("b", null, ex.en), el("span", null, ex.fr)); c.append(l); }
+  nouvelleEtape(c);
   busy = true; mic.disabled = true;
   try { await speak((m.exemples || []).map(x => x.en).join(" "), null, null); } catch {}
   busy = false;
@@ -1619,7 +1654,7 @@ async function afficherModele(){
 }
 function afficherBilan(){
   seance.phase = "bilan"; majLeconChip();
-  const c = carte("bilan", []);
+  const c = carte("bilan", []); nouvelleEtape(c);
   const faits = seance.faits.slice(-3);
   if (faits.length) { const ul = el("div", "cfaits"); faits.forEach(f => ul.append(el("div", null, "✓ " + f))); c.append(ul); }
   const st = stats(); const part = st.moi + st.ia ? Math.round(100 * st.moi / (st.moi + st.ia)) : 0;
@@ -1633,7 +1668,7 @@ function etapeSuivante(){
   if (!seance) return;
   if (seance.phase === "rappel") { if (seance.etape < seance.rappels.length) { afficherEtape(); return; } seance.phase = "modele"; seance.etape = 0; }
   if (seance.phase === "modele") { afficherModele(); return; }
-  if (seance.phase === "guide") { if (seance.etape < seance.guide.length) { afficherEtape(); return; } seance.phase = "libre"; seance.etape = 0; majLeconChip(); ask(null); return; }
+  if (seance.phase === "guide") { if (seance.etape < seance.guide.length) { afficherEtape(); return; } seance.phase = "libre"; seance.etape = 0; majLeconChip(); quitterScene(); ask(null); return; }
   if (seance.phase === "libre") { afficherBilan(); }
 }
 // reponse a une carte jugee
@@ -1650,12 +1685,13 @@ function etapeRatee(){
   // on montre la phrase attendue, on la dit, et on passe a la suite
   const c = carte("attendu", [el("p", "ctexte", e.en)]);
   const b = el("button", "cplay"); b.innerHTML = PLAY; b.onclick = () => { unlockAudio(); speak(e.en, null, null); }; c.prepend(b);
+  zone().append(c);
   seance.etape++;
   speak(e.en, null, null).then(() => etapeSuivante());
 }
 async function lancerSeance(){
   seance = {phase:"prep", etape:0, rappels:[], guide:[], modele:null, faits:[], rappelsOk:0, libreTours:0, essais:0};
-  const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); feed.append(dots);
+  const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); zone().append(dots);
   busy = true; mic.disabled = true;
   try {
     const prep = await preparerSeance();
@@ -1721,7 +1757,7 @@ NEVER invent facts about the learner and NEVER put him in a fictional situation 
 ${theme.libre ? "Today's topic: whatever he wants. Follow his topic, react to it and ask good follow-up questions." : `Today's topic: ${theme.en}. ${theme.role} Follow him if he goes elsewhere.`}
 
 STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDIO recording.
-- "heard": write exactly what he said, word for word, KEEPING his grammar mistakes (never fix them here). If nothing intelligible was said, write "" and set ok to true with empty fields.
+- "heard": write exactly what he said, word for word, KEEPING his grammar mistakes (never fix them here). If the audio is silent, too quiet or not intelligible, write "" and set ok to true with empty fields: NEVER guess, and NEVER reuse a sentence from the conversation above.
 - For EACH correction, "debut" and "fin" = where the corrected words are spoken in the audio, in seconds from the start of the recording (decimals allowed, e.g. 1.4 and 2.1). Be as precise as you can.
 - You can HEAR his pronunciation: if a word is clearly mispronounced, so that a native speaker could misunderstand it, add a correction: "original" = the word, "corrected" = the same word, explanation in French starting with "Prononciation :" saying how to say it (e.g. "Prononciation : le « th » se fait langue entre les dents"). Never correct the French accent itself, only real mispronunciations. At most one pronunciation correction.` : `It is transcribed from SPEECH: ignore spelling, punctuation and capital letters. "heard": "".`} Look only for real mistakes a native speaker would notice: grammar, wrong word, missing word, wrong tense, word order, a French-style phrase that sounds wrong in English. If a word looks wrongly transcribed in a way that suggests a pronunciation problem, add a correction whose explanation starts with "Prononciation ?". Do not correct things that are merely less elegant.
 - Corrections are ONLY about his English (grammar, words, phrasing, pronunciation), never about the content. A question to you, even about something you cannot do or do not have as an AI, is never a mistake: answer it in STEP 2. Example: "what did you do last weekend" is PERFECT English, so ok = true and corrections = []; then in your reply, explain kindly that as an AI you do not have weekends. Never change his question into another question.
@@ -1875,6 +1911,8 @@ function majCompteur(){}   // le compteur n'est plus affiche (la serie sert enco
 function setSerie(n){ const monte = n > serie; serie = n; majCompteur(monte); }
 function compterQuestion(){ nbQuestions++; majCompteur(true); }
 
+// l'IA a "entendu" mot pour mot une phrase deja dite avant : c'est une invention sur un audio trop bas
+function dejaDit(h){ const n = normPhrase(h); return n.split(" ").length >= 3 && history.filter(x => x.role === "user").slice(-8).some(x => normPhrase(x.content) === n); }
 async function ask(learner, youEl, opts = {}){
   if (busy) return;
   busy = true; mic.disabled = true; hidePop();
@@ -1889,7 +1927,7 @@ async function ask(learner, youEl, opts = {}){
         d = await llm(buildPrompt(learner, ctx, !!opts.audio), SCHEMA, opts.audio || null);
         if (opts.audio) {
           const h = String(d?.heard || "").trim();
-          if (!h) throw {code:"inaudible"};
+          if (!h || dejaDit(h)) throw {code:"inaudible"};
           learner = h; youEl.textContent = h; youEl.classList.remove("pending");
           history.push({role:"user", content:h});
         }
@@ -1996,7 +2034,7 @@ async function ask(learner, youEl, opts = {}){
       rate:/per_day|PerDay|retry in \d+h/i.test(e?.detail || "") ? "Quota gratuit du jour épuisé, même sur le modèle de secours. Mets un autre modèle dans les réglages ⚙️, ou reviens demain." : "Limite gratuite par minute atteinte. Attends une minute et renvoie.",
       net:"Pas de réseau : la requête n’est pas partie. Vérifie ta connexion et renvoie.",
       busy:"Google est saturé, même avec le modèle de secours. Attends 30 secondes et renvoie.",
-      inaudible:"Je n’ai pas compris ce que tu as dit. Rapproche-toi du micro et réessaie.",
+      inaudible:"Pas compris : parle plus fort, plus près du micro.",
       parse:"L’IA a répondu dans un format inattendu. Renvoie, en une phrase plus simple si possible.",
       shape:"L’IA a répondu dans un format inattendu. Renvoie, en une phrase plus simple si possible.",
       http:"Erreur côté Google (" + (e?.detail || "").slice(0, 80) + "). Réessaie dans un instant."
@@ -2011,7 +2049,7 @@ function submit(text){
   const t = (text || "").trim();
   if (!t || busy || !started) return;
   stopSpeak(); unlockAudio();
-  const you = el("div","you",t); feed.append(you); scrollDown();
+  const you = el("div","you",t); zone().append(you); scrollDown();
   history.push({role:"user", content:t});
   ask(t, you);
 }
@@ -2095,7 +2133,7 @@ function allerAccueil(){
   if (enreg && enreg.state === "recording") { jeterEnreg = "quitte"; enreg.stop(); }
   if (listening) { stopVoulu = true; rec.stop(); }
   stopSpeak(); hidePop();
-  started = false; mlStop(); mlBtn.hidden = true; history = []; journal = []; essai = null; lastHint = null; setSerie(0); seance = null;
+  started = false; mlStop(); mlBtn.hidden = true; history = []; journal = []; essai = null; lastHint = null; setSerie(0); seance = null; scene = null;
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
   $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("themeName").hidden = false; $("newTheme").hidden = true; $("leconChip").hidden = true;
   mic.disabled = true;
@@ -2105,7 +2143,7 @@ function allerAccueil(){
 // Entree dans le fil : les derniers echanges s'affichent en leger, puis on continue.
 function ouvrirFil(libre){
   unlockAudio(); stopSpeak(); if (voixKokoro()) loadTTS();
-  started = true; chargerFil(); lastHint = null; essai = null; nbQuestions = 0; setSerie(0); seance = null;
+  started = true; chargerFil(); lastHint = null; essai = null; nbQuestions = 0; setSerie(0); seance = null; scene = null;
   modeConversation(libre);
   feed.replaceChildren(); afficherEchanges(libre ? PAGE_INIT : 0);   // la seance demarre sur un ecran vide (Plus haut pour revoir)
 }

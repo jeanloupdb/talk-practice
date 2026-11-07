@@ -1450,6 +1450,34 @@ function afficherHisto(){
 }
 REF.toutVoir.onclick = () => { afficherHisto(); $("histo").hidden = false; };
 $("histo").onclick = e => { if (e.target.id === "histo" || e.target.closest("#histoClose")) fermer("histo"); };
+// Anciennes repliques enregistrees sans decoupage : Gemini les redecoupe en expressions (un seul appel),
+// exactement comme en direct, et on garde le resultat dans l'historique pour ne pas le refaire.
+const SCHEMA_DECOUPE = {type:"OBJECT", properties:{repliques:{type:"ARRAY", items:{type:"OBJECT",
+  properties:{chunks:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}, fr:{type:"STRING"}},
+  required:["chunks","fr"], propertyOrdering:["chunks","fr"]}}}, required:["repliques"]};
+async function decouperAnciennes(msgs){
+  const d = await llm(`For each English line below, in order:
+- "chunks": the line cut into consecutive pieces of 1 to 4 words; joined with spaces they must give the line exactly. Keep idioms, phrasal verbs and set expressions in one piece; punctuation stays attached. "fr" = the French meaning of THAT piece only, in context.
+- "fr": French translation of the whole line.
+Lines:
+${msgs.map((m, i) => (i + 1) + ". " + m.content).join("\n")}`, SCHEMA_DECOUPE);
+  (d.repliques || []).forEach((r, i) => {
+    const m = msgs[i];
+    if (m && Array.isArray(r.chunks) && r.chunks.length && r.chunks.map(c => c.en).join(" ").replace(/\s+/g, " ").trim() === m.content.replace(/\s+/g, " ").trim()) {
+      m.chunks = r.chunks; m.fr = r.fr || m.fr || "";
+    }
+  });
+}
+function afficherEchanges(){
+  feed.querySelectorAll(".you.passe, .claude").forEach(x => x.remove());
+  for (const m of history.slice(-6)) {
+    if (m.role === "user") { feed.append(el("div","you passe", m.content)); continue; }
+    const morceaux = Array.isArray(m.chunks) && m.chunks.length ? m.chunks : [{en:m.content, fr:m.fr || ""}];
+    const t = renderClaude(morceaux, m.fr || "");
+    t.reveal(true); t.play.classList.remove("ready");
+  }
+  scrollDown();
+}
 function reprendreConv(c){
   if (!S.key) { openSettings(); return; }
   unlockAudio(); stopSpeak();
@@ -1457,16 +1485,14 @@ function reprendreConv(c){
   started = true; history = (c.msgs || []).slice(-20); lastHint = null; essai = null; setSerie(0); convId = c.id;
   modeConversation(!!c.theme.libre); $("themeName").textContent = c.theme.libre ? "" : c.theme.fr;
   feed.replaceChildren(el("p","tip","Reprise de « " + c.titre + " » · " + quand(c.d)));
-  // on remet les derniers echanges ; les repliques de l'IA gardent leurs mots touchables
-  // (les anciennes conversations, sans decoupage, sont coupees en mots traduits a la demande)
-  for (const m of history.slice(-6)) {
-    if (m.role === "user") { feed.append(el("div","you passe", m.content)); continue; }
-    const morceaux = Array.isArray(m.chunks) && m.chunks.length ? m.chunks : m.content.split(/\s+/).filter(Boolean).map(w => ({en:w, fr:""}));
-    const t = renderClaude(morceaux, m.fr || "");
-    t.reveal(true); t.play.classList.remove("ready");
-  }
-  mic.disabled = false; scrollDown();
+  afficherEchanges();
+  mic.disabled = false;
   setStatus("À toi : touche le micro pour reprendre.");
+  const sansDecoupe = history.slice(-6).filter(m => m.role === "assistant" && !(Array.isArray(m.chunks) && m.chunks.length));
+  if (sansDecoupe.length) decouperAnciennes(sansDecoupe).then(() => {
+    if (convId !== c.id || busy) return;
+    afficherEchanges(); sauverConv();
+  }).catch(e => console.warn("redecoupage impossible pour l'instant", e));
 }
 
 // Accueil <-> conversation

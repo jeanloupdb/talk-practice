@@ -182,13 +182,14 @@ footer{padding:10px 18px 16px}
 .sheetbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 .ghostbtn{background:var(--soft);border:none;border-radius:999px;padding:12px 22px;font-weight:600}
 .motheadl{display:flex;align-items:center;gap:2px;min-width:0}
-.profhead{display:flex;align-items:baseline;justify-content:space-between;margin:4px 0 8px}
-.profhead b{font-size:1.5rem;font-weight:700}
-.profhead span{color:var(--muted);font-weight:600}
-.profbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-bottom:14px}
-.profbar i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .4s var(--ease)}
+.profcard{background:linear-gradient(135deg,#2457C5,#5E4FDB);color:#fff;border-radius:22px;padding:18px 18px 16px;margin:4px 0 10px;box-shadow:0 10px 30px color-mix(in srgb,#2457C5 25%,transparent)}
+.profhead{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 12px}
+.profhead b{font-size:1.6rem;font-weight:700;letter-spacing:-.01em}
+.profhead span{font-weight:700;opacity:.85}
+.profbar{height:6px;border-radius:3px;background:rgba(255,255,255,.25);overflow:hidden}
+.profbar i{display:block;height:100%;background:#fff;border-radius:3px;transition:width .4s var(--ease)}
 .profstats{display:flex;gap:8px}
-.stat{flex:1;background:var(--soft);border-radius:14px;padding:10px 6px;text-align:center}
+.stat{flex:1;background:var(--soft);border-radius:16px;padding:12px 6px;text-align:center}
 .stat b{display:block;font-size:1.2rem}
 .stat span{font-size:.75rem;color:var(--muted)}
 .profsec{margin:16px 2px 6px;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
@@ -203,19 +204,22 @@ footer{padding:10px 18px 16px}
 .hline.ia{color:var(--muted)}
 #setBody .plushaut{margin:0 auto 10px}
 #setBody .skip{margin:16px auto 0}
-.regrow{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;border-bottom:1px solid var(--line);padding:15px 4px;font-size:1.02rem;text-align:left;color:var(--ink)}
-.regrow:last-child{border-bottom:none}
+.regrow{display:flex;align-items:center;gap:10px;width:100%;background:var(--soft);border:none;border-radius:16px;padding:14px 16px;margin-bottom:8px;font-size:1.02rem;text-align:left;color:var(--ink)}
+.regrow:last-child{margin-bottom:0}
+.regrow:active{transform:scale(.985)}
 .reglabel{flex:1;min-width:0;font-weight:500}
 .reglabel small{display:block;color:var(--muted);font-size:.82rem;font-weight:400}
 .regval{color:var(--muted);font-size:.92rem;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .regrow .fl{color:var(--muted);font-size:1.3rem;line-height:1}
 .regrow .check{width:22px;text-align:right;color:var(--accent);font-weight:700}
+.regrow.cur{background:color-mix(in srgb,var(--accent) 14%,transparent)}
 .regrow.cur .reglabel{color:var(--accent);font-weight:600}
 .regrow.alerte .reglabel{color:var(--bad)}
 .regfield{margin-top:14px}
-.regfield label{display:block;font-size:.85rem;color:var(--muted);margin:0 0 6px}
+.regfield label{display:block;font-size:.85rem;color:var(--muted);margin:0 0 6px 4px}
+#setBody input,#setBody select{border:none;background:var(--soft);border-radius:16px;padding:14px 16px}
 .reglink{display:inline-block;margin:8px 0 2px;color:var(--accent);font-size:.9rem}
-#setBody .seg{margin:4px 0 10px}
+#setBody .seg{margin:4px 0 12px}
 #setBody .ghostbtn.full{margin-top:18px}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:4px;margin-top:12px}
 .seg button{border:none;background:none;border-radius:999px;padding:9px 6px;font-weight:600;color:var(--muted)}
@@ -1780,21 +1784,23 @@ function rendreReglages(){
   if (pageReg === "main") {
     titre.textContent = "Profil";
     const p = profil(), n = Math.min(10, Math.max(1, p.niveau || 4));
+    const carte = el("div", "profcard");
     const head = el("div", "profhead"); head.append(el("b", null, "Niveau " + n), el("span", null, CEFR(n)));
     const bar = el("div", "profbar"); const i = el("i"); i.style.width = (n * 10) + "%"; bar.append(i);
+    carte.append(head, bar);
     const stats = el("div", "profstats");
     const stat = (v, l) => { const d = el("div", "stat"); d.append(el("b", null, String(v)), el("span", null, l)); return d; };
     stats.append(stat(p.tours || 0, "échanges"), stat(p.acquis.length, "acquis"), stat(Object.keys(p.fautes).length, "à surveiller"));
     const pills = (liste, cls) => { const w = el("div", "pills"); liste.forEach(x => w.append(el("span", "pill " + cls, x))); return w; };
     if (!focus) choisirFocus();
-    const blocs = [head, bar, stats];
+    const blocs = [carte, stats];
     if (focus?.structure) { blocs.push(el("div", "profsec", "En ce moment"), pills([NOM_STRUCT[focus.structure] || focus.structure], "")); }
     if (p.acquis.length) { blocs.push(el("div", "profsec", "Acquis"), pills(p.acquis.map(x => NOM_STRUCT[x] || x), "ok")); }
     const fautes = Object.entries(p.fautes).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k]) => k);
     if (fautes.length) { blocs.push(el("div", "profsec", "À surveiller"), pills(fautes, "ko")); }
     blocs.push(el("div", "profsec", "Réglages"));
     body.replaceChildren(...blocs,
-      ligneReg("Historique", fil().journal?.length ? Math.ceil(fil().journal.length / 2) + " échanges" : "vide", () => setPage("historique")),
+      ligneReg("Historique", (() => { const n = Math.ceil((fil().journal?.length || 0) / 2); return n ? n + (n > 1 ? " échanges" : " échange") : "vide"; })(), () => setPage("historique")),
       ligneReg("Voix", voixLabel, () => setPage("voix")),
       ligneReg("Écoute", ecouteGemini() ? "Gemini" : "Dictée Chrome", () => setPage("ecoute")),
       ligneReg("Vitesse", vit, () => setPage("vitesse")),

@@ -260,9 +260,11 @@ body:not(.home) .blobs{opacity:.28}
 .voix{position:absolute;z-index:0;pointer-events:none;filter:blur(36px);left:50%;bottom:-8%;width:90vw;max-width:560px;height:46vw;max-height:300px;border-radius:50%;transform:translateX(-50%) scale(calc(.9 + var(--vox) * .5));
   background:radial-gradient(closest-side,#6A5AE0,transparent 72%);opacity:calc(var(--vox) * 1.1);transition:transform .1s linear,opacity .15s linear,background .4s;animation:none}
 body.home .voix{display:none}
-/* onde douce la ou l'on touche le fond de l'accueil (dans la couche des halos : floue, fondus respectes) */
-.onde{position:absolute;width:46vw;height:46vw;max-width:340px;max-height:340px;border-radius:50%;transform:translate(-50%,-50%) scale(.25);opacity:0;animation:onde 1.6s cubic-bezier(.2,.7,.3,1) forwards}
-@keyframes onde{0%{transform:translate(-50%,-50%) scale(.25);opacity:.95}60%{opacity:.5}100%{transform:translate(-50%,-50%) scale(1.7);opacity:0}}
+/* vagues qui s'etendent la ou l'on touche le fond de l'accueil */
+.vagues{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;filter:blur(8px);-webkit-mask-image:linear-gradient(to bottom,transparent 6%,#000 22%,#000 80%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 6%,#000 22%,#000 80%,transparent 100%)}
+.vague{position:absolute;width:30vw;height:30vw;max-width:220px;max-height:220px;border-radius:50%;transform:translate(-50%,-50%) scale(.15);opacity:0;
+  background:radial-gradient(circle,transparent 52%,var(--c) 64%,transparent 76%);animation:vague-spread 1.9s cubic-bezier(.15,.6,.25,1) forwards}
+@keyframes vague-spread{0%{transform:translate(-50%,-50%) scale(.15);opacity:0}8%{opacity:.75}100%{transform:translate(-50%,-50%) scale(5.5);opacity:0}}
 body.ecoute .voix{background:radial-gradient(closest-side,#2457C5,transparent 72%)}
 
 /* ---------- Mouvement (courbes "Material" : rapide au depart, douce a l'arrivee) ---------- */
@@ -317,7 +319,7 @@ button:not(:disabled):active{transform:scale(.94)}
 <body class="home">
 <div class="app">
   <section id="stage">
-    <div class="blobs" aria-hidden="true"><span class="blob b1"><i></i></span><span class="blob b2"><i></i></span><span class="blob b3"><i></i></span></div><span class="voix" aria-hidden="true"></span>
+    <div class="blobs" aria-hidden="true"><span class="blob b1"><i></i></span><span class="blob b2"><i></i></span><span class="blob b3"><i></i></span></div><span class="voix" aria-hidden="true"></span><div class="vagues" aria-hidden="true"></div>
     <div class="bar">
       <button class="iconbtn back" id="newTheme" aria-label="Retour à l’accueil" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="titleblock"><span class="title"><svg class="marque" viewBox="0 0 512 512" role="img" aria-label="Talk Practice"><defs><linearGradient id="mq" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2457C5"/><stop offset="1" stop-color="#5E4FDB"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="url(#mq)"/><path d="M152 136h208a56 56 0 0 1 56 56v112a56 56 0 0 1-56 56H236l-62 50a10 10 0 0 1-16-8v-42h-6a56 56 0 0 1-56-56V192a56 56 0 0 1 56-56z" fill="#fff"/><g fill="#2457C5"><rect x="186" y="232" width="20" height="36" rx="10"/><rect x="222" y="206" width="20" height="88" rx="10"/><rect x="258" y="186" width="20" height="128" rx="10"/><rect x="294" y="212" width="20" height="76" rx="10"/><rect x="330" y="236" width="20" height="28" rx="10"/></g></svg><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span><span class="theme leconchip" id="leconChip" hidden></span></div>
@@ -944,12 +946,15 @@ const COULEURS_ONDE = ["#2457C5", "#6A5AE0", "#B9B2F2"];
 $("stage").addEventListener("pointerdown", e => {
   if (!document.body.classList.contains("home") || e.target.closest("button, a, input, select")) return;
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const couche = document.querySelector(".blobs"), r = couche.getBoundingClientRect();
-  const o = el("span", "onde");
-  o.style.left = (e.clientX - r.left) + "px"; o.style.top = (e.clientY - r.top) + "px";
-  o.style.background = COULEURS_ONDE[Math.floor(Math.random() * COULEURS_ONDE.length)];
-  couche.append(o); o.addEventListener("animationend", () => o.remove());
-  if (couche.querySelectorAll(".onde").length > 6) couche.querySelector(".onde").remove();
+  const couche = document.querySelector(".vagues"), r = couche.getBoundingClientRect();
+  const c = COULEURS_ONDE[Math.floor(Math.random() * COULEURS_ONDE.length)];
+  // deux cercles qui s'etendent, le second un peu apres : l'onde se propage
+  [0, 220].forEach(delai => setTimeout(() => {
+    const o = el("span", "vague");
+    o.style.left = (e.clientX - r.left) + "px"; o.style.top = (e.clientY - r.top) + "px"; o.style.setProperty("--c", c);
+    couche.append(o); o.addEventListener("animationend", () => o.remove());
+    if (couche.children.length > 8) couche.firstChild.remove();
+  }, delai));
 });
 
 /* ---------- Traduction au toucher ---------- */

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="fond" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2457C5"/>
+      <stop offset="1" stop-color="#5E4FDB"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.72" cy="0.9" r="0.75">
+      <stop offset="0" stop-color="#B9B2F2" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#B9B2F2" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- fond : le degrade bleu -> violet de l'appli, avec le halo du bas de l'ecran -->
+  <rect width="512" height="512" fill="url(#fond)"/>
+  <rect width="512" height="512" fill="url(#halo)"/>
+  <!-- bulle de parole, aux coins tres arrondis comme les pastilles de l'appli (dans la zone sure) -->
+  <path d="M152 136h208a56 56 0 0 1 56 56v112a56 56 0 0 1-56 56H236l-62 50a10 10 0 0 1-16-8v-42h-6a56 56 0 0 1-56-56V192a56 56 0 0 1 56-56z" fill="#FFFFFF"/>
+  <!-- les barres d'onde de l'enregistrement -->
+  <g fill="#2457C5">
+    <rect x="186" y="232" width="20" height="36" rx="10"/>
+    <rect x="222" y="206" width="20" height="88" rx="10"/>
+    <rect x="258" y="186" width="20" height="128" rx="10"/>
+    <rect x="294" y="212" width="20" height="76" rx="10"/>
+    <rect x="330" y="236" width="20" height="28" rx="10"/>
+  </g>
+</svg>

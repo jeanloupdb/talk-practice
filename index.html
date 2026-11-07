@@ -71,9 +71,13 @@ svg{width:24px;height:24px;flex:none}
 .splitchev .chev{width:24px;height:24px;color:inherit}
 .sujetligne{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;border-bottom:1px solid var(--line);padding:16px 4px;font-size:1.05rem;font-weight:500;text-align:left;color:var(--ink)}
 .sujetligne:last-child{border-bottom:none}
+.sujetligne.reprise{color:var(--muted);font-weight:500}
+.sujetligne .ico{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:9px;vertical-align:-3px;color:var(--accent)}
+.sujetligne .ico svg{width:18px;height:18px}
 .sujetligne .fl{color:var(--muted);font-size:1.3rem;line-height:1}
 .sujetligne:active{background:color-mix(in srgb,var(--accent) 8%,transparent)}
-.titleblock{min-width:0}
+.titleblock{min-width:0;flex:1}
+.iconbtn.back{margin-left:-10px;margin-right:-4px}
 .conv{display:flex;align-items:center;gap:8px}
 .convbtn{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none;border:none;border-bottom:1px solid var(--line);border-radius:0;padding:13px 6px;text-align:left}
 .convbtn b{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -81,12 +85,7 @@ svg{width:24px;height:24px;flex:none}
 .passe{opacity:.75}
 .versconv{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border:none;border-radius:999px;padding:8px 16px;font-weight:600;font-size:.92rem}
 body.home .mainrow #mic,body.home .mainrow #hintBtn{display:none}
-body.home .mainrow{grid-template-columns:1fr auto;gap:12px}
-body:not(.home) .histpill{display:none}
-.histpill{justify-self:start;min-width:0;max-width:100%;display:flex;align-items:center;gap:9px;height:52px;padding:0 18px 0 16px;border:none;border-radius:999px;background:var(--soft);color:var(--ink);font-size:.95rem;font-weight:500}
-.histpill svg{width:20px;height:20px;flex:none;color:var(--accent)}
-.histpill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.histpill small{color:var(--muted);font-weight:400;margin-left:6px}
+body.home .mainrow{grid-template-columns:1fr auto}
 .titleblock .title{display:flex;align-items:center;gap:2px}
 .primary{background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:14px 28px;font-weight:600;font-size:1.05rem}
 .primary:disabled{opacity:.45;cursor:default}
@@ -255,6 +254,7 @@ button:not(:disabled):active{transform:scale(.94)}
 <div class="app">
   <section id="stage">
     <div class="bar">
+      <button class="iconbtn back" id="newTheme" aria-label="Retour à l’accueil" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="titleblock"><span class="title"><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span></div>
       <div class="barbtns">
         <button class="iconbtn" id="mlBtn" aria-label="Mode mains libres" hidden>
@@ -262,9 +262,6 @@ button:not(:disabled):active{transform:scale(.94)}
         </button>
         <button class="iconbtn" id="gear" aria-label="Réglages">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
-        </button>
-        <button class="iconbtn" id="newTheme" aria-label="Retour à l’accueil" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>
         </button>
       </div>
     </div>
@@ -286,7 +283,6 @@ button:not(:disabled):active{transform:scale(.94)}
     <p class="status" id="status"></p>
     <div class="hint" id="hintBox" hidden></div>
     <div class="row mainrow">
-      <button class="histpill" id="toutVoir" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="repList"></span></button>
       <button class="round" id="hintBtn" disabled aria-label="Astuce"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></button>
       <button class="round" id="mic" aria-label="Parler" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
       <button class="round" id="askBtn" aria-label="Poser une question en français">
@@ -434,6 +430,23 @@ let theme = null, history = [], busy = false, started = false, lastHint = null;
 function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function setStatus(t){ statusEl.textContent = t || ""; }
 // Ferme une fenetre du bas en la faisant glisser (au lieu de la faire disparaitre d'un coup).
+/* Bouton retour du telephone (historique du navigateur) : une seule entree "dedans" posee des qu'on entre
+   dans une conversation ou qu'on ouvre une fenetre. Retour = fermer la fenetre ouverte, sinon revenir a
+   l'accueil ; on ne quitte l'appli qu'en faisant retour depuis l'accueil. */
+const FENETRES = ["settings", "mot", "roles", "qa", "histo"];
+function navDedans(){ if (window.history.state?.tp !== "in") window.history.pushState({tp:"in"}, ""); }
+function ouvrir(id){ navDedans(); $(id).hidden = false; }
+window.addEventListener("popstate", () => {
+  const ouverte = FENETRES.find(id => !$(id).hidden && !$(id).classList.contains("ferme"));
+  if (ouverte) {
+    if (ouverte === "qa") qaDictee?.arreter();
+    fermer(ouverte); stopSpeak();
+    if (started) navDedans();          // on reste dans la conversation : on remet l'entree
+    return;
+  }
+  if (started && !busy) allerAccueil();
+  else if (started) navDedans();       // reponse en cours : on ne quitte pas, on remet l'entree
+});
 function fermer(id){
   const w = $(id); if (w.hidden || w.classList.contains("ferme")) return;
   w.classList.add("ferme");
@@ -952,7 +965,7 @@ async function openMot(en, fr, phrase){
   $("motTitle").append(pl);
   box.replaceChildren(el("p","motfr",fr || ""), el("div","dots"));
   box.lastChild.append(el("i"), el("i"), el("i"));
-  $("mot").hidden = false;
+  ouvrir("mot");
   const k = en.toLowerCase() + "|" + phrase;
   try {
     if (!motCache.has(k)) motCache.set(k, llm(`A French-speaking learner of English (intermediate) tapped the expression "${en}" in this sentence: "${phrase}".
@@ -993,16 +1006,22 @@ function majDepart(){
   GO.ico.innerHTML = ICO_MIC; GO.label.textContent = "Je commence";
   GO.btn.setAttribute("aria-label", "Je commence, sujet libre");
 }
+const ICO_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
 function afficherRoles(){
-  $("rolesList").replaceChildren(...THEMES.map(t => {
-    const b = el("button", "sujetligne");
-    b.append(el("span", null, t.fr), el("span", "fl", "›"));
-    b.onclick = () => { fermer("roles"); setTheme(t); begin(); };
-    return b;
-  }));
+  const ligne = (label, onclick, cls, ico) => {
+    const b = el("button", "sujetligne" + (cls ? " " + cls : ""));
+    const t = el("span"); if (ico) { const i = el("span", "ico"); i.innerHTML = ico; t.append(i); } t.append(label);
+    b.append(t, el("span", "fl", "›")); b.onclick = onclick; return b;
+  };
+  const der = convs()[0];
+  $("rolesList").replaceChildren(
+    ...(der ? [ligne("Reprendre « " + der.titre + " »", () => { fermer("roles"); reprendreConv(der); }, "reprise", ICO_CLOCK)] : []),
+    ...THEMES.map(t => ligne(t.fr, () => { fermer("roles"); setTheme(t); begin(); })),
+    ...(convs().length ? [ligne("Historique", () => { fermer("roles"); afficherHisto(); ouvrir("histo"); }, "reprise")] : [])
+  );
 }
 GO.btn.onclick = commencerLibre;
-$("topicBtn").onclick = () => { if (busy) return; hidePop(); afficherRoles(); $("roles").hidden = false; };
+$("topicBtn").onclick = () => { if (busy) return; hidePop(); afficherRoles(); ouvrir("roles"); };
 $("roles").onclick = e => { if (e.target.id === "roles" || e.target.closest("#rolesClose")) fermer("roles"); };
 
 /* ---------- Question parallele (en francais, hors conversation) ---------- */
@@ -1139,7 +1158,7 @@ const qaDictee = creerDictee("fr-FR", $("qaMic"), {
 });
 $("askBtn").onclick = () => {
   if (listening) { stopVoulu = true; rec.stop(); }
-  stopSpeak(); hidePop(); $("qa").hidden = false;
+  stopSpeak(); hidePop(); ouvrir("qa");
 };
 const fermerQa = () => { qaDictee?.arreter(); fermer("qa"); stopSpeak(); };
 $("qa").onclick = e => { if (e.target.id === "qa" || e.target.closest("#qaClose")) fermerQa(); };
@@ -1542,7 +1561,6 @@ function submit(text){
 /* ---------- Historique des conversations (sur le telephone, 20 max, 40 messages max chacune) ---------- */
 const CONV_MAX = 20, MSG_MAX = 40;
 // references gardees : l'accueil sort du DOM pendant une conversation
-const REF = {repList: document.getElementById("repList"), toutVoir: document.getElementById("toutVoir")};
 let convId = null;
 function convs(){ return Array.isArray(S.convs) ? S.convs : (S.convs = []); }
 function sauverConv(){
@@ -1573,24 +1591,17 @@ function ligneConv(c, avecSuppr){
   it.append(b);
   if (avecSuppr) {
     const x = el("button","rdel","×"); x.setAttribute("aria-label","Supprimer « " + c.titre + " »");
-    x.onclick = () => { S.convs = convs().filter(v => v.id !== c.id); saveS(); afficherHisto(); afficherReprendre(); };
+    x.onclick = () => { S.convs = convs().filter(v => v.id !== c.id); saveS(); afficherHisto(); };
     it.append(x);
   }
   return it;
 }
 // Bouton historique (en bas a gauche sur l'accueil) : il laisse voir la derniere conversation.
-function afficherReprendre(){
-  const c = convs()[0];
-  REF.toutVoir.hidden = !c;
-  if (!c) return;
-  REF.repList.replaceChildren(document.createTextNode(c.titre), el("small", null, quand(c.d)));
-  REF.toutVoir.setAttribute("aria-label", "Historique, dernière conversation : " + c.titre);
-}
+function afficherReprendre(){}
 function afficherHisto(){
   const l = convs();
   $("histoList").replaceChildren(...(l.length ? l.map(c => ligneConv(c, true)) : [el("p","tip","Aucune conversation pour l’instant.")]));
 }
-REF.toutVoir.onclick = () => { afficherHisto(); $("histo").hidden = false; };
 $("histo").onclick = e => { if (e.target.id === "histo" || e.target.closest("#histoClose")) fermer("histo"); };
 // Anciennes repliques enregistrees sans decoupage : Gemini les redecoupe en expressions (un seul appel),
 // exactement comme en direct, et on garde le resultat dans l'historique pour ne pas le refaire.
@@ -1640,9 +1651,9 @@ function reprendreConv(c){
 // Accueil <-> conversation
 const accueil = $("empty");
 function modeConversation(libre){
-  document.body.classList.remove("home"); REF.toutVoir.hidden = true;
+  document.body.classList.remove("home");
   $("modeName").textContent = libre ? "Sujet libre" : "Conversation";
-  $("newTheme").hidden = false;
+  $("newTheme").hidden = false; navDedans();
   // preference retenue : si le mode mains libres etait actif la derniere fois, on le remet
   mainsLibres = !!(S.mainsLibres && ENREG_OK); mlEchecs = 0; mlVides = 0; mlMaj();
   if (mainsLibres) mlWake(true);
@@ -1657,6 +1668,7 @@ function allerAccueil(){
   $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("newTheme").hidden = true;
   $("hintBox").hidden = true; $("hintBtn").disabled = true; mic.disabled = true;
   feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home"); afficherReprendre();
+  if (window.history.state?.tp === "in") window.history.replaceState(null, "");
 }
 function begin(){
   if (!S.key) { openSettings(); return; }
@@ -1731,7 +1743,7 @@ function openSettings(){
   // une cle Azure est la, mais on etait reste sur Google par defaut : on propose Azure d'emblee
   if (S.azKey && provChoisi === "g" && S.voice === DEFAULTS.voice) provChoisi = "az";
   majReglages();
-  $("settings").hidden = false;
+  ouvrir("settings");
 }
 document.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
   voixParProv[provChoisi] = $("voiceSel").value;

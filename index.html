@@ -1560,7 +1560,7 @@ async function preparerSeance(){
   const d = await llm(`Prepare a short spoken English session for a French-speaking engineering student, level ${p.niveau || 4}/10 (1 = beginner, 10 = native-like).
 TODAY'S TARGET: ${l.cible.en} (French title: "${l.cible.fr}").
 1) "modele": "mot" = the English target itself as a 1-3 word title, in English only (e.g. "get", "used to", "make / do"), never the French title; "exemples" = 2 short everyday sentences using it (8 words max each), with French translations.
-2) "guide": 3 French instructions, each asking him to say ONE sentence in English that needs the target, about his REAL life (studies, daily routine, a trip, friends), never fiction, never a role. Form: "Dis que tu te lèves à 7 h." / "Demande-moi si je bois du café le matin." Progressive. "en" = the expected English sentence (short, natural).
+2) "guide": 3 French instructions, each asking him to say ONE sentence in English that needs the target, about his REAL life (studies, daily routine, a trip, friends), never fiction, never a role. Form: "Dis que tu te lèves à 7 h." / "Demande-moi si je bois du café le matin." Progressive, and each one must call for a sentence DIFFERENT from the two examples of "modele". "en" = the expected English sentence (short, natural).
 3) "rappels": for each review item below, "fr" = a French instruction that makes him produce that English again (do not show the English), "en" = the expected English, close to the item. Items: ${JSON.stringify(dus.map((x, i) => ({i, en:x.en})))}
 Keep every French instruction under 14 words.`, SCHEMA_SEANCE);
   const rap = dus.map((item, i) => { const r = (d.rappels || []).find(x => x.i === i) || {}; return {item, fr:r.fr || "Redis : " + item.en, en:r.en || item.en}; });
@@ -1571,13 +1571,20 @@ function contexteSeance(learner){
   if (seance.phase === "rappel" || seance.phase === "guide") {
     const e = etapeCourante(); if (!e) return null;
     return {
-      cible: `GUIDED STEP: the learner was asked in French: "${e.fr}". Expected English (any natural equivalent is fine): "${e.en}". "ok" if his sentence says that correctly (it may be worded differently), "ko" if he tried but the target is wrong, "non" if he said something unrelated. IMPORTANT: every correction must bring his sentence CLOSER TO THE EXPECTED SENTENCE (same tense, same meaning); never correct towards another tense or another sentence.`,
+      cible: `GUIDED STEP: the learner was asked in French: "${e.fr}". Expected English (any natural equivalent is fine): "${e.en}". "ok" if his sentence is correct English and uses the target, even if a detail differs from the expected sentence ("at seven" instead of "early" is fine); any sentence identical to the card's examples is ok. "ko" if he tried but the target is wrong, "non" if he said something unrelated. IMPORTANT: every correction must bring his sentence CLOSER TO THE EXPECTED SENTENCE (same tense, same meaning); never correct towards another tense or another sentence.`,
       reponse: `GUIDED STEP: reply with ONLY a 2-5 word feedback ("Perfect.", "Yes, that's it.", "Nice one."), no question, nothing else.`,
       ouverture: ""
     };
   }
   if (seance.phase === "libre" && !learner) return {cible: "", reponse: "", ouverture: `OPENING OF THE FREE PART: set ok to true, corrections to []. Ask ONE short question (12 words max) about his real life that naturally calls for the target. No greeting, no announcement, nothing else. `};
   return null;
+}
+const normPhrase = t => String(t || "").toLowerCase().replace(/[’']/g, "'").replace(/[^a-z' ]/g, " ").replace(/\s+/g, " ").trim();
+// la phrase dite est-elle, mot pour mot, la phrase attendue ou un exemple de la carte ?
+function phraseConnue(t){
+  const n = normPhrase(t); if (!n) return false;
+  const connues = [etapeCourante()?.en, ...((seance?.modele?.exemples || []).map(x => x.en))].filter(Boolean).map(normPhrase);
+  return connues.includes(n);
 }
 function etapeCourante(){
   if (!seance) return null;
@@ -1908,6 +1915,7 @@ async function ask(learner, youEl, opts = {}){
     }
     if (learner) { const st = stats(); st.moi += nbMots(learner); st.tours++; if (!d.ok) st.fautes += (d.corrections || []).length; }
     const enCarte = seance && (seance.phase === "rappel" || seance.phase === "guide");
+    if (enCarte && learner && !d.ok && phraseConnue(learner)) { d.ok = true; d.corrections = []; d.cible = "ok"; }
     if (learner && !d.ok) {
       // Erreur : on montre ce qui ne va pas, on le dit a l'oral, et on attend un nouvel essai.
       history.pop();                                   // la tentative ratee ne fait pas partie de la conversation

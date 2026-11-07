@@ -75,12 +75,15 @@ svg{width:24px;height:24px;flex:none}
 .gros.parler{margin:4px 0 10px}
 #rolesList .rgroup{margin:18px 4px 2px}
 .convbtn{width:100%;-webkit-touch-callout:none;user-select:none}
-.convbtn.selmode small{width:22px;text-align:right;color:var(--accent);font-weight:700;font-size:1rem}
-.convbtn.sel b{color:var(--accent)}
-.selbar{display:flex;align-items:center;gap:14px;padding:6px 4px 10px}
-.selbar span{flex:1;font-weight:600}
-.selbar button{background:none;border:none;font-weight:600;color:var(--accent);padding:6px 2px}
-.selbar button.danger{color:var(--bad)}
+.convbtn.selmode{border-bottom:none;border-radius:14px;padding:11px 10px;margin-bottom:2px;gap:14px;justify-content:flex-start}
+.cercle{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none;color:var(--on-accent);font-size:.8rem;font-weight:800;transition:background-color .15s,border-color .15s}
+.convbtn.sel{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.convbtn.sel .cercle{background:var(--accent);border-color:var(--accent)}
+.selbar{display:flex;align-items:center;gap:8px;padding:0 0 8px}
+.selcount{min-width:28px;height:28px;padding:0 9px;border-radius:999px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-weight:700;font-size:.9rem}
+.seltout{flex:1;text-align:left;background:none;border:none;color:var(--accent);font-weight:600;padding:6px 4px}
+.selbar .iconbtn.danger{color:var(--bad)}
+.selbar .iconbtn:disabled{opacity:.35}
 .sujetligne.reprise{color:var(--muted);font-weight:500}
 .sujetligne .ico{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:9px;vertical-align:-3px;color:var(--accent)}
 .sujetligne .ico svg{width:18px;height:18px}
@@ -966,11 +969,13 @@ function afficherRoles(){
   const l = convs();
   if (selection) {
     const bar = el("div", "selbar");
-    const n = el("span", null, selection.size + " sélectionnée" + (selection.size > 1 ? "s" : ""));
-    const suppr = el("button", "danger", "Supprimer"), annule = el("button", null, "Annuler");
+    const annule = el("button", "iconbtn"); annule.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'; annule.setAttribute("aria-label", "Annuler la sélection"); annule.onclick = annulerSelection;
+    const n = el("span", "selcount", String(selection.size));
+    const tout = el("button", "seltout", selection.size === l.length ? "Aucune" : "Toutes");
+    tout.onclick = () => { selection = selection.size === l.length ? new Set() : new Set(l.map(c => c.id)); afficherRoles(); };
+    const suppr = el("button", "iconbtn danger"); suppr.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'; suppr.setAttribute("aria-label", "Supprimer la sélection"); suppr.disabled = !selection.size;
     suppr.onclick = () => { S.convs = l.filter(c => !selection.has(c.id)); saveS(); selection = null; afficherRoles(); };
-    annule.onclick = annulerSelection;
-    bar.append(n, annule, suppr);
+    bar.append(annule, n, tout, suppr);
     $("rolesList").replaceChildren(bar, ...convs().map(c => ligneConv(c)));
     return;
   }
@@ -1649,7 +1654,9 @@ function quand(t){
 let selection = null;   // mode selection dans l'historique (appui long) : Set d'identifiants
 function ligneConv(c){
   const b = el("button", "convbtn" + (selection ? " selmode" : "") + (selection?.has(c.id) ? " sel" : ""));
-  b.append(el("b", null, c.titre), el("small", null, selection ? (selection.has(c.id) ? "✓" : "") : quand(c.d)));
+  if (selection) b.append(el("span", "cercle", selection.has(c.id) ? "✓" : ""));
+  b.append(el("b", null, c.titre));
+  if (!selection) b.append(el("small", null, quand(c.d)));
   let timer;
   const debut = () => { timer = setTimeout(() => { timer = null; if (!selection) { selection = new Set([c.id]); try { navigator.vibrate?.(15); } catch {} afficherRoles(); } }, 500); };
   const fin = () => { if (timer) clearTimeout(timer); };

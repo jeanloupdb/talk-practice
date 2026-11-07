@@ -114,7 +114,6 @@ body:not(.home) .histpill{display:none}
 .poptxt small{display:block;color:var(--muted);font-size:.82rem;margin-top:2px}
 .you.tried{opacity:.45;font-size:1rem}
 .you.tried .faute{text-decoration:line-through;text-decoration-color:var(--bad)}
-.serie{display:inline-block;margin-left:8px;font-size:.78rem;font-weight:700;color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent);border-radius:999px;padding:2px 9px;vertical-align:2px}
 .play.ready{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent);animation:ring 1.8s infinite}
 @keyframes ring{70%{box-shadow:0 0 0 14px transparent}100%{box-shadow:0 0 0 0 transparent}}
 .cheer{margin:6px 0 0;color:var(--muted);font-size:.88rem}
@@ -129,7 +128,10 @@ body:not(.home) .histpill{display:none}
 .claude.old .play svg{width:18px;height:18px}
 .tbtn{border:none;background:none;color:var(--accent);font-weight:600;padding:8px 10px;border-radius:999px;display:flex;gap:6px;align-items:center;font-size:.95rem}
 .claude.old .tbtn span{display:none}
-.fr{margin:10px 0 0;color:var(--muted);font-size:1.02rem}
+.fr{display:none;font-size:clamp(1.6rem,7vw,2.15rem);font-weight:600;line-height:1.28;margin:0;color:var(--ink);transition:font-size .35s var(--ease),color .35s}
+.claude.trad .msg{display:none}
+.claude.trad .fr{display:block;animation:fondu .25s ease both}
+.claude.old .fr{font-size:1.15rem;font-weight:500;color:var(--muted)}
 .dots{display:flex;gap:6px;padding:8px 0}
 .dots i{width:9px;height:9px;border-radius:50%;background:var(--accent);opacity:.3;animation:b 1s infinite}
 .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
@@ -217,7 +219,6 @@ footer{padding:10px 18px 16px}
 .you,.qaq{animation:entreG .32s var(--ease) both}
 .claude .msg{transition:filter .45s var(--ease),font-size .35s var(--ease),color .35s}
 .claude.old .msg{transition:font-size .35s var(--ease),color .35s}
-.serie.bump{animation:bump .45s var(--rebond)}
 .pop:not([hidden]){animation:fondu .18s ease both}
 /* fenetres qui montent / descendent */
 .sheetwrap:not([hidden]){animation:fondu .22s ease both}
@@ -254,7 +255,7 @@ button:not(:disabled):active{transform:scale(.94)}
 <div class="app">
   <section id="stage">
     <div class="bar">
-      <div class="titleblock"><span class="title"><span id="modeName">Talk Practice</span> <span class="serie" id="serie" hidden></span></span><span class="theme" id="themeName"></span></div>
+      <div class="titleblock"><span class="title"><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span></div>
       <div class="barbtns">
         <button class="iconbtn" id="mlBtn" aria-label="Mode mains libres" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="13" width="4.5" height="7" rx="2"/><rect x="16.5" y="13" width="4.5" height="7" rx="2"/></svg>
@@ -1401,13 +1402,13 @@ function renderClaude(chunks, replyFr){
   play.addEventListener("click", () => play.classList.remove("ready"), {once:true});
   const eye = el("button","tbtn"); eye.innerHTML = EYE; const eyeL = el("span",null,"Afficher"); eye.append(eyeL);
   const tr = el("button","tbtn"); tr.innerHTML = TRANS; const trL = el("span",null,"Traduire"); tr.append(trL);
-  const fr = el("p","fr",replyFr || ""); fr.hidden = true;
+  const fr = el("p","fr",replyFr || "");
   const reveal = (on = true) => { msg.classList.toggle("hide", !on); eyeL.textContent = on ? "Masquer" : "Afficher"; };
   play.onclick = () => { if (speakingBtn === play) stopSpeak(); else speak(text, play, reveal); };
   eye.onclick = () => { hidePop(); reveal(msg.classList.contains("hide")); };
-  tr.onclick = () => { fr.hidden = !fr.hidden; trL.textContent = fr.hidden ? "Traduire" : "Cacher"; if (!fr.hidden) reveal(true); };
+  tr.onclick = () => { hidePop(); const on = !wrap.classList.contains("trad"); wrap.classList.toggle("trad", on); trL.textContent = on ? "Anglais" : "Traduire"; if (on) reveal(true); };
   ctrl.append(play, eye); if (replyFr) ctrl.append(tr);
-  wrap.append(msg, ctrl, fr); feed.append(wrap);
+  wrap.append(msg, fr, ctrl); feed.append(wrap);
   return {text, play, reveal};
 }
 
@@ -1416,13 +1417,7 @@ const RETRY_LINES = ["Not quite. Have another go!", "Almost! Try that again.", "
 let essai = null;         // tentative en cours de correction : {prev, corrections, youEl, first}
 let serie = 0;            // reponses justes du premier coup, d'affilee
 let nbQuestions = 0;
-function majCompteur(monte){
-  const b = $("serie"), parts = [];
-  if (serie) parts.push(serie + " sans faute");
-  if (nbQuestions) parts.push(nbQuestions + " question" + (nbQuestions > 1 ? "s" : ""));
-  b.textContent = parts.join(" · "); b.hidden = !parts.length;
-  if (monte) { b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump"); }
-}
+function majCompteur(){}   // le compteur n'est plus affiche (la serie sert encore a la logique)
 function setSerie(n){ const monte = n > serie; serie = n; majCompteur(monte); }
 function compterQuestion(){ nbQuestions++; majCompteur(true); }
 

@@ -427,6 +427,9 @@ const TRANS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const $ = id => document.getElementById(id);
 const feed = $("feed"), mic = $("mic"), statusEl = $("status"), pop = $("pop");
 let theme = null, history = [], busy = false, started = false, lastHint = null;
+// "history" = ce que le modele voit (phrases acceptees) ; "journal" = tout ce qui s'est affiche
+// (essais rates avec leurs fautes, conseils, repliques decoupees), pour retrouver la conversation entiere.
+let journal = [];
 function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function setStatus(t){ statusEl.textContent = t || ""; }
 // Ferme une fenetre du bas en la faisant glisser (au lieu de la faire disparaitre d'un coup).
@@ -1493,6 +1496,7 @@ async function ask(learner, youEl, opts = {}){
       const first = essai ? essai.first : true;
       essai = {prev:learner, corrections:d.corrections, youEl, first:false};
       if (first) setSerie(0);
+      journal.push({role:"user", content:learner, ok:false, tried:true, corrections:d.corrections || []}); sauverConv();
       renderFix(d, youEl, () => {
         // "Passer" : on garde la phrase telle quelle et la conversation continue.
         history.push({role:"user", content:learner});
@@ -1511,6 +1515,7 @@ async function ask(learner, youEl, opts = {}){
 
     if (learner) {
       if (!opts.force) renderFix(d, youEl);
+      journal.push({role:"user", content:learner, ok:true, forced:!!opts.force, conseil:(!opts.force && d.conseil?.better) ? d.conseil : null});
       if (!essai && !opts.force) setSerie(serie + 1);
       const moi = [...history].reverse().find(h => h.role === "user");
       if (d.learner_asked && moi) { moi.asked = true; compterQuestion(); }
@@ -1519,6 +1524,7 @@ async function ask(learner, youEl, opts = {}){
     essai = null;
     const t = renderClaude(chunks, d.reply_fr);
     history.push({role:"assistant", content:t.text, chunks, fr:d.reply_fr || ""});
+    journal.push({role:"assistant", content:t.text, chunks, fr:d.reply_fr || ""});
     sauverConv();
     if (history.length > 20) history = history.slice(-20);
     lastHint = d.hint_en ? {en:d.hint_en, fr:d.hint_fr || ""} : null;
@@ -1559,7 +1565,7 @@ function submit(text){
   ask(t, you);
 }
 /* ---------- Historique des conversations (sur le telephone, 20 max, 40 messages max chacune) ---------- */
-const CONV_MAX = 20, MSG_MAX = 40;
+const CONV_MAX = 20, MSG_MAX = 40, JOURNAL_MAX = 300;
 // references gardees : l'accueil sort du DOM pendant une conversation
 let convId = null;
 function convs(){ return Array.isArray(S.convs) ? S.convs : (S.convs = []); }
@@ -1571,7 +1577,7 @@ function sauverConv(){
   Object.assign(c, {
     theme: {fr:theme.fr, en:theme.en, role:theme.role, libre:!!theme.libre},
     titre: theme.libre ? (premier.slice(0, 60) || "Sujet libre") : theme.fr,
-    msgs: history.slice(-MSG_MAX), d: Date.now()
+    msgs: history.slice(-MSG_MAX), journal: journal.slice(-JOURNAL_MAX), d: Date.now()
   });
   S.convs = [c, ...convs().filter(x => x.id !== c.id)].slice(0, CONV_MAX);
   saveS();
@@ -1623,8 +1629,15 @@ ${msgs.map((m, i) => (i + 1) + ". " + m.content).join("\n")}`, SCHEMA_DECOUPE);
 }
 function afficherEchanges(){
   feed.querySelectorAll(".you.passe, .claude").forEach(x => x.remove());
-  for (const m of history.slice(-6)) {
-    if (m.role === "user") { feed.append(el("div","you passe", m.content)); continue; }
+  // conversation complete si elle a ete enregistree avec son journal, sinon les derniers echanges du modele
+  const source = journal.length ? journal : history.slice(-6);
+  for (const m of source) {
+    if (m.role === "user") {
+      const y = el("div", "you passe" + (m.tried ? " attempt tried" : ""), m.content); feed.append(y);
+      if (m.tried) marquer(y, m.corrections || [], "faute");
+      else if (m.ok && !m.forced) { y.classList.add("juste"); if (m.conseil?.better) marquer(y, [m.conseil], "mieux"); }
+      continue;
+    }
     const morceaux = Array.isArray(m.chunks) && m.chunks.length ? m.chunks : [{en:m.content, fr:m.fr || ""}];
     const t = renderClaude(morceaux, m.fr || "");
     t.reveal(true); t.play.classList.remove("ready");
@@ -1635,7 +1648,7 @@ function reprendreConv(c){
   if (!S.key) { openSettings(); return; }
   unlockAudio(); stopSpeak();
   setTheme(c.theme.libre ? LIBRE : c.theme);
-  started = true; history = (c.msgs || []).slice(-20); lastHint = null; essai = null; nbQuestions = 0; setSerie(0); convId = c.id;
+  started = true; history = (c.msgs || []).slice(-20); journal = Array.isArray(c.journal) ? c.journal.slice() : []; lastHint = null; essai = null; nbQuestions = 0; setSerie(0); convId = c.id;
   modeConversation(!!c.theme.libre); $("themeName").textContent = c.theme.libre ? "" : c.theme.fr;
   feed.replaceChildren(el("p","tip","Reprise de « " + c.titre + " » · " + quand(c.d)));
   afficherEchanges();
@@ -1663,7 +1676,7 @@ function allerAccueil(){
   if (enreg && enreg.state === "recording") { jeterEnreg = "quitte"; enreg.stop(); }
   if (listening) { stopVoulu = true; rec.stop(); }
   stopSpeak(); hidePop();
-  started = false; mlStop(); mlBtn.hidden = true; history = []; essai = null; lastHint = null; setSerie(0);
+  started = false; mlStop(); mlBtn.hidden = true; history = []; journal = []; essai = null; lastHint = null; setSerie(0);
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
   $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("newTheme").hidden = true;
   $("hintBox").hidden = true; $("hintBtn").disabled = true; mic.disabled = true;
@@ -1674,7 +1687,7 @@ function begin(){
   if (!S.key) { openSettings(); return; }
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
   unlockAudio(); stopSpeak(); if (voixKokoro()) loadTTS();
-  started = true; history = []; lastHint = null; essai = null; nbQuestions = 0; setSerie(0); convId = null;
+  started = true; history = []; journal = []; lastHint = null; essai = null; nbQuestions = 0; setSerie(0); convId = null;
   modeConversation(false); $("themeName").textContent = theme.fr;
   feed.replaceChildren();
   ask(null);
@@ -1683,7 +1696,7 @@ function commencerLibre(){
   if (!S.key) { openSettings(); return; }
   unlockAudio(); stopSpeak();
   setTheme(LIBRE);
-  started = true; history = []; lastHint = null; essai = null; nbQuestions = 0; setSerie(0); convId = null;
+  started = true; history = []; journal = []; lastHint = null; essai = null; nbQuestions = 0; setSerie(0); convId = null;
   modeConversation(true);
   feed.replaceChildren(); mic.disabled = false;
   setStatus("Parle de ce que tu veux. Touche le micro rouge quand tu as fini.");

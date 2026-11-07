@@ -816,7 +816,7 @@ async function basculerEnreg(opts = {}){
     mlVides = 0;
     you.className = "you pending"; you.textContent = "";
     setStatus("");
-    try { you.dataset.rec = URL.createObjectURL(blob); } catch {}   // pour reecouter sa propre prononciation
+    you._rec = blob; you.dataset.rec = "1";   // pour reecouter sa propre prononciation (le passage corrige)
     ask(null, you, {audio:{data: await blobB64(blob), mime:type}});
   };
   // Niveau de la voix en direct : le halo du micro et les barres de ta bulle bougent avec toi.
@@ -1300,7 +1300,7 @@ const SCHEMA = {
     heard:{type:"STRING"},
     ok:{type:"BOOLEAN"},
     learner_asked:{type:"BOOLEAN"},
-    corrections:{type:"ARRAY", items:{type:"OBJECT", properties:{original:{type:"STRING"}, corrected:{type:"STRING"}, explanation_fr:{type:"STRING"}, type:{type:"STRING"}}, required:["original","corrected","explanation_fr","type"], propertyOrdering:["original","corrected","explanation_fr","type"]}},
+    corrections:{type:"ARRAY", items:{type:"OBJECT", properties:{original:{type:"STRING"}, corrected:{type:"STRING"}, explanation_fr:{type:"STRING"}, type:{type:"STRING"}, debut:{type:"NUMBER"}, fin:{type:"NUMBER"}}, required:["original","corrected","explanation_fr","type","debut","fin"], propertyOrdering:["original","corrected","explanation_fr","type","debut","fin"]}},
     obs:{type:"OBJECT", properties:{structures:{type:"ARRAY", items:{type:"STRING"}}, verbs:{type:"ARRAY", items:{type:"STRING"}}, level:{type:"INTEGER"}}, required:["structures","verbs","level"], propertyOrdering:["structures","verbs","level"]},
     conseil:{type:"OBJECT", properties:{original:{type:"STRING"}, better:{type:"STRING"}, why_fr:{type:"STRING"}}, required:["original","better","why_fr"], propertyOrdering:["original","better","why_fr"]},
     reply_en:{type:"STRING"},
@@ -1510,13 +1510,14 @@ ${theme.libre ? "Today's topic: whatever he wants. Follow his topic, react to it
 
 STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDIO recording.
 - "heard": write exactly what he said, word for word, KEEPING his grammar mistakes (never fix them here). If nothing intelligible was said, write "" and set ok to true with empty fields.
+- For EACH correction, "debut" and "fin" = where the corrected words are spoken in the audio, in seconds from the start of the recording (decimals allowed, e.g. 1.4 and 2.1). Be as precise as you can.
 - You can HEAR his pronunciation: if a word is clearly mispronounced, so that a native speaker could misunderstand it, add a correction: "original" = the word, "corrected" = the same word, explanation in French starting with "Prononciation :" saying how to say it (e.g. "Prononciation : le « th » se fait langue entre les dents"). Never correct the French accent itself, only real mispronunciations. At most one pronunciation correction.` : `It is transcribed from SPEECH: ignore spelling, punctuation and capital letters. "heard": "".`} Look only for real mistakes a native speaker would notice: grammar, wrong word, missing word, wrong tense, word order, a French-style phrase that sounds wrong in English. If a word looks wrongly transcribed in a way that suggests a pronunciation problem, add a correction whose explanation starts with "Prononciation ?". Do not correct things that are merely less elegant.
 - Corrections are ONLY about his English (grammar, words, phrasing, pronunciation), never about the content. A question to you, even about something you cannot do or do not have as an AI, is never a mistake: answer it in STEP 2. Example: "what did you do last weekend" is PERFECT English, so ok = true and corrections = []; then in your reply, explain kindly that as an AI you do not have weekends. Never change his question into another question.
 - QUESTIONS deserve special care, they are where French speakers slip: missing do/does/did ("Where you go?"), wrong word order ("Where you are going?"), indirect questions ("Can you tell me where is the station?" -> "where the station is"), missing auxiliary. These ARE mistakes.
 - "learner_asked": true if his message contains a real question to you (even a short one), false otherwise.
 - "ok": true if there is no real mistake in his English, false otherwise.
 - "conseil": only when ok is true and EITHER a phrase sounds blunt or unnatural in Ireland, OR his sentence is correct but basic for his level (an overused verb, a very simple structure where the focus structure would fit): OR one of his ACQUIRED CHALLENGES would have been the natural way to say it: "original" = his exact words concerned, "better" = the same idea one notch above (more natural, richer verb, the focus structure, the acquired challenge), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".
-- "corrections": the mistakes (at most 3), each with the exact wrong words, the corrected words, a French explanation of 12 words max, addressing the learner with « tu » (never « vous »), and "type" = the category in 2 or 3 French words, reused consistently (e.g. "prétérit oublié", "question sans do", "article", "préposition", "pluriel", "ordre des mots", "accord sujet-verbe", "vocabulaire", "prononciation"). Empty if ok.
+- "corrections": the mistakes (at most 3), each with the exact wrong words, the corrected words, a French explanation of 12 words max, addressing the learner with « tu » (never « vous »), "debut"/"fin" (0 and 0 when there is no audio), and "type" = the category in 2 or 3 French words, reused consistently (e.g. "prétérit oublié", "question sans do", "article", "préposition", "pluriel", "ordre des mots", "accord sujet-verbe", "vocabulaire", "prononciation"). Empty if ok.
 - "obs" (about his message, even when ok): "structures" = the grammar structures he used CORRECTLY, only from this list: ${STRUCTURES.join(", ")} (empty if none); "verbs" = the main verbs he used, base form, 6 max; "level" = the level of this message from 1 (A1) to 10 (C2). For an empty or inaudible message: [], [], 0.
 ${retry}${force}
 
@@ -1567,6 +1568,19 @@ function marquer(youEl, items, cls){
   }
   if (pos < texte.length) youEl.append(document.createTextNode(texte.slice(pos)));
 }
+// Rejoue un passage de l'enregistrement (avec une petite marge) ; tout l'enregistrement si la position manque.
+const decodes = new WeakMap();
+async function jouerPassage(blob, debut, fin){
+  unlockAudio();
+  let buf = decodes.get(blob);
+  if (!buf) { buf = await actx.decodeAudioData(await blob.arrayBuffer()); decodes.set(blob, buf); }
+  let d0 = 0, d1 = buf.duration;
+  if (fin > debut && fin > 0 && debut < buf.duration) { d0 = Math.max(0, debut - 0.25); d1 = Math.min(buf.duration, fin + 0.3); }
+  try { currentSrc?.stop(); } catch {}
+  const src = actx.createBufferSource(); src.buffer = buf; src.connect(actx.destination);
+  src.onended = () => { if (currentSrc === src) currentSrc = null; };
+  currentSrc = src; src.start(0, d0, Math.max(0.35, d1 - d0));
+}
 function showFixPop(sp, items){
   hidePop(); selChunk = sp; sp.classList.add("sel");
   const box = el("div", "popfix");
@@ -1576,10 +1590,10 @@ function showFixPop(sp, items){
     const why = c.explanation_fr || c.why_fr; if (why) t.append(el("small", null, why));
     const pl = el("button", "popplay"); pl.innerHTML = PLAY; pl.setAttribute("aria-label", "Écouter la bonne prononciation");
     pl.onclick = e => { e.stopPropagation(); unlockAudio(); speak(c.corrected || c.better, pl, null); };
-    const url = sp.closest(".you")?.dataset.rec;
-    if (url) {
+    const blob = sp.closest(".you")?._rec;
+    if (blob) {
       const moi = el("button", "popplay moi"); moi.innerHTML = ICO_MIC; moi.setAttribute("aria-label", "Réécouter ce que j’ai dit");
-      moi.onclick = e => { e.stopPropagation(); stopSpeak(); const a = new Audio(url); a.play().catch(() => {}); };
+      moi.onclick = e => { e.stopPropagation(); stopSpeak(); jouerPassage(blob, c.debut, c.fin).catch(() => {}); };
       row.append(t, moi, pl);
     } else row.append(t, pl);
     box.append(row);

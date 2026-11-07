@@ -251,6 +251,9 @@ body:not(.home) .blobs{opacity:.28}
 .voix{position:absolute;z-index:0;pointer-events:none;filter:blur(36px);left:50%;bottom:-8%;width:90vw;max-width:560px;height:46vw;max-height:300px;border-radius:50%;transform:translateX(-50%) scale(calc(.9 + var(--vox) * .5));
   background:radial-gradient(closest-side,#6A5AE0,transparent 72%);opacity:calc(var(--vox) * 1.1);transition:transform .1s linear,opacity .15s linear,background .4s;animation:none}
 body.home .voix{display:none}
+/* onde douce la ou l'on touche le fond de l'accueil (dans la couche des halos : floue, fondus respectes) */
+.onde{position:absolute;width:46vw;height:46vw;max-width:340px;max-height:340px;border-radius:50%;transform:translate(-50%,-50%) scale(.25);opacity:0;animation:onde 1.6s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes onde{0%{transform:translate(-50%,-50%) scale(.25);opacity:.95}60%{opacity:.5}100%{transform:translate(-50%,-50%) scale(1.7);opacity:0}}
 body.ecoute .voix{background:radial-gradient(closest-side,#2457C5,transparent 72%)}
 
 /* ---------- Mouvement (courbes "Material" : rapide au depart, douce a l'arrivee) ---------- */
@@ -923,6 +926,19 @@ document.addEventListener("visibilitychange", () => {
   if (!mainsLibres) return;
   if (document.hidden) { if (enreg && enreg.state === "recording") { jeterEnreg = true; enreg.stop(); } }
   else { mlWake(true); mlApres(); }
+});
+
+/* ---------- Onde au toucher du fond de l'accueil ---------- */
+const COULEURS_ONDE = ["#2457C5", "#6A5AE0", "#B9B2F2"];
+$("stage").addEventListener("pointerdown", e => {
+  if (!document.body.classList.contains("home") || e.target.closest("button, a, input, select")) return;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const couche = document.querySelector(".blobs"), r = couche.getBoundingClientRect();
+  const o = el("span", "onde");
+  o.style.left = (e.clientX - r.left) + "px"; o.style.top = (e.clientY - r.top) + "px";
+  o.style.background = COULEURS_ONDE[Math.floor(Math.random() * COULEURS_ONDE.length)];
+  couche.append(o); o.addEventListener("animationend", () => o.remove());
+  if (couche.querySelectorAll(".onde").length > 6) couche.querySelector(".onde").remove();
 });
 
 /* ---------- Traduction au toucher ---------- */

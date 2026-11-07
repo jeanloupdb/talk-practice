@@ -78,7 +78,7 @@ svg{width:24px;height:24px;flex:none}
 .convbtn b{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .convbtn small{color:var(--muted);font-size:.82rem;flex:none}
 .passe{opacity:.75}
-.versconv{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:10px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);border:none;border-radius:999px;padding:11px 16px;font-weight:700}
+.versconv{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border:none;border-radius:999px;padding:8px 16px;font-weight:600;font-size:.92rem}
 body.home .mainrow #mic,body.home .mainrow #hintBtn{visibility:hidden}
 .titleblock .title{display:flex;align-items:center;gap:2px}
 .primary{background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:14px 28px;font-weight:600;font-size:1.05rem}
@@ -123,24 +123,29 @@ body.home .mainrow #mic,body.home .mainrow #hintBtn{visibility:hidden}
 .dots i{width:9px;height:9px;border-radius:50%;background:var(--accent);opacity:.3;animation:b 1s infinite}
 .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
 @keyframes b{50%{opacity:1}}
-.pop{position:fixed;z-index:20;max-width:min(80vw,320px);background:var(--pop);color:var(--on-pop);padding:9px 13px;border-radius:12px;font-size:.98rem;box-shadow:0 6px 24px rgba(10,20,50,.25)}
+.pop{position:fixed;z-index:20;max-width:min(84vw,330px);background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:9px 13px;border-radius:18px;font-size:.98rem;box-shadow:0 10px 30px rgba(10,20,50,.18)}
 .pop{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 13px}
 .popmot{background:none;border:none;padding:4px 0;color:inherit;text-align:left;font-size:.98rem}
 .popfr{display:block;font-weight:600}
-.pop small{display:block;opacity:.7;font-size:.8rem;text-decoration:underline;text-underline-offset:2px}
-.popplay{flex:none;width:40px;height:40px;border-radius:50%;border:none;display:grid;place-items:center;background:color-mix(in srgb,var(--on-pop) 18%,transparent);color:var(--on-pop)}
-.popplay svg{width:18px;height:18px}
+.pop small{display:block;color:var(--muted);font-size:.82rem}
+.popplay{flex:none;width:38px;height:38px;border-radius:50%;border:none;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.popplay svg{width:16px;height:16px}
+.popplay.inline{display:inline-grid;width:34px;height:34px;margin-left:10px;vertical-align:middle}
 .mothead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .motfr{margin:4px 0 10px;font-size:1.1rem}
 .motfr small{display:block;color:var(--muted);font-size:.85rem;font-weight:400}
-.motnote{background:var(--soft);border-radius:14px;padding:9px 13px;margin:0 0 10px;font-size:.93rem;color:var(--muted)}
-.ex{display:block;width:100%;text-align:left;background:var(--soft);border:none;border-radius:14px;padding:11px 14px;margin-top:8px}
+.motnote{margin:0 0 6px;font-size:.92rem;color:var(--muted)}
+.ex{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);border-radius:0;padding:12px 2px}
+.extxt{flex:1;min-width:0}
+.explay{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.explay svg{width:14px;height:14px}
 .exen{display:block;font-weight:600}
-#qa .sheet{display:flex;flex-direction:column;min-height:55%}
+#qa .sheet{display:flex;flex-direction:column;min-height:50%}
+#qa .status{margin:0 0 14px}
 #qaFeed{flex:1;display:flex;flex-direction:column;gap:12px;margin:12px 0;overflow-y:auto}
 .qaq{align-self:flex-end;text-align:right;color:var(--accent);font-weight:600;max-width:90%}
 .qaq.live{opacity:.6}
-.qar p{margin:0 0 8px;line-height:1.45}
+.qar p{margin:0 0 6px;line-height:1.5;font-size:1.02rem}
 .qarow{margin-top:auto}
 #qaMic{width:72px;height:72px;background:var(--accent);color:var(--on-accent)}
 #qaMic.on{background:var(--live)}
@@ -365,10 +370,9 @@ button:not(:disabled):active{transform:scale(.94)}
 </div>
 <div class="sheetwrap" id="qa" hidden>
   <div class="sheet" role="dialog" aria-labelledby="qaTitle">
-    <div class="mothead"><h2 id="qaTitle">Une question ?</h2><button class="iconbtn" id="qaClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <p class="tip">Demande en français : le sens d’un mot, une règle, comment dire quelque chose… La conversation t’attend.</p>
+    <div class="mothead"><h2 id="qaTitle">Question</h2><button class="iconbtn" id="qaClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="qaFeed"></div>
-    <p class="status" id="qaStatus">Touche le micro et pose ta question.</p>
+    <p class="status" id="qaStatus">Pose ta question en français</p>
     <div class="row qarow">
       <button class="round" id="qaMic" aria-label="Poser la question au micro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
     </div>
@@ -823,7 +827,11 @@ let motToken = 0;
 async function openMot(en, fr, phrase){
   const tok = ++motToken;
   const box = $("motBody");
-  $("motTitle").textContent = en.replace(/[.,!?;:"]+$/,"");
+  const motPropre = en.replace(/[.,!?;:"]+$/,"");
+  $("motTitle").replaceChildren(document.createTextNode(motPropre));
+  const pl = el("button","popplay inline"); pl.innerHTML = PLAY; pl.setAttribute("aria-label","Écouter");
+  pl.onclick = () => { unlockAudio(); speak(motPropre, pl, null); };
+  $("motTitle").append(pl);
   box.replaceChildren(el("p","motfr",fr || ""), el("div","dots"));
   box.lastChild.append(el("i"), el("i"), el("i"));
   $("mot").hidden = false;
@@ -840,15 +848,15 @@ async function openMot(en, fr, phrase){
     head.append(el("b", null, d.sens_fr || fr || ""));
     if (d.base && d.base.toLowerCase() !== en.toLowerCase().replace(/[.,!?;:"]+$/,"")) head.append(el("small", null, "forme de base : " + d.base));
     const items = (d.exemples || []).map(x => {
-      const b = el("button","ex"); b.append(el("span","exen",x.en), el("span","exfr",x.fr));
+      const b = el("button","ex"); const t = el("span","extxt"); t.append(el("span","exen",x.en), el("span","exfr",x.fr)); const ic = el("span","explay"); ic.innerHTML = PLAY; b.append(t, ic);
       b.onclick = () => { unlockAudio(); speak(x.en, null, null); };
       return b;
     });
-    box.replaceChildren(head, ...(d.note_fr ? [el("p","motnote",d.note_fr)] : []), el("p","tip","Touche un exemple pour l’écouter."), ...items);
+    box.replaceChildren(head, ...(d.note_fr ? [el("p","motnote",d.note_fr)] : []), ...items);
   } catch (e) {
     if (tok !== motToken) return;
     console.error(e);
-    box.replaceChildren(el("p","motfr",fr || ""), el("p","tip","Exemples indisponibles pour l’instant (" + (e?.code === "rate" ? "limite gratuite atteinte" : "réseau ou Google saturé") + "). Réessaie dans un moment."));
+    box.replaceChildren(el("p","motfr",fr || ""), el("p","tip", e?.code === "rate" ? "Limite gratuite atteinte, réessaie plus tard" : "Exemples indisponibles, réessaie"));
   }
 }
 $("mot").onclick = e => { if (e.target.id === "mot" || e.target.closest("#motClose")) { fermer("mot"); motToken++; stopSpeak(); } };
@@ -922,7 +930,7 @@ function qaStatus(t){ $("qaStatus").textContent = t; }
 async function poserQuestion(q){
   q = (q || "").trim();
   if (!q || qaBusy) return;
-  qaBusy = true; qaStatus("Je réfléchis…");
+  qaBusy = true; qaStatus("");
   const f = $("qaFeed");
   f.append(el("div","qaq",q));
   const dots = el("div","dots"); dots.append(el("i"), el("i"), el("i")); f.append(dots); f.scrollTop = f.scrollHeight;
@@ -946,25 +954,25 @@ Answer IN FRENCH, addressing him with « tu » (never « vous »), simply and co
     const box = el("div","qar");
     String(d.reponse_fr || "").split(/\n+/).filter(Boolean).forEach(t => box.append(el("p", null, t)));
     for (const x of d.exemples || []) {
-      const b = el("button","ex"); b.append(el("span","exen",x.en), el("span","exfr",x.fr));
+      const b = el("button","ex"); const t = el("span","extxt"); t.append(el("span","exen",x.en), el("span","exfr",x.fr)); const ic = el("span","explay"); ic.innerHTML = PLAY; b.append(t, ic);
       b.onclick = () => { unlockAudio(); speak(x.en, null, null); };
       box.append(b);
     }
-    const vers = el("button","versconv","En parler en anglais ›");
+    const vers = el("button","versconv","En parler en anglais");
     vers.onclick = () => conversationDepuisQuestion(q, d.reponse_fr, vers);
     box.append(vers);
     f.append(box);
     box.scrollIntoView({block:"start", behavior:"smooth"});
   } catch (e) {
     dots.remove(); console.error(e);
-    f.append(el("p","tip","Pas de réponse pour l’instant (" + (e?.code === "rate" ? "limite gratuite atteinte" : "réseau ou Google saturé") + "). Réessaie dans un moment."));
-  } finally { qaBusy = false; if (!qaDictee?.ecoute) qaStatus("Touche le micro pour une autre question."); }
+    qaStatus(e?.code === "rate" ? "Limite gratuite atteinte, réessaie plus tard" : "Pas de réponse, réessaie");
+  } finally { qaBusy = false; if (!qaDictee?.ecoute) qaStatus("Une autre question ?"); }
 }
 
 // "En parler en anglais" : la question devient le sujet d'une nouvelle conversation.
 async function conversationDepuisQuestion(q, r, btn){
   if (qaBusy) return;
-  qaBusy = true; btn.disabled = true; btn.textContent = "Je prépare la conversation…";
+  qaBusy = true; btn.disabled = true; btn.textContent = "…";
   try {
     const t = await llm(`A French-speaking engineering student learning English asked this side question, in French: """${q}"""
 The answer he got: """${r}"""
@@ -975,8 +983,8 @@ Create a short English role-play where he will naturally need to use what this q
     if (!t?.fr || !t?.en || !t?.role) throw {code:"shape"};
     fermer("qa"); setTheme(t); begin();
   } catch (e) {
-    console.error(e); btn.disabled = false; btn.textContent = "En parler en anglais ›";
-    qaStatus("Je n’ai pas pu préparer la conversation (" + (e?.code === "rate" ? "limite gratuite atteinte" : "réseau ou Google saturé") + "). Réessaie.");
+    console.error(e); btn.disabled = false; btn.textContent = "En parler en anglais";
+    qaStatus(e?.code === "rate" ? "Limite gratuite atteinte, réessaie plus tard" : "Pas pu préparer la conversation, réessaie");
   } finally { qaBusy = false; }
 }
 

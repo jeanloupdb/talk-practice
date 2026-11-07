@@ -273,7 +273,7 @@ button:not(:disabled):active{transform:scale(.94)}
         <h1 class="hello">Prêt à parler anglais ?</h1>
         <div class="choix">
           <div class="split">
-            <button class="gros" id="go"><span id="goIco"></span><span id="goLabel">Je commence</span></button>
+            <button class="gros" id="go"><span id="goIco"></span><span id="goLabel">Practice</span></button>
             <button class="gros splitchev" id="topicBtn" aria-label="Laisser l’IA lancer un sujet"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           </div>
           <button class="gros second" id="askHome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><text x="12" y="14.6" text-anchor="middle" font-size="7.5" font-weight="800" font-family="Figtree,system-ui,sans-serif" fill="currentColor" stroke="none" letter-spacing=".3">FR</text></svg>Une question en français</button>
@@ -1003,8 +1003,8 @@ const ICO_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const GO = {btn: document.getElementById("go"), ico: document.getElementById("goIco"), label: document.getElementById("goLabel")};
 // Le bouton reste "Je commence" (sujet libre). Le ▾ ouvre la liste des sujets : un toucher lance l'IA dessus.
 function majDepart(){
-  GO.ico.innerHTML = ICO_MIC; GO.label.textContent = "Je commence";
-  GO.btn.setAttribute("aria-label", "Je commence, sujet libre");
+  GO.ico.innerHTML = ICO_MIC; GO.label.textContent = "Practice";
+  GO.btn.setAttribute("aria-label", "Practice");
 }
 const ICO_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
 let sujetsTires = [];

@@ -1293,22 +1293,39 @@ const SCHEMA = {
 /* Equilibre des roles : l'apprenant doit aussi POSER des questions (en Irlande, c'est lui qui ira chercher l'info).
    On regarde ses derniers tours : s'il ne fait que repondre, l'IA arrete de l'interroger et lui tend une amorce
    ou l'invite a lui poser une question. */
-let tourFin = 0;
+/* Le coach : a chaque tour, l'appli impose un MOUVEMENT a l'IA, comme un bon coach de conversation.
+   - jamais de question fermee ni de question qui appelle trois mots : on demande un recit, un avis a defendre,
+     une explication, une hypothese, une comparaison (de quoi parler 3 ou 4 phrases) ;
+   - jamais deux relances d'affilee sur le meme fil : au 3e tour on change d'angle ;
+   - un tour sur trois environ, c'est a lui de poser les questions (amorce ou invitation), davantage s'il ne le fait pas. */
+const MOUVEMENTS = {
+  story:   "Ask him to TELL you about a concrete experience, in detail (\"Tell me about the last time...\", \"Walk me through...\", \"What happened when...\"): something that needs 3 or 4 sentences.",
+  opinion: "Ask his real OPINION on something concrete linked to the topic, then (next turn) gently push back or play devil's advocate so he has to argue.",
+  explain: "Ask him to EXPLAIN or teach you something he knows well (how it works, how he does it), step by step.",
+  hypo:    "Ask a HYPOTHETICAL (\"What would you do if...\", \"Imagine you had to...\") that needs a developed answer.",
+  compare: "Ask him to COMPARE two things (France and Ireland, before and now, two options) and say which he prefers and why.",
+  switch:  "CHANGE THE ANGLE: do not ask anything more about what he just said. Move to a different aspect of the topic (or a neighbouring topic) with a fresh, open question that needs a developed answer.",
+  hook:    "Do NOT end with a question. React, then end with an intriguing statement, a surprising fact or a strong opinion linked to the topic that leaves a curiosity gap, so that HE wants to ask you something.",
+  invite:  "Do NOT ask him anything about himself. Share one interesting thing or opinion, then invite him to ask YOU questions about it (e.g. \"Ask me anything about that\").",
+  mission: "Do not interview him. Answer only what he asked, briefly and clearly; reveal the next piece of information only when he asks for it. If he is stuck, give a small clue about what he could ask."
+};
+const OUVERTS = ["story", "opinion", "explain", "hypo", "compare"];
+let mouvPrec = "", nbTours = 0;
 function choisirFin(learner){
   if (theme.mission) return "mission";
   if (theme.inverse) return "invite";
-  if (!learner) return "question";
-  const recents = history.filter(h => h.role === "user").slice(-4, -1);   // ses tours precedents
+  if (!learner) { mouvPrec = "story"; nbTours = 0; return "story"; }
+  nbTours++;
+  const recents = history.filter(h => h.role === "user").slice(-4, -1);
   const posees = recents.filter(h => h.asked).length;
-  if (recents.length && posees / recents.length < 0.5) return (tourFin++ % 2) ? "hook" : "invite";
-  return (tourFin++ % 3 === 2) ? "hook" : "question";
+  const passif = recents.length >= 2 && posees / recents.length < 0.5;
+  let m;
+  if (passif && nbTours % 2 === 0) m = mouvPrec === "invite" ? "hook" : "invite";      // il ne pose jamais de question : on lui tend la perche
+  else if (nbTours % 3 === 0) m = Math.random() < 0.5 ? "switch" : "hook";              // on ne tourne pas en rond
+  else { const pool = OUVERTS.filter(x => x !== mouvPrec); m = pool[Math.floor(Math.random() * pool.length)]; }
+  mouvPrec = m; return m;
 }
-const FINS = {
-  question: "End with one question that keeps the conversation going.",
-  hook: "Do NOT end with a question. End with an intriguing statement, a surprising fact or an opinion linked to the topic that leaves a curiosity gap, so that HE wants to ask you something.",
-  invite: "Do NOT ask him a question about himself. End by inviting him to ask you something specific (e.g. \"Ask me about the best day trips from Dublin!\").",
-  mission: "Do not interview him. Answer only what he asked, briefly and clearly; reveal the next piece of information only when he asks for it. If he is stuck, give a small clue about what he could ask."
-};
+const FINS = MOUVEMENTS;
 function buildPrompt(learner, essai, audio){
   const fin = choisirFin(learner);
   const transcript = history.map(h => (h.role === "user" ? "Learner: " : "You: ") + h.content).join("\n") || "(nothing yet)";
@@ -1334,11 +1351,12 @@ STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDI
 ${retry}${force}
 
 STEP 2, only if ok is true, REPLY. If ok is false, leave reply_en, reply_fr, hint_en and hint_fr empty and chunks [].
-- "reply_en": your whole reply, READ ALOUD: 2 to 4 short spoken sentences, natural everyday English, no emojis, no lists, natural openers (Oh, Well, Right, Ah, So), clear punctuation. If he asked you a question, answer it properly first. ${FINS[fin]}
+- "reply_en": your whole reply, READ ALOUD: 2 to 4 short spoken sentences, natural everyday English, no emojis, no lists, natural openers (Oh, Well, Right, Ah, So), clear punctuation. First REACT in one sentence to what he said (show you listened: pick up a word, add a thought or a fact of your own). If he asked you a question, answer it properly. Then make this move: ${FINS[fin]}
+  COACH RULES: never ask a yes/no question or one answerable in a few words; never ask for a detail about a detail; never repeat a question already asked in this conversation; vary the angles so the conversation moves forward instead of circling. When you ask, make the size of the answer explicit (\"tell me the whole story\", \"give me two reasons\", \"walk me through it step by step\").
 - "chunks": reply_en cut into consecutive pieces of 1 to 4 words, in order; joined with spaces they must give reply_en exactly. Keep idioms, phrasal verbs and set expressions in one piece. Punctuation stays attached to its piece.
   "fr" = the French meaning of THAT piece only (never of the next or previous piece). Example: {"en":"Are you looking","fr":"Tu cherches"},{"en":"for a pub?","fr":"un pub ?"}
 - "reply_fr": French translation of reply_en.
-- "hint_en": ${fin === "question" ? "a short, simple answer the learner could give" : "a natural QUESTION the learner could ask you now (well formed, polite)"}; "hint_fr": its French translation.
+- "hint_en": ${OUVERTS.includes(fin) || fin === "switch" ? "the first sentence of a developed answer he could give" : "a natural QUESTION the learner could ask you now (well formed, polite)"}; "hint_fr": its French translation.
 - "fait": if the learner's message reveals a NEW lasting fact about his REAL life (studies, work, family, hobbies, tastes, projects, places he knows, opinions...) that is not already known above, write it as one short French sentence of 15 words max, about him ("Il ..."). Otherwise "".
 - "command": "pause" ONLY if his whole message is a request to pause or stop the conversation (in English or French: "pause", "stop", "on arrête", "let's stop here", "I need a break"); then also set ok to true and corrections to []. Otherwise "".
 
@@ -1349,7 +1367,7 @@ Use a fact ONLY when today's topic is directly about it (e.g. his studies when t
 Conversation so far:
 ${transcript}
 
-${audio ? "The learner's answer is in the attached audio." : learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to [], and start the conversation: greet him warmly and open today's topic (with a first, easy question about him; or, if he is the one asking the questions, invite him to ask you anything; or, for a mission, state the mission clearly). Stick to today's topic; use a known fact only if it fits it."}`;
+${audio ? "The learner's answer is in the attached audio." : learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to [], and start the conversation: greet him warmly in one short sentence and open today's topic (with an open question that invites him to tell something, not a yes/no question; or, if he is the one asking the questions, invite him to ask you anything; or, for a mission, state the mission clearly). Stick to today's topic; use a known fact only if it fits it."}`;
 }
 
 // Les fautes sont marquees directement dans la bulle de l'apprenant (rouge souligne) ; un toucher

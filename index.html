@@ -90,6 +90,8 @@ svg{width:24px;height:24px;flex:none}
 .versconv{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border:none;border-radius:999px;padding:8px 16px;font-weight:600;font-size:.92rem}
 body.home footer{display:none}
 body.home #stage{border-radius:0}
+/* sur l'accueil, la couleur fond vers le fond de page en bas (plus de jonction avec la barre du telephone) */
+body.home #stage::after{content:"";position:absolute;left:0;right:0;bottom:0;height:26%;background:linear-gradient(to bottom,transparent,var(--bg) 92%);z-index:0;pointer-events:none}
 .titleblock .title{display:flex;align-items:center;gap:2px}
 .primary{background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:14px 28px;font-weight:600;font-size:1.05rem}
 .primary:disabled{opacity:.45;cursor:default}

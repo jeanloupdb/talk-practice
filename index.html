@@ -37,6 +37,20 @@ svg{width:24px;height:24px;flex:none}
 .title{font-weight:600;font-size:1.05rem}
 .theme{font-size:.9rem;color:var(--muted)}
 .leconchip{display:flex;align-items:center;gap:8px}
+.leconchip .phase{font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:999px;padding:2px 8px}
+/* cartes de seance : une consigne, rien d'autre */
+.carte{align-self:stretch;background:var(--card);border:1px solid var(--card-line);border-radius:22px;padding:16px 18px;backdrop-filter:blur(6px);animation:entre .38s var(--ease) both}
+.carte.consigne{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,transparent),color-mix(in srgb,#6A5AE0 14%,transparent))}
+.cpill{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.ctexte{margin:0;font-size:clamp(1.3rem,5.6vw,1.6rem);font-weight:600;line-height:1.3}
+.carte.attendu .ctexte{color:var(--good)}
+.cmot{margin:0 0 10px;font-size:clamp(1.9rem,9vw,2.4rem);font-weight:800;letter-spacing:-.01em}
+.cex{padding:8px 0;border-top:1px solid var(--card-line)}
+.cex b{display:block;font-size:1.1rem}
+.cex span{display:block;color:var(--muted);font-size:.9rem}
+.cfaits div{padding:6px 0;font-weight:600;color:var(--good)}
+.cstat{margin:10px 0 0;color:var(--muted);font-size:.9rem}
+.cfin{margin-top:14px}
 .leconchip .pts{color:var(--accent);letter-spacing:2px;font-size:.8rem}
 .barbtns{display:flex}
 .themebtn{background:none;border:none;padding:4px 8px;margin:-4px -8px;border-radius:14px;text-align:left;display:block;min-width:0}
@@ -1423,12 +1437,14 @@ function choisirLecon(){
 function majLeconChip(){
   const chip = $("leconChip"), l = lecon();
   if (!l || !started) { chip.hidden = true; return; }
-  chip.replaceChildren(el("span", "lbl", "Défi · " + l.cible.fr), el("span", "pts", "●".repeat(l.points) + "○".repeat(Math.max(0, 3 - l.points))));
+  const phase = seance ? ({prep:"", rappel:"Rappel", modele:"Nouveau", guide:"Guidé", libre:"Libre", bilan:"Bilan"}[seance.phase] || "") : "";
+  chip.replaceChildren(el("span", "lbl", l.cible.fr), el("span", "pts", "●".repeat(l.points) + "○".repeat(Math.max(0, 3 - l.points))), ...(phase ? [el("span", "phase", phase)] : []));
   chip.hidden = false;
 }
 // Apres chaque phrase jugee : la cible a-t-elle ete utilisee ?
 function suivreLecon(d, texte){
   let l = lecon(); if (!l) return;
+  if (seance && seance.phase === "rappel") return;   // le rappel ne compte pas pour le defi du jour
   l.tours++;
   let usage = d.cible;
   const t = String(texte || d.heard || "");
@@ -1438,7 +1454,7 @@ function suivreLecon(d, texte){
     else if (c.re && c.re.test(t)) usage = "ok";
   }
   if (!d.ok && usage !== "ko" && c.re && (d.corrections || []).some(x => c.re.test(String(x.original || "")))) usage = "ko";
-  if (usage === "ok") { l.points++; l.sansUsage = 0; if (l.points >= 3) { (profil().lecons = profil().lecons || []).push(l.cible.id); saveS(); choisirLecon(); return; } }
+  if (usage === "ok") { l.points++; l.sansUsage = 0; if (seance && seance.phase !== "libre") l.points = Math.min(l.points, 2); if (l.points >= 3) { (profil().lecons = profil().lecons || []).push(l.cible.id); if (seance?.guide?.[0]?.en) ajouterRappel({type:"defi", en:seance.guide[0].en}); saveS(); choisirLecon(); return; } }
   else if (d.cible === "ko") { l.points = 0; l.sansUsage = 0; }
   else l.sansUsage++;
   saveS(); majLeconChip();
@@ -1493,6 +1509,137 @@ Decide: "niveau" = his overall level 1 to 10; "acquis" = structures from ${JSON.
   } catch (e) { console.warn("bilan du profil reporte", e); }
 }
 
+/* ---------- Rappel espace : ce que tu as appris revient a 1, 3, 7, 21, 60 jours, et tu dois le REDIRE ----------
+   Un element = une phrase a reproduire (defi valide, ou faute corrigee). Reussi : il s'eloigne ; rate : il revient demain. */
+const INTERVALLES = [1, 3, 7, 21, 60];
+function rappels(){ return Array.isArray(S.rappels) ? S.rappels : (S.rappels = []); }
+function ajouterRappel(item){
+  const cle = String(item.en || "").toLowerCase().replace(/[^a-z' ]/g, "").trim();
+  if (!cle || cle.split(" ").length < 2 || rappels().some(x => x.cle === cle)) return;
+  rappels().push({type:item.type, en:item.en, cle, niveau:0, n:0, due:Date.now() + 864e5});
+  if (rappels().length > 60) { const r = rappels().sort((a, b) => a.niveau - b.niveau); S.rappels = r.slice(0, 60); }
+  saveS();
+}
+function rappelsDus(){ const now = Date.now(); return rappels().filter(x => x.due <= now).sort((a, b) => a.due - b.due).slice(0, 3); }
+function noterRappel(item, ok){
+  if (ok) { item.niveau = Math.min(INTERVALLES.length - 1, item.niveau + 1); item.n++; } else item.niveau = 0;
+  item.due = Date.now() + INTERVALLES[item.niveau] * 864e5; saveS();
+}
+// phrase corrigee complete (pour en faire un rappel)
+function phraseCorrigee(texte, corrections){
+  let t = String(texte || "");
+  for (const c of corrections || []) { if (c.original && c.corrected && c.original !== c.corrected) { const i = t.toLowerCase().indexOf(String(c.original).toLowerCase()); if (i >= 0) t = t.slice(0, i) + c.corrected + t.slice(i + c.original.length); } }
+  return t.replace(/\s+/g, " ").trim();
+}
+
+/* ---------- Statistiques de l'audit (par semaine) : part de parole, reutilisation, fautes ---------- */
+function semaine(){ const d = new Date(); const j = (d.getDay() + 6) % 7; d.setDate(d.getDate() - j); return d.toISOString().slice(0, 10); }
+function stats(){ if (!S.stats || typeof S.stats !== "object") S.stats = {}; const k = semaine(); if (!S.stats[k]) S.stats[k] = {moi:0, ia:0, rOk:0, rTot:0, fautes:0, tours:0}; const cles = Object.keys(S.stats).sort(); if (cles.length > 8) for (const c of cles.slice(0, -8)) delete S.stats[c]; return S.stats[k]; }
+const nbMots = t => String(t || "").trim().split(/\s+/).filter(Boolean).length;
+
+/* ---------- La seance : 10 minutes en trois temps, pilotees par l'appli ----------
+   rappel (tu redis ce qui est du) -> modele (une carte) -> guide (3 consignes) -> libre (1 question) -> bilan. */
+const SCHEMA_SEANCE = {type:"OBJECT", properties:{
+  modele:{type:"OBJECT", properties:{mot:{type:"STRING"}, exemples:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}}, required:["mot","exemples"], propertyOrdering:["mot","exemples"]},
+  guide:{type:"ARRAY", items:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}}, required:["fr","en"], propertyOrdering:["fr","en"]}},
+  rappels:{type:"ARRAY", items:{type:"OBJECT", properties:{i:{type:"INTEGER"}, fr:{type:"STRING"}, en:{type:"STRING"}}, required:["i","fr","en"], propertyOrdering:["i","fr","en"]}}
+}, required:["modele","guide","rappels"], propertyOrdering:["modele","guide","rappels"]};
+let seance = null;
+async function preparerSeance(){
+  const l = lecon() || choisirLecon(), p = profil(), dus = rappelsDus();
+  const d = await llm(`Prepare a short spoken English session for a French-speaking engineering student, level ${p.niveau || 4}/10 (1 = beginner, 10 = native-like).
+TODAY'S TARGET: ${l.cible.en} (French title: "${l.cible.fr}").
+1) "modele": "mot" = the English target itself as a 1-3 word title, in English only (e.g. "get", "used to", "make / do"), never the French title; "exemples" = 2 short everyday sentences using it (8 words max each), with French translations.
+2) "guide": 3 French instructions, each asking him to say ONE sentence in English that needs the target, about his REAL life (studies, daily routine, a trip, friends), never fiction, never a role. Form: "Dis que tu te lèves à 7 h." / "Demande-moi si je bois du café le matin." Progressive. "en" = the expected English sentence (short, natural).
+3) "rappels": for each review item below, "fr" = a French instruction that makes him produce that English again (do not show the English), "en" = the expected English, close to the item. Items: ${JSON.stringify(dus.map((x, i) => ({i, en:x.en})))}
+Keep every French instruction under 14 words.`, SCHEMA_SEANCE);
+  const rap = dus.map((item, i) => { const r = (d.rappels || []).find(x => x.i === i) || {}; return {item, fr:r.fr || "Redis : " + item.en, en:r.en || item.en}; });
+  return {modele:d.modele, guide:(d.guide || []).slice(0, 3), rappels:rap};
+}
+function contexteSeance(learner){
+  if (!seance) return null;
+  if (seance.phase === "rappel" || seance.phase === "guide") {
+    const e = etapeCourante(); if (!e) return null;
+    return {
+      cible: `GUIDED STEP: the learner was asked in French: "${e.fr}". Expected English (any natural equivalent is fine): "${e.en}". "ok" if his sentence says that correctly (it may be worded differently), "ko" if he tried but the target is wrong, "non" if he said something unrelated.`,
+      reponse: `GUIDED STEP: reply with ONLY a 2-5 word feedback ("Perfect.", "Yes, that's it.", "Nice one."), no question, nothing else.`,
+      ouverture: ""
+    };
+  }
+  if (seance.phase === "libre" && !learner) return {cible: "", reponse: "", ouverture: `OPENING OF THE FREE PART: set ok to true, corrections to []. Ask ONE short question (12 words max) about his real life that naturally calls for the target. No greeting, no announcement, nothing else. `};
+  return null;
+}
+function etapeCourante(){
+  if (!seance) return null;
+  if (seance.phase === "rappel") return seance.rappels[seance.etape] || null;
+  if (seance.phase === "guide") return seance.guide[seance.etape] || null;
+  return null;
+}
+function carte(cls, enfants){ const c = el("div", "carte " + cls); c.append(...enfants); feed.append(c); scrollDown(); return c; }
+function pastille(txt){ return el("span", "cpill", txt); }
+function afficherEtape(){
+  const e = etapeCourante(); if (!e) return;
+  const total = seance.phase === "rappel" ? seance.rappels.length : seance.guide.length;
+  carte("consigne", [pastille((seance.phase === "rappel" ? "Rappel " : "") + (seance.etape + 1) + "/" + total), el("p", "ctexte", e.fr)]);
+  mic.disabled = false; mlApres();
+}
+async function afficherModele(){
+  const m = seance.modele || {mot:(lecon() || choisirLecon()).cible.fr, exemples:[]};
+  const c = carte("modele", [pastille("Nouveau"), el("p", "cmot", m.mot)]);
+  for (const ex of m.exemples || []) { const l = el("div", "cex"); l.append(el("b", null, ex.en), el("span", null, ex.fr)); c.append(l); }
+  busy = true; mic.disabled = true;
+  try { await speak((m.exemples || []).map(x => x.en).join(" "), null, null); } catch {}
+  busy = false;
+  seance.phase = "guide"; seance.etape = 0; majLeconChip(); etapeSuivante();
+}
+function afficherBilan(){
+  seance.phase = "bilan"; majLeconChip();
+  const c = carte("bilan", [pastille("Bilan")]);
+  const faits = seance.faits.slice(-3);
+  if (faits.length) { const ul = el("div", "cfaits"); faits.forEach(f => ul.append(el("div", null, "✓ " + f))); c.append(ul); }
+  const st = stats(); const part = st.moi + st.ia ? Math.round(100 * st.moi / (st.moi + st.ia)) : 0;
+  c.append(el("p", "cstat", "Toi " + part + " %" + (seance.rappels.length ? ", rappel " + seance.rappelsOk + "/" + seance.rappels.length : "")));
+  const fin = el("button", "gros second cfin", "Terminer"); fin.onclick = allerAccueil; c.append(fin);
+  mic.disabled = true; mlStop();
+  ding();
+}
+function etapeSuivante(){
+  if (!seance) return;
+  if (seance.phase === "rappel") { if (seance.etape < seance.rappels.length) { afficherEtape(); return; } seance.phase = "modele"; seance.etape = 0; }
+  if (seance.phase === "modele") { afficherModele(); return; }
+  if (seance.phase === "guide") { if (seance.etape < seance.guide.length) { afficherEtape(); return; } seance.phase = "libre"; seance.etape = 0; majLeconChip(); ask(null); return; }
+  if (seance.phase === "libre") { afficherBilan(); }
+}
+// reponse a une carte jugee
+function etapeReussie(d, learner){
+  const e = etapeCourante();
+  seance.faits.push(learner);
+  if (seance.phase === "rappel") { noterRappel(e.item, true); seance.rappelsOk++; stats().rOk++; }
+  seance.etape++;
+  speak(d.reply_en && d.reply_en.length < 40 ? d.reply_en : "Perfect.", null, null).then(() => etapeSuivante());
+}
+function etapeRatee(){
+  const e = etapeCourante();
+  if (seance.phase === "rappel") noterRappel(e.item, false);
+  // on montre la phrase attendue, on la dit, et on passe a la suite
+  const c = carte("attendu", [pastille("Écoute"), el("p", "ctexte", e.en)]);
+  seance.etape++;
+  speak(e.en, null, null).then(() => etapeSuivante());
+}
+async function lancerSeance(){
+  seance = {phase:"prep", etape:0, rappels:[], guide:[], modele:null, faits:[], rappelsOk:0, libreTours:0};
+  const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); feed.append(dots);
+  busy = true; mic.disabled = true;
+  try {
+    const prep = await preparerSeance();
+    Object.assign(seance, prep); seance.phase = seance.rappels.length ? "rappel" : "modele";
+    const st = stats(); st.rTot += seance.rappels.length; saveS();
+  } catch (e) { console.warn("seance non preparee, conversation simple", e); seance = null; }
+  dots.remove(); busy = false;
+  majLeconChip();
+  if (seance) etapeSuivante(); else ask(null);
+}
+
 /* Le coach : a chaque tour, l'appli impose un MOUVEMENT a l'IA, comme un bon coach de conversation.
    - jamais de question fermee ni de question qui appelle trois mots : on demande un recit, un avis a defendre,
      une explication, une hypothese, une comparaison (de quoi parler 3 ou 4 phrases) ;
@@ -1532,6 +1679,7 @@ function choisirFin(learner){
 const FINS = MOUVEMENTS;
 function buildPrompt(learner, essai, audio){
   const fin = choisirFin(learner);
+  const seanceCtx = contexteSeance(learner);
   const transcript = history.map(h => (h.role === "user" ? "Learner: " : "You: ") + h.content).join("\n") || "(nothing yet)";
   // en nouvelle session, les anciens echanges servent de contexte : on les marque comme tels
   const ancien = !learner && history.length ? "(earlier session)\n" : "";
@@ -1559,14 +1707,14 @@ STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDI
 ${retry}${force}
 
 STEP 2, only if ok is true, REPLY. If ok is false, leave reply_en, reply_fr, hint_en and hint_fr empty and chunks [].
-- "reply_en": your whole reply, READ ALOUD: 2 to 4 short spoken sentences, natural everyday English, no emojis, no lists, natural openers (Oh, Well, Right, Ah, So), clear punctuation. First REACT in one sentence to what he said (show you listened: pick up a word, add a thought or a fact of your own). If he asked you a question, answer it properly. Then make this move: ${FINS[fin]}
-  COACH RULES: never ask a yes/no question or one answerable in a few words; never ask for a detail about a detail; never repeat a question already asked in this conversation; vary the angles so the conversation moves forward instead of circling. When you ask, make the size of the answer explicit (\"tell me the whole story\", \"give me two reasons\", \"walk me through it step by step\").
+- "reply_en": your whole reply, READ ALOUD. HARD LIMIT: 1 or 2 short sentences, 25 words in total, never more (he learns by speaking, not by listening to you). ${seanceCtx ? seanceCtx.reponse : `React in a few words to what he said (show you listened), answer if he asked something, then make this move in ONE short sentence: ${FINS[fin]}
+  COACH RULES: never a yes/no question; never a detail about a detail; never repeat a question already asked; vary the angles. Ask for ONE thing at a time, never "tell me everything".`}
 - "chunks": reply_en cut into consecutive pieces of 1 to 4 words, in order; joined with spaces they must give reply_en exactly. Keep idioms, phrasal verbs and set expressions in one piece. Punctuation stays attached to its piece.
   "fr" = the French meaning of THAT piece only (never of the next or previous piece). Example: {"en":"Are you looking","fr":"Tu cherches"},{"en":"for a pub?","fr":"un pub ?"}
 - "reply_fr": French translation of reply_en.
 - "hint_en": ${OUVERTS.includes(fin) || fin === "switch" ? "the first sentence of a developed answer he could give" : "a natural QUESTION the learner could ask you now (well formed, polite)"}; "hint_fr": its French translation.
 - "fait": if the learner's message reveals a NEW lasting fact about his REAL life (studies, work, family, hobbies, tastes, projects, places he knows, opinions...) that is not already known above, write it as one short French sentence of 15 words max, about him ("Il ..."). Otherwise "".
-- "cible": today's challenge target is ${JSON.stringify((lecon() || choisirLecon()).cible.en)}. "ok" if this message contains a correct use of it (any form), "ko" if he tried to use it but got it wrong (then it is also a correction), "non" if he did not use it.
+- "cible": ${seanceCtx ? seanceCtx.cible : `today's challenge target is ${JSON.stringify((lecon() || choisirLecon()).cible.en)}. "ok" if this message contains a correct use of it (any form), "ko" if he tried to use it but got it wrong (then it is also a correction), "non" if he did not use it.`}
 - "command": "pause" ONLY if his whole message is a request to pause or stop the conversation (in English or French: "pause", "stop", "on arrête", "let's stop here", "I need a break"); then also set ok to true and corrections to []. Otherwise "".
 
 ${profilTexte()}
@@ -1578,7 +1726,7 @@ Use a fact ONLY when today's topic is directly about it (e.g. his studies when t
 Conversation so far:
 ${ancien}${transcript}
 
-${audio ? "The learner's answer is in the attached audio." : learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to []. " + (history.length ? "This is a NEW SESSION of an ongoing relationship: welcome him back in a few warm words (no recap of what was said before), then announce today's challenge in one or two short sentences: " + (lecon()?.points ? "we keep working on it, he needs " + (3 - lecon().points) + " more good uses" : "a NEW challenge, with one short example of the target") + ", then open today's topic with a question that naturally calls for the target" : "Start the conversation: greet him warmly in one short sentence, announce today's challenge with one short example of the target, and open today's topic with a question that naturally calls for it") + " (with an open question that invites him to tell something, not a yes/no question; or, if he is the one asking the questions, invite him to ask you anything; or, for a mission, state the mission clearly). Stick to today's topic; use a known fact only if it fits it."}`;
+${seanceCtx && !learner ? seanceCtx.ouverture : ""}${audio ? "The learner's answer is in the attached audio." : learner ? `The learner just said: """${learner}"""` : seanceCtx ? "" : "There is no learner message yet: set ok to true, corrections to []. " + (history.length ? "This is a NEW SESSION of an ongoing relationship: welcome him back in a few warm words (no recap of what was said before), then announce today's challenge in one or two short sentences: " + (lecon()?.points ? "we keep working on it, he needs " + (3 - lecon().points) + " more good uses" : "a NEW challenge, with one short example of the target") + ", then open today's topic with a question that naturally calls for the target" : "Start the conversation: greet him warmly in one short sentence, announce today's challenge with one short example of the target, and open today's topic with a question that naturally calls for it") + " (with an open question that invites him to tell something, not a yes/no question; or, if he is the one asking the questions, invite him to ask you anything; or, for a mission, state the mission clearly). Stick to today's topic; use a known fact only if it fits it."}`;
 }
 
 // Les fautes sont marquees directement dans la bulle de l'apprenant (rouge souligne) ; un toucher
@@ -1720,7 +1868,7 @@ async function ask(learner, youEl, opts = {}){
         }
         if (opts.force) d.ok = true;
         chunks = Array.isArray(d?.chunks) ? d.chunks.filter(c => c && typeof c.en === "string" && c.en.trim()) : [];
-        if (d.ok && !chunks.length) throw {code:"shape", detail:JSON.stringify(d)};
+        if (d.ok && !chunks.length && !(seance && (seance.phase === "rappel" || seance.phase === "guide"))) throw {code:"shape", detail:JSON.stringify(d)};
         if (!d.ok && !(d.corrections || []).length) throw {code:"shape", detail:JSON.stringify(d)};
         break;
       } catch (e) {
@@ -1738,9 +1886,18 @@ async function ask(learner, youEl, opts = {}){
       speak("Okay, I'll pause here. Tap the headphones when you want to continue.", null, null);
       return;
     }
+    if (learner) { const st = stats(); st.moi += nbMots(learner); st.tours++; if (!d.ok) st.fautes += (d.corrections || []).length; }
+    const enCarte = seance && (seance.phase === "rappel" || seance.phase === "guide");
     if (learner && !d.ok) {
       // Erreur : on montre ce qui ne va pas, on le dit a l'oral, et on attend un nouvel essai.
       history.pop();                                   // la tentative ratee ne fait pas partie de la conversation
+      if ((d.corrections || []).length) ajouterRappel({type:"faute", en:phraseCorrigee(learner, d.corrections)});
+      if (enCarte && essai && (essai.tries || 1) >= 1) {
+        // deux essais rates sur une carte : on montre la reponse et on avance
+        youEl.classList.add("attempt"); renderFix(d, youEl, () => {}); feed.querySelectorAll(".skip").forEach(x => x.remove()); essai = null;
+        journal.push({role:"user", content:learner, ok:false, tried:true, corrections:d.corrections || [], t:Date.now()}); sauverConv();
+        etapeRatee(); return;
+      }
       if (mainsLibres && ++mlEchecs >= 3) {
         // mains libres : au 3e echec on passe a la suite, personne ne peut toucher "Passer"
         mlEchecs = 0; history.push({role:"user", content:learner});
@@ -1750,7 +1907,7 @@ async function ask(learner, youEl, opts = {}){
       feed.querySelectorAll(".you.attempt").forEach(x => x.classList.add("tried"));
       youEl.classList.add("attempt");
       const first = essai ? essai.first : true;
-      essai = {prev:learner, corrections:d.corrections, youEl, first:false};
+      essai = {prev:learner, corrections:d.corrections, youEl, first:false, tries:(essai?.tries || 0) + 1};
       if (first) setSerie(0);
       journal.push({role:"user", content:learner, ok:false, tried:true, corrections:d.corrections || [], t:Date.now()}); sauverConv();
       if (first) { observer(d); suivreLecon(d, learner); }   // la 1re tentative compte dans le profil, pas les reprises
@@ -1779,6 +1936,12 @@ async function ask(learner, youEl, opts = {}){
       feed.querySelectorAll(".you.attempt").forEach(x => x.classList.add("tried"));
     }
     essai = null;
+    if (enCarte && learner) {
+      sauverConv();
+      if (d.cible === "non") etapeRatee(); else etapeReussie(d, learner);
+      return;
+    }
+    if (seance && seance.phase === "libre" && learner) { seance.faits.push(learner); seance.libreTours++; }
     const t = renderClaude(chunks, d.reply_fr);
     history.push({role:"assistant", content:t.text, chunks, fr:d.reply_fr || ""});
     journal.push({role:"assistant", content:t.text, chunks, fr:d.reply_fr || "", t:Date.now()});
@@ -1790,7 +1953,11 @@ async function ask(learner, youEl, opts = {}){
     // Phrase juste : "ding", puis la reponse est lue directement (l'audio se prepare pendant le ding).
     prechargerVoix(t.text);
     t.play.classList.remove("ready");
-    (learner && !opts.force ? ding() : Promise.resolve()).then(() => speak(t.text, t.play, t.reveal)).then(() => mlApres());
+    stats().ia += nbMots(t.text); saveS();
+    (learner && !opts.force ? ding() : Promise.resolve()).then(() => speak(t.text, t.play, t.reveal)).then(() => {
+      if (seance && seance.phase === "libre" && seance.libreTours >= 2) { afficherBilan(); return; }
+      mlApres();
+    });
   } catch (e) {
     dots.remove(); console.error(e);
     if (opts.audio) { if (learner) history.pop(); youEl?.remove(); }
@@ -1900,7 +2067,7 @@ function allerAccueil(){
   if (enreg && enreg.state === "recording") { jeterEnreg = "quitte"; enreg.stop(); }
   if (listening) { stopVoulu = true; rec.stop(); }
   stopSpeak(); hidePop();
-  started = false; mlStop(); mlBtn.hidden = true; history = []; journal = []; essai = null; lastHint = null; setSerie(0);
+  started = false; mlStop(); mlBtn.hidden = true; history = []; journal = []; essai = null; lastHint = null; setSerie(0); seance = null;
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
   $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("themeName").hidden = false; $("newTheme").hidden = true; $("leconChip").hidden = true;
   mic.disabled = true;
@@ -1910,15 +2077,15 @@ function allerAccueil(){
 // Entree dans le fil : les derniers echanges s'affichent en leger, puis on continue.
 function ouvrirFil(libre){
   unlockAudio(); stopSpeak(); if (voixKokoro()) loadTTS();
-  started = true; chargerFil(); lastHint = null; essai = null; nbQuestions = 0; setSerie(0);
+  started = true; chargerFil(); lastHint = null; essai = null; nbQuestions = 0; setSerie(0); seance = null;
   modeConversation(libre);
-  feed.replaceChildren(); afficherEchanges();
+  feed.replaceChildren(); afficherEchanges(libre ? PAGE_INIT : 0);   // la seance demarre sur un ecran vide (Plus haut pour revoir)
 }
 function begin(){
   if (!S.key) { openSettings(); return; }
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
   ouvrirFil(false); $("themeName").textContent = theme.fr;
-  ask(null);
+  lancerSeance();
 }
 function commencerLibre(){
   if (!S.key) { openSettings(); return; }
@@ -1972,18 +2139,24 @@ function rendreReglages(){
     const head = el("div", "profhead"); head.append(el("b", null, "Niveau " + n), el("span", null, CEFR(n)));
     const bar = el("div", "profbar"); const i = el("i"); i.style.width = (n * 10) + "%"; bar.append(i);
     carte.append(head, bar);
-    const stats = el("div", "profstats");
+    const chiffres = el("div", "profstats");
     const stat = (v, l) => { const d = el("div", "stat"); d.append(el("b", null, String(v)), el("span", null, l)); return d; };
-    stats.append(stat(p.tours || 0, "échanges"), stat(p.acquis.length, "acquis"), stat(Object.keys(p.fautes).length, "à surveiller"));
+    chiffres.append(stat(p.tours || 0, "échanges"), stat(p.acquis.length, "acquis"), stat(Object.keys(p.fautes).length, "à surveiller"));
     const pills = (liste, cls) => { const w = el("div", "pills"); liste.forEach(x => w.append(el("span", "pill " + cls, x))); return w; };
     if (!focus) choisirFocus();
-    const blocs = [carte, stats];
+    const blocs = [carte, chiffres];
     const l = lecon() || choisirLecon();
     blocs.push(el("div", "profsec", "Défi en cours"), pills([l.cible.fr + "  " + "●".repeat(l.points) + "○".repeat(3 - l.points)], ""));
     if ((p.lecons || []).length) blocs.push(el("div", "profsec", "Défis réussis"), pills(p.lecons.map(id => (CIBLES.find(c => c.id === id) || {fr: id.startsWith("s:") ? "utiliser le " + (NOM_STRUCT[id.slice(2)] || id.slice(2)) : id}).fr), "ok"));
     if (p.acquis.length) { blocs.push(el("div", "profsec", "Acquis"), pills(p.acquis.map(x => NOM_STRUCT[x] || x), "ok")); }
     const fautes = Object.entries(p.fautes).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k]) => k);
     if (fautes.length) { blocs.push(el("div", "profsec", "À surveiller"), pills(fautes, "ko")); }
+    const st = stats(), part = st.moi + st.ia ? Math.round(100 * st.moi / (st.moi + st.ia)) : 0;
+    const reut = st.rTot ? Math.round(100 * st.rOk / st.rTot) : 0, dus = rappels().filter(x => x.due <= Date.now()).length;
+    const audit = el("div", "profstats");
+    const stat2 = (v, l) => { const d = el("div", "stat"); d.append(el("b", null, String(v)), el("span", null, l)); return d; };
+    audit.append(stat2(part + " %", "toi"), stat2(st.rTot ? reut + " %" : "–", "réutilisé"), stat2(dus, "à redire"));
+    blocs.push(el("div", "profsec", "Cette semaine"), audit);
     blocs.push(el("div", "profsec", "Réglages"));
     body.replaceChildren(...blocs,
       ligneReg("Historique", (() => { const n = Math.ceil((fil().journal?.length || 0) / 2); return n ? n + (n > 1 ? " échanges" : " échange") : "vide"; })(), () => setPage("historique")),

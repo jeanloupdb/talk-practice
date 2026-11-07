@@ -60,7 +60,8 @@ svg{width:24px;height:24px;flex:none}
 .hello{font-size:clamp(1.6rem,7vw,2.1rem);font-weight:700;margin:0 0 22px;letter-spacing:-.01em}
 .choix{display:flex;flex-direction:column;gap:12px;max-width:420px;margin:0 auto}
 .gros{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;border:none;border-radius:999px;padding:18px 22px;font-size:1.1rem;font-weight:700;background:var(--accent);color:var(--on-accent);min-height:60px}
-.gros.second{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.gros.second{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);min-height:56px;font-size:1rem;font-weight:600}
+#homeNote{margin:4px 0 0}
 .gros svg{width:24px;height:24px}
 .split{display:flex;gap:3px}
 .split #go{flex:1;min-width:0;border-radius:999px 10px 10px 999px}
@@ -89,8 +90,7 @@ svg{width:24px;height:24px;flex:none}
 .convbtn small{color:var(--muted);font-size:.82rem;flex:none}
 .passe{opacity:.75}
 .versconv{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border:none;border-radius:999px;padding:8px 16px;font-weight:600;font-size:.92rem}
-body.home .mainrow #mic{display:none}
-body.home .mainrow{grid-template-columns:1fr auto}
+body.home footer{display:none}
 .titleblock .title{display:flex;align-items:center;gap:2px}
 .primary{background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:14px 28px;font-weight:600;font-size:1.05rem}
 .primary:disabled{opacity:.45;cursor:default}
@@ -171,7 +171,8 @@ footer{padding:10px 18px 16px}
 .status{font-size:.88rem;color:var(--muted);min-height:1.2em;margin:0 0 10px;text-align:center}
 .row{display:flex;gap:10px;align-items:flex-end}
 .mainrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
-.mainrow #askBtn{justify-self:end;width:52px;height:52px;background:var(--soft);color:var(--accent)}
+.mainrow #mic{grid-column:2}
+.mainrow #askBtn{grid-column:3;justify-self:end;width:52px;height:52px;background:var(--soft);color:var(--accent)}
 .qarow{justify-content:center}
 .round{width:48px;height:48px;flex:none;border-radius:50%;border:none;display:grid;place-items:center}
 #mic{width:72px;height:72px;background:var(--accent);color:var(--on-accent)}
@@ -274,6 +275,8 @@ button:not(:disabled):active{transform:scale(.94)}
             <button class="gros" id="go"><span id="goIco"></span><span id="goLabel">Je commence</span></button>
             <button class="gros splitchev" id="topicBtn" aria-label="Laisser l’IA lancer un sujet"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           </div>
+          <button class="gros second" id="askHome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2-2.4 3.4"/><path d="M12 16.6h.01"/></svg>Une question en français</button>
+          <p class="status" id="homeNote"></p>
         </div>
       </div>
     </div>
@@ -423,7 +426,8 @@ let theme = null, history = [], busy = false, started = false, lastHint = null;
 // (essais rates avec leurs fautes, conseils, repliques decoupees), pour retrouver la conversation entiere.
 let journal = [];
 function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
-function setStatus(t){ statusEl.textContent = t || ""; }
+const homeNote = document.getElementById("homeNote");
+function setStatus(t){ statusEl.textContent = t || ""; homeNote.textContent = t || ""; }
 // Ferme une fenetre du bas en la faisant glisser (au lieu de la faire disparaitre d'un coup).
 /* Bouton retour du telephone (historique du navigateur) : une seule entree "dedans" posee des qu'on entre
    dans une conversation ou qu'on ouvre une fenetre. Retour = fermer la fenetre ouverte, sinon revenir a
@@ -1153,7 +1157,7 @@ const qaDictee = creerDictee("fr-FR", $("qaMic"), {
   },
   done: t => poserQuestion(t)
 });
-$("askBtn").onclick = () => {
+$("askBtn").onclick = $("askHome").onclick = () => {
   if (listening) { stopVoulu = true; rec.stop(); }
   stopSpeak(); hidePop(); ouvrir("qa");
 };

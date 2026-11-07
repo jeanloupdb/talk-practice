@@ -48,6 +48,10 @@ svg{width:24px;height:24px;flex:none}
 .rbtn.cur::after{content:"✓";font-weight:700}
 .memofait{flex:1;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.95rem}
 .rdel{background:none;border:none;color:var(--muted);padding:8px;font-size:1.2rem;line-height:1}
+.iconbtn.actif{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+/* mains libres arme (entre deux ecoutes) : anneau doux autour du micro */
+#mic.ml:not(.on){box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 30%,transparent)}
+#mic.ml.on::after{animation-duration:2.2s}
 .iconbtn{background:none;border:none;padding:8px;border-radius:50%;display:grid;place-items:center;color:var(--accent)}
 #voiceStatus{margin:0 18px;font-size:.85rem;color:var(--muted)}
 #feed{flex:1;overflow-y:auto;padding:12px 22px 26px;display:flex;flex-direction:column;gap:18px}
@@ -251,6 +255,9 @@ button:not(:disabled):active{transform:scale(.94)}
     <div class="bar">
       <div class="titleblock"><span class="title"><span id="modeName">Talk Practice</span> <span class="serie" id="serie" hidden></span></span><span class="theme" id="themeName"></span></div>
       <div class="barbtns">
+        <button class="iconbtn" id="mlBtn" aria-label="Mode mains libres" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="13" width="4.5" height="7" rx="2"/><rect x="16.5" y="13" width="4.5" height="7" rx="2"/></svg>
+        </button>
         <button class="iconbtn" id="gear" aria-label="Réglages">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
         </button>
@@ -452,7 +459,7 @@ if (S.theme?.fr && S.theme?.en && S.theme?.role) setTheme(S.theme); else setThem
 queueMicrotask(() => afficherReprendre());
 
 /* ---------- Voix IA (Kokoro, dans le téléphone) ---------- */
-let tts = null, ttsState = "idle", actx = null, currentSrc = null, playToken = 0, speakingBtn = null;
+let tts = null, ttsState = "idle", actx = null, currentSrc = null, playToken = 0, speakingBtn = null, enLecture = false;
 const audioCache = new Map();
 function unlockAudio(){
   try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch {}
@@ -498,7 +505,7 @@ function stopSpeak(){
   try { currentSrc?.stop(); } catch {}
   currentSrc = null;
   if ("speechSynthesis" in window) speechSynthesis.cancel();
-  setPlay(speakingBtn, false); speakingBtn = null;
+  setPlay(speakingBtn, false); speakingBtn = null; enLecture = false;
 }
 /* Petit "ding" de reussite, fabrique a la volee (pas de fichier). */
 function ding(){
@@ -614,8 +621,8 @@ async function genAudioGoogle(text){
 async function speak(text, btn, reveal){
   stopSpeak(); unlockAudio();
   const token = ++playToken;
-  speakingBtn = btn; setPlay(btn, true);
-  const done = () => { if (speakingBtn === btn && token === playToken) { setPlay(btn, false); speakingBtn = null; } };
+  speakingBtn = btn; setPlay(btn, true); enLecture = true;
+  const done = () => { enLecture = false; if (speakingBtn === btn && token === playToken) { setPlay(btn, false); speakingBtn = null; } };
   const parts = splitSentences(text);
   // 1) Voix Azure (rapide), si choisie et configuree.
   if (voixAzure() && actx) {
@@ -655,12 +662,16 @@ async function speak(text, btn, reveal){
   if (!("speechSynthesis" in window)) { reveal && reveal(); return done(); }
   const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
   const v = vs.find(v => /en[-_](US|GB)/i.test(v.lang)) || vs[0];
-  parts.forEach((p, i) => {
-    const u = new SpeechSynthesisUtterance(p);
-    u.lang = v?.lang || "en-US"; if (v) u.voice = v; u.rate = Number(S.speed) * 0.95;
-    if (i === parts.length - 1) u.onend = done;
-    u.onerror = done;
-    speechSynthesis.speak(u);
+  return new Promise(res => {
+    const fini = () => { done(); res(); };
+    parts.forEach((p, i) => {
+      const u = new SpeechSynthesisUtterance(p);
+      u.lang = v?.lang || "en-US"; if (v) u.voice = v; u.rate = Number(S.speed) * 0.95;
+      if (i === parts.length - 1) u.onend = fini;
+      u.onerror = fini;
+      speechSynthesis.speak(u);
+    });
+    if (!parts.length) fini();
   });
 }
 
@@ -740,8 +751,9 @@ mic.onclick = () => {
 const ENREG_OK = !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
 let enreg = null, enregDebut = 0, enregTimer = null, enregLive = null, jeterEnreg = false;
 function blobB64(b){ return new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = ko; r.readAsDataURL(b); }); }
-async function basculerEnreg(){
-  if (enreg && enreg.state === "recording") { enreg.stop(); return; }
+async function basculerEnreg(opts = {}){
+  const auto = !!opts.auto;
+  if (enreg && enreg.state === "recording") { enreg.forcer?.(); enreg.stop(); return; }
   if (busy || !started) return;
   stopSpeak(); unlockAudio(); hidePop(); $("hintBox").hidden = true;
   let flux;
@@ -757,8 +769,22 @@ async function basculerEnreg(){
     const type = (enreg.mimeType || mime || "audio/webm").split(";")[0];
     const blob = new Blob(morceaux, {type});
     const you = enregLive; enregLive = null;
-    if (jeterEnreg) { jeterEnreg = false; you?.remove(); return; }
-    if (Date.now() - enregDebut < 700 || blob.size < 1200) { you?.remove(); setStatus("Trop court : touche le micro, parle, puis retouche-le."); return; }
+    if (jeterEnreg || (auto && !aParle)) {
+      const vide = jeterEnreg !== "quitte"; jeterEnreg = false; you?.remove();
+      if (auto && mainsLibres && vide) {
+        // rien entendu : on reecoute, et au bout de 3 fois on se met en pause pour ne pas tourner a vide
+        if (++mlVides >= 3) mlStop("Je n’entends rien : mains libres en pause. Touche le casque pour reprendre.");
+        else { setStatus("Je n’ai rien entendu, je t’écoute encore."); setTimeout(ecouterAuto, 400); }
+      }
+      return;
+    }
+    if (Date.now() - enregDebut < 700 || blob.size < 1200) {
+      you?.remove();
+      if (auto && mainsLibres) { setStatus("Trop court, je t’écoute encore."); setTimeout(ecouterAuto, 400); }
+      else setStatus("Trop court : touche le micro, parle, puis retouche-le.");
+      return;
+    }
+    mlVides = 0;
     you.className = "you pending"; you.textContent = "";
     setStatus("");
     ask(null, you, {audio:{data: await blobB64(blob), mime:type}});
@@ -770,11 +796,29 @@ async function basculerEnreg(){
     source.connect(analyse);
   } catch { analyse = null; }
   const niveaux = new Uint8Array(128);
+  // Detection de fin de phrase (mode auto) : on apprend le bruit de fond au debut, puis on considere
+  // qu'on parle au-dessus de 3x ce bruit, et que la phrase est finie apres 1,3 s de silence.
+  let bruit = 0, parleDepuis = 0, dernierSon = 0, aParle = false;
   const anime = () => {
     if (!analyse || !enregLive) return;
     analyse.getByteTimeDomainData(niveaux);
     let somme = 0; for (const v of niveaux) somme += (v - 128) * (v - 128);
-    const lvl = Math.min(1, Math.sqrt(somme / niveaux.length) / 40);
+    const rms = Math.sqrt(somme / niveaux.length);
+    const lvl = Math.min(1, rms / 40);
+    if (auto) {
+      const now = Date.now();
+      if (now - enregDebut < 250) bruit = bruit ? bruit * 0.8 + rms * 0.2 : rms;
+      else {
+        const seuilParole = Math.max(bruit * 3, 6), seuilSilence = Math.max(bruit * 1.8, 3.5);
+        if (rms > seuilParole) { if (!parleDepuis) parleDepuis = now; dernierSon = now; }
+        else if (rms < seuilSilence && !parleDepuis) bruit = bruit * 0.97 + rms * 0.03;
+        if (parleDepuis && now - dernierSon > 1300) {
+          if (dernierSon - parleDepuis > 250) { aParle = true; enreg.stop(); }   // vraie phrase finie
+          else parleDepuis = 0;                                                  // juste un bruit bref
+        }
+        if (!parleDepuis && now - enregDebut > 10000) enreg.stop();              // 10 s sans un mot
+      }
+    }
     mic.style.setProperty("--lvl", lvl.toFixed(3));
     const barres = enregLive.querySelectorAll(".ondes i");
     barres.forEach((b, i) => { const k = [0.55, 0.85, 1, 0.8, 0.6][i] || 1; b.style.transform = "scaleY(" + Math.max(.18, Math.min(1, lvl * k * 1.6 + Math.random() * .08)).toFixed(2) + ")"; });
@@ -782,23 +826,71 @@ async function basculerEnreg(){
   };
   const stopAnalyse = () => { cancelAnimationFrame(raf); try { source?.disconnect(); } catch {} mic.style.removeProperty("--lvl"); };
   enreg.addEventListener("stop", stopAnalyse);
+  enreg.forcer = () => { aParle = true; };
+  if (auto && !analyse) aParle = true;   // sans analyse audio : pas de detection, envoi manuel ou a 20 s
   enreg.start(); enregDebut = Date.now();
-  mic.classList.add("on"); mic.setAttribute("aria-label", "Arrêter et envoyer");
+  mic.classList.add("on"); mic.setAttribute("aria-label", auto ? "Envoyer maintenant" : "Arrêter et envoyer");
   enregLive = el("div", "you live"); const dot = el("span", "recdot"), tps = el("span", null, "0:00"), ondes = el("span", "ondes");
   for (let i = 0; i < 5; i++) ondes.append(el("i"));
   enregLive.append(dot, tps, ondes); feed.append(enregLive); scrollDown();
   raf = requestAnimationFrame(anime);
-  setStatus("Je t’écoute… Touche le micro rouge quand tu as fini.");
+  setStatus(auto ? "Mains libres : je t’écoute, parle quand tu veux." : "Je t’écoute… Touche le micro rouge quand tu as fini.");
   enregTimer = setInterval(() => {
     const sec = Math.floor((Date.now() - enregDebut) / 1000);
     tps.textContent = Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
-    if (sec >= 90) enreg.stop();
+    if (sec >= (auto && !analyse ? 20 : 90)) { aParle = true; enreg.stop(); }
   }, 250);
 }
 if (ENREG_OK) {
-  mic.hidden = false; mic.onclick = basculerEnreg;
+  mic.hidden = false; mic.onclick = () => basculerEnreg({auto: mainsLibres});
   if (statusEl.textContent.startsWith("La dictée")) setStatus("");
 }
+
+/* ---------- Mains libres : plus rien a toucher ----------
+   L'appli detecte la fin de ta phrase (silence apres avoir parle), envoie, l'IA repond a voix haute,
+   puis elle se remet a ecouter toute seule. Jamais pendant que l'IA parle (elle s'entendrait).
+   Sortie : le casque en haut, ou "pause" / "stop" dit a voix haute. Un toucher sur le micro pendant
+   l'ecoute envoie tout de suite. */
+let mainsLibres = false, mlEchecs = 0, mlVides = 0, wakeLock = null;
+const mlBtn = document.getElementById("mlBtn");
+async function mlWake(on){
+  try {
+    if (on && !wakeLock && navigator.wakeLock) { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); }
+    else if (!on && wakeLock) { const w = wakeLock; wakeLock = null; await w.release(); }
+  } catch {}
+}
+function mlMaj(){
+  mlBtn.hidden = !started || !ENREG_OK;
+  mlBtn.classList.toggle("actif", mainsLibres);
+  mlBtn.setAttribute("aria-label", mainsLibres ? "Quitter le mode mains libres" : "Mode mains libres");
+  mic.classList.toggle("ml", mainsLibres);
+}
+function mlApres(){ if (mainsLibres && started) setTimeout(ecouterAuto, 350); }
+function ecouterAuto(){
+  if (!mainsLibres || !started || busy || enLecture) return;
+  if (enreg && enreg.state === "recording") return;
+  basculerEnreg({auto:true});
+}
+function mlStart(){
+  if (!ENREG_OK || !started) return;
+  mainsLibres = true; S.mainsLibres = true; saveS(); mlEchecs = 0; mlVides = 0; mlMaj(); mlWake(true);
+  if (enreg && enreg.state === "recording") { setStatus("Mains libres : je t’écoute, parle quand tu veux."); return; }
+  if (busy || enLecture) setStatus("Mains libres : je t’écouterai dès que l’IA a fini de parler.");
+  else ecouterAuto();
+}
+function mlStop(raison, oublier){
+  mainsLibres = false; if (oublier) { S.mainsLibres = false; saveS(); }
+  mlMaj(); mlWake(false);
+  if (enreg && enreg.state === "recording") { jeterEnreg = true; enreg.stop(); }
+  if (raison) setStatus(raison);
+}
+mlBtn.onclick = () => { if (mainsLibres) mlStop("Mains libres désactivé. Touche le micro pour parler.", true); else mlStart(); };
+// ecran cache (appel, autre appli) : on arrete d'ecouter ; au retour, on reprend
+document.addEventListener("visibilitychange", () => {
+  if (!mainsLibres) return;
+  if (document.hidden) { if (enreg && enreg.state === "recording") { jeterEnreg = true; enreg.stop(); } }
+  else { mlWake(true); mlApres(); }
+});
 
 /* ---------- Traduction au toucher ---------- */
 let selChunk = null;
@@ -1167,10 +1259,11 @@ const SCHEMA = {
     reply_fr:{type:"STRING"},
     hint_en:{type:"STRING"},
     hint_fr:{type:"STRING"},
-    fait:{type:"STRING"}
+    fait:{type:"STRING"},
+    command:{type:"STRING"}
   },
-  required:["heard","ok","learner_asked","corrections","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait"],
-  propertyOrdering:["heard","ok","learner_asked","corrections","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait"]
+  required:["heard","ok","learner_asked","corrections","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command"],
+  propertyOrdering:["heard","ok","learner_asked","corrections","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command"]
 };
 
 /* Equilibre des roles : l'apprenant doit aussi POSER des questions (en Irlande, c'est lui qui ira chercher l'info).
@@ -1223,6 +1316,7 @@ STEP 2, only if ok is true, REPLY. If ok is false, leave reply_en, reply_fr, hin
 - "reply_fr": French translation of reply_en.
 - "hint_en": ${fin === "question" ? "a short, simple answer the learner could give" : "a natural QUESTION the learner could ask you now (well formed, polite)"}; "hint_fr": its French translation.
 - "fait": if the learner's message reveals a NEW lasting fact about his REAL life (studies, work, family, hobbies, tastes, projects, places he knows, opinions...) that is not already known above, write it as one short French sentence of 15 words max, about him ("Il ..."). Otherwise "".
+- "command": "pause" ONLY if his whole message is a request to pause or stop the conversation (in English or French: "pause", "stop", "on arrête", "let's stop here", "I need a break"); then also set ok to true and corrections to []. Otherwise "".
 
 What you already know about the learner from earlier conversations:
 ${memoTexte()}
@@ -1346,9 +1440,22 @@ async function ask(learner, youEl, opts = {}){
     }
     dots.remove();
 
+    if (opts.audio && d.command === "pause" && mainsLibres) {
+      // "pause" / "stop" dit a voix haute : on sort du mode mains libres
+      history.pop(); youEl?.remove();
+      mlStop("Mains libres en pause. Touche le casque pour reprendre.");
+      speak("Okay, I'll pause here. Tap the headphones when you want to continue.", null, null);
+      return;
+    }
     if (learner && !d.ok) {
       // Erreur : on montre ce qui ne va pas, on le dit a l'oral, et on attend un nouvel essai.
       history.pop();                                   // la tentative ratee ne fait pas partie de la conversation
+      if (mainsLibres && ++mlEchecs >= 3) {
+        // mains libres : au 3e echec on passe a la suite, personne ne peut toucher "Passer"
+        mlEchecs = 0; history.push({role:"user", content:learner});
+        speak("Okay, let's move on.", null, null).then(() => ask(learner, youEl, {force:true}));
+        return;
+      }
       feed.querySelectorAll(".you.attempt").forEach(x => x.classList.add("tried"));
       youEl.classList.add("attempt");
       const first = essai ? essai.first : true;
@@ -1361,9 +1468,14 @@ async function ask(learner, youEl, opts = {}){
       });
       setStatus("Corrige et redis ta phrase.");
       scrollDown();
-      speak(RETRY_LINES[Math.floor(Math.random() * RETRY_LINES.length)], null, null);
+      let dire = RETRY_LINES[Math.floor(Math.random() * RETRY_LINES.length)];
+      // mains libres : on dit aussi les corrections, puisqu'on ne lit pas l'ecran
+      if (mainsLibres) dire += " " + (d.corrections || []).slice(0, 2).filter(c => c.original && c.corrected && c.original !== c.corrected)
+        .map(c => `Instead of "${c.original.replace(/[.?!]+$/, "")}", say "${c.corrected.replace(/[.?!]+$/, "")}".`).join(" ");
+      speak(dire, null, null).then(() => mlApres());
       return;
     }
+    mlEchecs = 0;
 
     if (learner) {
       if (!opts.force) renderFix(d, youEl);
@@ -1385,7 +1497,7 @@ async function ask(learner, youEl, opts = {}){
     // Phrase juste : "ding", puis la reponse est lue directement (l'audio se prepare pendant le ding).
     prechargerVoix(t.text);
     t.play.classList.remove("ready");
-    (learner && !opts.force ? ding() : Promise.resolve()).then(() => speak(t.text, t.play, t.reveal));
+    (learner && !opts.force ? ding() : Promise.resolve()).then(() => speak(t.text, t.play, t.reveal)).then(() => mlApres());
   } catch (e) {
     dots.remove(); console.error(e);
     if (opts.audio) { if (learner) history.pop(); youEl?.remove(); }
@@ -1518,13 +1630,16 @@ function modeConversation(libre){
   document.body.classList.remove("home"); REF.toutVoir.hidden = true;
   $("modeName").textContent = libre ? "Sujet libre" : "Conversation";
   $("newTheme").hidden = false;
+  // preference retenue : si le mode mains libres etait actif la derniere fois, on le remet
+  mainsLibres = !!(S.mainsLibres && ENREG_OK); mlEchecs = 0; mlVides = 0; mlMaj();
+  if (mainsLibres) mlWake(true);
 }
 function allerAccueil(){
   if (busy) return;
-  if (enreg && enreg.state === "recording") { jeterEnreg = true; enreg.stop(); }
+  if (enreg && enreg.state === "recording") { jeterEnreg = "quitte"; enreg.stop(); }
   if (listening) { stopVoulu = true; rec.stop(); }
   stopSpeak(); hidePop();
-  started = false; history = []; essai = null; lastHint = null; setSerie(0);
+  started = false; mlStop(); mlBtn.hidden = true; history = []; essai = null; lastHint = null; setSerie(0);
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
   $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("newTheme").hidden = true;
   $("hintBox").hidden = true; $("hintBtn").disabled = true; mic.disabled = true;
@@ -1547,7 +1662,7 @@ function commencerLibre(){
   modeConversation(true);
   feed.replaceChildren(); mic.disabled = false;
   setStatus("Parle de ce que tu veux. Touche le micro rouge quand tu as fini.");
-  if (ENREG_OK) basculerEnreg(); else mic.onclick();
+  if (ENREG_OK) basculerEnreg({auto: mainsLibres}); else mic.onclick();
 }
 
 /* ---------- Réglages UI ----------

@@ -41,11 +41,6 @@ svg{width:24px;height:24px;flex:none}
 .themebtn .theme{display:block}
 .themebtn .chev{display:inline-block;vertical-align:-4px}
 .chev{width:18px;height:18px;color:var(--accent);margin-left:2px}
-.create{display:flex;align-items:center;gap:14px;background:var(--soft);border-radius:18px;padding:12px 14px;margin:12px 0 6px}
-.create b{display:block}
-.create span{display:block;color:var(--muted);font-size:.88rem}
-#roleMic{width:52px;height:52px;background:var(--accent);color:var(--on-accent)}
-#roleMic.on{background:var(--live)}
 .rgroup{font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 4px 4px}
 .ritem{display:flex;align-items:center;gap:8px}
 .rbtn{flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none;border:none;text-align:left;padding:13px 4px;border-bottom:1px solid var(--line);font-size:1rem}
@@ -62,12 +57,15 @@ svg{width:24px;height:24px;flex:none}
 .gros{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;border:none;border-radius:999px;padding:18px 22px;font-size:1.1rem;font-weight:700;background:var(--accent);color:var(--on-accent);min-height:60px}
 .gros.second{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
 .gros svg{width:24px;height:24px}
-.split{display:flex;gap:4px}
-.split #start{flex:1;min-width:0;border-radius:999px 8px 8px 999px;justify-content:flex-start;padding-left:24px}
-.split #start #topicName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lance{font-weight:500;opacity:.8;flex:none}
-.splitchev{flex:none;width:60px;padding:0;border-radius:8px 999px 999px 8px}
-.splitchev .chev{width:22px;height:22px}
+.split{display:flex;gap:3px}
+.split #go{flex:1;min-width:0;border-radius:999px 10px 10px 999px}
+#goLabel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#goIco{display:grid;place-items:center;flex:none}
+#goIco svg{width:22px;height:22px}
+.splitchev{flex:none;width:62px;padding:0;border-radius:10px 999px 999px 10px}
+.splitchev .chev{width:24px;height:24px;color:inherit}
+.rbtn .ico{display:inline-grid;place-items:center;width:20px;margin-right:10px;color:var(--accent);vertical-align:-4px}
+.rbtn .ico svg{width:18px;height:18px}
 .titleblock{min-width:0}
 .reprise{display:inline-flex;align-items:center;gap:7px;max-width:100%;margin:20px auto 0;background:none;border:none;color:var(--muted);font-size:.9rem;padding:8px 12px;border-radius:999px}
 .reprise svg{width:16px;height:16px;flex:none}
@@ -223,7 +221,7 @@ button:not(:disabled):active{transform:scale(.94)}
 .round.on::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--live);opacity:.25;
   transform:scale(calc(1 + var(--lvl) * .9));transition:transform .08s linear;z-index:-1}
 .round.on::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--live);opacity:.5;animation:vague 1.4s ease-out infinite}
-#mic,#qaMic,#roleMic{isolation:isolate}
+#mic,#qaMic{isolation:isolate}
 .round.on svg{opacity:0;transform:scale(.4)}
 .round svg{transition:opacity .2s,transform .25s var(--rebond)}
 .round .stopico{position:absolute;width:20px;height:20px;border-radius:5px;background:currentColor;transform:scale(0);transition:transform .25s var(--rebond)}
@@ -260,10 +258,9 @@ button:not(:disabled):active{transform:scale(.94)}
       <div class="empty" id="empty">
         <h1 class="hello">Prêt à parler anglais ?</h1>
         <div class="choix">
-          <button class="gros" id="startFree"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Je commence</button>
           <div class="split">
-            <button class="gros second" id="start"><span class="lance">L’IA lance :</span> <span id="topicName"></span></button>
-            <button class="gros second splitchev" id="topicBtn" aria-label="Changer de sujet"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+            <button class="gros" id="go"><span id="goIco"></span><span id="goLabel">Je commence</span></button>
+            <button class="gros splitchev" id="topicBtn" aria-label="Choisir par quoi commencer"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           </div>
         </div>
         <button class="reprise" id="reprendre" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span id="repList"></span></button>
@@ -352,11 +349,7 @@ button:not(:disabled):active{transform:scale(.94)}
 <div class="pop" id="pop" hidden></div>
 <div class="sheetwrap" id="roles" hidden>
   <div class="sheet" role="dialog" aria-labelledby="rolesTitle">
-    <div class="mothead"><h2 id="rolesTitle">Sujets</h2><button class="iconbtn" id="rolesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="create">
-      <button class="round" id="roleMic" aria-label="Dire de quoi tu veux parler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
-      <div><b>Ton sujet</b><span id="roleStatus">Dis de quoi tu veux parler</span></div>
-    </div>
+    <div class="mothead"><h2 id="rolesTitle">Commencer par</h2><button class="iconbtn" id="rolesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="rolesList"></div>
   </div>
 </div>
@@ -431,12 +424,11 @@ function fermer(id){
 function setVoiceStatus(t){ $("voiceStatus").textContent = t || ""; }
 function scrollDown(){ feed.scrollTop = feed.scrollHeight; }
 // Conversation libre : c'est l'apprenant qui lance le sujet, l'IA suit.
-const topicNameEl = document.getElementById("topicName"); // garde la reference : l'accueil sort du DOM pendant une conversation
 const LIBRE = {fr:"Sujet libre", en:"a free conversation: the learner chooses what to talk about", role:"a friendly, curious English-speaking friend who follows the learner's topic and asks good follow-up questions", libre:true};
 function setTheme(t){
   theme = t;
   if (started) $("themeName").textContent = t.libre ? "" : t.fr;
-  if (!t.libre) { S.theme = t; saveS(); topicNameEl.textContent = t.fr; }
+  if (!t.libre) { S.theme = t; saveS(); }
 }
 function pickTheme(){ const tous = [...THEMES, ...(S.mesThemes || [])]; let t; do { t = tous[Math.floor(Math.random()*tous.length)]; } while (tous.length > 1 && t.fr === theme?.fr); setTheme(t); }
 // Les anciens "jeux de role" (mise en scene) sont remplaces par des sujets de vraie conversation.
@@ -881,61 +873,39 @@ async function openMot(en, fr, phrase){
 }
 $("mot").onclick = e => { if (e.target.id === "mot" || e.target.closest("#motClose")) { fermer("mot"); motToken++; stopSpeak(); } };
 
-/* ---------- Choix / creation du jeu de role ---------- */
+/* ---------- Bouton de depart : "Je commence" (sujet libre) ou un sujet que Sam lance ----------
+   Le ▾ ouvre la liste ; choisir change le bouton (sans demarrer) ; toucher le bouton demarre. */
 const SCHEMA_ROLE = {
   type:"OBJECT",
   properties:{ fr:{type:"STRING"}, en:{type:"STRING"}, role:{type:"STRING"} },
   required:["fr","en","role"], propertyOrdering:["fr","en","role"]
 };
-let roleBusy = false;
-function roleStatus(t){ $("roleStatus").textContent = t; }
-function lancerTheme(t){ setTheme(t); fermer("roles"); stopSpeak(); begin(); }
+const ICO_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+const GO = {btn: document.getElementById("go"), ico: document.getElementById("goIco"), label: document.getElementById("goLabel")};
+function depart(){ const d = S.depart; return d && d.fr && d.en ? d : null; }     // null = "Je commence"
+function majDepart(){
+  const d = depart();
+  GO.ico.innerHTML = d ? PLAY : ICO_MIC;
+  GO.label.textContent = d ? d.fr : "Je commence";
+  GO.btn.setAttribute("aria-label", d ? "Commencer : " + d.fr : "Je commence, sujet libre");
+}
+function choisirDepart(t){ S.depart = t; saveS(); majDepart(); fermer("roles"); }
 function afficherRoles(){
-  const l = $("rolesList"); l.replaceChildren();
-  const ligne = (t, perso) => {
-    const it = el("div","ritem");
-    const b = el("button", "rbtn" + (theme && t.fr === theme.fr ? " cur" : ""), t.fr);
-    b.onclick = () => lancerTheme(t);
-    it.append(b);
-    if (perso) {
-      const x = el("button","rdel","×"); x.setAttribute("aria-label","Supprimer « " + t.fr + " »");
-      x.onclick = () => { S.mesThemes = S.mesThemes.filter(m => m !== t); saveS(); afficherRoles(); };
-      it.append(x);
-    }
-    return it;
+  const l = $("rolesList"), d = depart();
+  const ligne = (label, ico, actif, onclick) => {
+    const b = el("button", "rbtn" + (actif ? " cur" : ""));
+    const i = el("span","ico"); i.innerHTML = ico; b.append(i, document.createTextNode(label));
+    b.onclick = onclick;
+    const it = el("div","ritem"); it.append(b); return it;
   };
-  if ((S.mesThemes || []).length) { l.append(el("div","rgroup","Les tiens")); S.mesThemes.forEach(t => l.append(ligne(t, true))); }
-  l.append(el("div","rgroup","Idées de sujets")); THEMES.forEach(t => l.append(ligne(t, false)));
+  l.replaceChildren(
+    ligne("Je commence", ICO_MIC, !d, () => choisirDepart(null)),
+    ...THEMES.map(t => ligne(t.fr, "", d && d.fr === t.fr, () => choisirDepart(t)))
+  );
 }
-async function creerRole(desc){
-  roleBusy = true; roleStatus("…");
-  try {
-    const t = await llm(`A French-speaking engineering student wants to practise spoken English by chatting with Sam, a friendly Irish conversation partner, about a topic he chose. He described it in French (dictated, ignore transcription errors): """${desc}"""
-This is a REAL conversation about his real life and opinions, never a fictional scene and never a role for him.
-- "fr": a short French title for the topic, 2 to 5 words, like "Ta passion pour le vélo" or "Ton stage".
-- "en": the topic in English, a few words.
-- "role": how Sam should approach it, in English, 1 to 2 sentences: what to ask him about, what to share, so he talks a lot. If he wants to ask Sam questions, say so.`, SCHEMA_ROLE);
-    if (!t?.fr || !t?.en || !t?.role) throw {code:"shape"};
-    S.mesThemes = [t, ...(S.mesThemes || []).filter(m => m.fr !== t.fr)].slice(0, 12); saveS();
-    roleStatus("Dis de quoi tu veux parler");
-    lancerTheme(t);
-  } catch (e) {
-    console.error(e);
-    roleStatus(e?.code === "rate" ? "Limite gratuite atteinte, réessaie plus tard" : "Pas pu créer le sujet, réessaie");
-  } finally { roleBusy = false; }
-}
-let roleDictee = null;
-$("topicBtn").onclick = () => {
-  if (busy) return;
-  if (listening) { stopVoulu = true; rec.stop(); }
-  hidePop(); afficherRoles(); $("roles").hidden = false;
-  if (!roleDictee) roleDictee = creerDictee("fr-FR", $("roleMic"), {
-    status: roleStatus, occupe: () => roleBusy,
-    live: t => { if (t !== null) roleStatus("« " + t + " »"); },
-    done: t => creerRole(t)
-  });
-};
-$("roles").onclick = e => { if (e.target.id === "roles" || e.target.closest("#rolesClose")) { roleDictee?.arreter(); fermer("roles"); } };
+GO.btn.onclick = () => { const d = depart(); if (d) { setTheme(d); begin(); } else commencerLibre(); };
+$("topicBtn").onclick = () => { if (busy) return; hidePop(); afficherRoles(); $("roles").hidden = false; };
+$("roles").onclick = e => { if (e.target.id === "roles" || e.target.closest("#rolesClose")) fermer("roles"); };
 
 /* ---------- Question parallele (en francais, hors conversation) ---------- */
 const SCHEMA_QA = {
@@ -1617,7 +1587,6 @@ $("testVoice").onclick = async () => {
   majReglages();
 };
 
-$("start").onclick = begin;
 $("hintBtn").onclick = () => {
   const box = $("hintBox");
   if (!box.hidden) { box.hidden = true; return; }
@@ -1626,7 +1595,7 @@ $("hintBtn").onclick = () => {
   box.hidden = false;
 };
 $("newTheme").onclick = allerAccueil;
-$("startFree").onclick = commencerLibre;
+majDepart();
 
 if (!S.key) setStatus("Première fois ? Ajoute ta clé Gemini gratuite dans les réglages ⚙️.");
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

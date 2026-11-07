@@ -35,6 +35,8 @@ svg{width:24px;height:24px;flex:none}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px 6px}
 .title{font-weight:600;font-size:1.05rem}
 .theme{font-size:.9rem;color:var(--muted)}
+.leconchip{display:flex;align-items:center;gap:8px}
+.leconchip .pts{color:var(--accent);letter-spacing:2px;font-size:.8rem}
 .barbtns{display:flex}
 .themebtn{background:none;border:none;padding:4px 8px;margin:-4px -8px;border-radius:14px;text-align:left;display:block;min-width:0}
 .themebtn:active{background:color-mix(in srgb,var(--accent) 10%,transparent)}
@@ -282,7 +284,7 @@ button:not(:disabled):active{transform:scale(.94)}
   <section id="stage">
     <div class="bar">
       <button class="iconbtn back" id="newTheme" aria-label="Retour à l’accueil" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <div class="titleblock"><span class="title"><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span></div>
+      <div class="titleblock"><span class="title"><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span><span class="theme leconchip" id="leconChip" hidden></span></div>
       <div class="barbtns">
         <button class="iconbtn" id="mlBtn" aria-label="Mode mains libres" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="13" width="4.5" height="7" rx="2"/><rect x="16.5" y="13" width="4.5" height="7" rx="2"/></svg>
@@ -1268,10 +1270,11 @@ const SCHEMA = {
     hint_en:{type:"STRING"},
     hint_fr:{type:"STRING"},
     fait:{type:"STRING"},
-    command:{type:"STRING"}
+    command:{type:"STRING"},
+    cible:{type:"STRING"}
   },
-  required:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command"],
-  propertyOrdering:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command"]
+  required:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible"],
+  propertyOrdering:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible"]
 };
 
 /* Equilibre des roles : l'apprenant doit aussi POSER des questions (en Irlande, c'est lui qui ira chercher l'info).
@@ -1306,6 +1309,80 @@ function observer(d){
   saveS();
   if (p.depuisBilan >= 20) bilanProfil();
 }
+/* ---------- Les defis (lecons) : un a la fois, valide par 3 bons usages, remis a zero par une erreur ----------
+   Cibles : des structures (du parcours) et des mots ou expressions a haut rendement. */
+const CIBLES = [
+  {id:"get", fr:"bien utiliser « get »", en:"the verb GET in its everyday meanings (get up, get to, get a coffee, get tired, get it)", min:1, re:/\b(get|gets|got|gotten|getting)\b/i},
+  {id:"make-do", fr:"« make » ou « do »", en:"MAKE vs DO (make a decision, make a mistake, do homework, do the dishes)", min:2},
+  {id:"used-to", fr:"« used to » pour le passé", en:"USED TO for past habits (I used to play football)", min:3, re:/\bused to\b/i},
+  {id:"been-ing", fr:"« I've been -ing »", en:"the present perfect continuous (I've been working on it since Monday)", min:4, re:/\b(have|has|'ve|'s) been \w+ing\b/i},
+  {id:"should-have", fr:"« should have » pour regretter", en:"SHOULD HAVE / COULD HAVE + past participle to talk about regrets or alternatives", min:5, re:/\b(should|could|would)('ve| have) \w+/i},
+  {id:"look-forward", fr:"« look forward to »", en:"LOOK FORWARD TO + -ing (I'm looking forward to visiting Galway)", min:3, re:/\blook(s|ed|ing)? forward to\b/i},
+  {id:"would-rather", fr:"« would rather »", en:"WOULD RATHER + verb to express a preference (I'd rather stay in)", min:4, re:/\b(would|'d) rather\b/i},
+  {id:"depends", fr:"« it depends on »", en:"IT DEPENDS ON + noun / whether (it depends on the weather)", min:3, re:/\bdepends? on\b/i},
+  {id:"polite", fr:"demander poliment", en:"polite requests: COULD YOU..., WOULD YOU MIND + -ing, DO YOU KNOW IF...", min:2, re:/\b(could you|would you mind|do you know (if|whether|where|how|what))\b/i},
+  {id:"wish", fr:"« I wish »", en:"I WISH + past simple for present wishes (I wish I had more time)", min:5, re:/\bI wish\b/i},
+  {id:"tags", fr:"les question tags", en:"question tags (It's cold, isn't it? You went there, didn't you?)", min:5},
+  {id:"phrasal-up-out", fr:"phrasal verbs avec up et out", en:"common phrasal verbs with UP and OUT (set up, give up, find out, work out, run out of)", min:4, re:/\b(set|sets|setting|give|gives|gave|giving|find|finds|found|finding|work|works|worked|working|run|runs|ran|running|pick|picked|picking|turn|turned|turning|end|ended|ending|show|showed|showing|catch|caught|catching|figure|figured|figuring) (up|out)\b/i}
+];
+function cibleStructure(st){ return {id:"s:" + st, fr:"utiliser le " + (NOM_STRUCT[st] || st), en:"the " + st + " tense/structure", min:0, structure:st}; }
+function lecon(){ return (S.lecon && S.lecon.cible) ? S.lecon : null; }
+// Le prochain defi : alternance structure du parcours / mot ou expression, jamais un defi deja reussi.
+function prochaineCible(){
+  const p = profil(); const faites = new Set([...(p.lecons || []), lecon()?.cible.id].filter(Boolean));
+  const n = Math.min(10, Math.max(1, p.niveau || 4));
+  const derniereStructure = !!(p.derniereLecon || "").startsWith("s:");
+  const motsDispo = CIBLES.filter(c => c.min <= n + 1 && !faites.has(c.id));
+  if (!focus) choisirFocus();
+  const st = cibleStructure(focus.structure);
+  if (!derniereStructure && !faites.has(st.id)) return st;
+  if (motsDispo.length) return motsDispo[0];
+  return faites.has(st.id) ? cibleStructure(PARCOURS.map(x => x[0]).find(x => !faites.has("s:" + x)) || focus.structure) : st;
+}
+function choisirLecon(){
+  const cible = prochaineCible();
+  S.lecon = {cible, points:0, tours:0, sansUsage:0, debut:Date.now()}; profil().derniereLecon = cible.id; saveS();
+  majLeconChip(); return S.lecon;
+}
+function majLeconChip(){
+  const chip = $("leconChip"), l = lecon();
+  if (!l || !started) { chip.hidden = true; return; }
+  chip.replaceChildren(el("span", "lbl", "Défi · " + l.cible.fr), el("span", "pts", "●".repeat(l.points) + "○".repeat(Math.max(0, 3 - l.points))));
+  chip.hidden = false;
+}
+// Apres chaque phrase jugee : la cible a-t-elle ete utilisee ?
+function suivreLecon(d, texte){
+  let l = lecon(); if (!l) return;
+  l.tours++;
+  let usage = d.cible;
+  const t = String(texte || d.heard || "");
+  const c = l.cible;
+  if (d.ok && usage !== "ok") {
+    if (c.structure && (d.obs?.structures || []).map(x => String(x).toLowerCase()).includes(c.structure)) usage = "ok";
+    else if (c.re && c.re.test(t)) usage = "ok";
+  }
+  if (!d.ok && usage !== "ko" && c.re && (d.corrections || []).some(x => c.re.test(String(x.original || "")))) usage = "ko";
+  if (usage === "ok") { l.points++; l.sansUsage = 0; if (l.points >= 3) { (profil().lecons = profil().lecons || []).push(l.cible.id); saveS(); choisirLecon(); return; } }
+  else if (d.cible === "ko") { l.points = 0; l.sansUsage = 0; }
+  else l.sansUsage++;
+  saveS(); majLeconChip();
+}
+function acquisTexte(){
+  const ids = profil().lecons || [];
+  const libelles = ids.map(id => id.startsWith("s:") ? "the " + id.slice(2) : (CIBLES.find(c => c.id === id)?.en || id));
+  if (!libelles.length) return "";
+  return `
+ACQUIRED CHALLENGES (he validated these, they are now part of how he must speak): ${libelles.join(" ; ")}.
+- A mistake on one of them is a REAL mistake: put it in "corrections" with "type" = "défi acquis".
+- When he says something in a basic way where one of them would have been the natural choice, propose it through "conseil" ("better" = his sentence rewritten WITH that acquired challenge, "why_fr" starting with "Défi acquis :" and its French name). Only if "better" really uses it; otherwise do not label the conseil that way.`;
+}
+function leconTexte(){
+  const l = lecon() || choisirLecon();
+  const reste = 3 - l.points;
+  return acquisTexte() + `
+LESSON (today's challenge): "${l.cible.en}". He validates it with 3 correct uses (he has ${l.points}/3 so far${l.points ? "" : ""}); a wrong use resets the count. Steer the conversation so that using it is the natural thing to do; use it yourself now and then. If he uses it wrongly, correct it kindly and invite him to try again right away.${l.sansUsage >= 3 ? " He has not used it for a while: ask him explicitly to say something with it." : ""}${l.points === 2 ? " If he uses it correctly NOW, that completes the challenge: congratulate him in one sentence, then announce the next challenge: \"" + prochaineCibleTexte() + "\" with one short example, and ask a first question calling for it." : ""}`;
+}
+function prochaineCibleTexte(){ return prochaineCible().en; }
 let focus = null;
 function choisirFocus(){
   const p = profil();
@@ -1319,7 +1396,7 @@ function profilTexte(){
   const p = profil(); if (!focus) choisirFocus();
   const n = Math.min(10, Math.max(1, p.niveau || 4));
   return `LEARNER PROFILE (never mention it): spoken level ${n}/10. Speak ONE notch above him: ${NIVEAUX[Math.min(10, n + 1)]}.
-Today's coaching focus: steer naturally so he has to use "${focus.structure}" (your moves and questions should call for it), and use it yourself in your replies.${focus.faute ? ` Watch for his recurring mistake "${focus.faute}": be strict on it.` : ""}${focus.verbes.length >= 3 ? ` He overuses the verbs ${focus.verbes.join(", ")}: when a richer verb would fit, suggest it through "conseil".` : ""}${p.acquis.length ? ` He already masters: ${p.acquis.join(", ")}.` : ""} Introduce in your own replies one useful expression slightly above his level, naturally.`;
+${leconTexte()}${focus.faute ? ` Watch for his recurring mistake "${focus.faute}": be strict on it.` : ""}${focus.verbes.length >= 3 ? ` He overuses the verbs ${focus.verbes.join(", ")}: when a richer verb would fit, suggest it through "conseil".` : ""}${p.acquis.length ? ` He already masters: ${p.acquis.join(", ")}.` : ""} Introduce in your own replies one useful expression slightly above his level, naturally.`;
 }
 async function bilanProfil(){
   const p = profil(); p.depuisBilan = 0; saveS();
@@ -1399,7 +1476,7 @@ STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDI
 - QUESTIONS deserve special care, they are where French speakers slip: missing do/does/did ("Where you go?"), wrong word order ("Where you are going?"), indirect questions ("Can you tell me where is the station?" -> "where the station is"), missing auxiliary. These ARE mistakes.
 - "learner_asked": true if his message contains a real question to you (even a short one), false otherwise.
 - "ok": true if there is no real mistake in his English, false otherwise.
-- "conseil": only when ok is true and EITHER a phrase sounds blunt or unnatural in Ireland, OR his sentence is correct but basic for his level (an overused verb, a very simple structure where the focus structure would fit): "original" = his exact words concerned, "better" = the same idea one notch above (more natural, richer verb, the focus structure), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".
+- "conseil": only when ok is true and EITHER a phrase sounds blunt or unnatural in Ireland, OR his sentence is correct but basic for his level (an overused verb, a very simple structure where the focus structure would fit): OR one of his ACQUIRED CHALLENGES would have been the natural way to say it: "original" = his exact words concerned, "better" = the same idea one notch above (more natural, richer verb, the focus structure, the acquired challenge), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".
 - "corrections": the mistakes (at most 3), each with the exact wrong words, the corrected words, a French explanation of 12 words max, addressing the learner with « tu » (never « vous »), and "type" = the category in 2 or 3 French words, reused consistently (e.g. "prétérit oublié", "question sans do", "article", "préposition", "pluriel", "ordre des mots", "accord sujet-verbe", "vocabulaire", "prononciation"). Empty if ok.
 - "obs" (about his message, even when ok): "structures" = the grammar structures he used CORRECTLY, only from this list: ${STRUCTURES.join(", ")} (empty if none); "verbs" = the main verbs he used, base form, 6 max; "level" = the level of this message from 1 (A1) to 10 (C2). For an empty or inaudible message: [], [], 0.
 ${retry}${force}
@@ -1412,6 +1489,7 @@ STEP 2, only if ok is true, REPLY. If ok is false, leave reply_en, reply_fr, hin
 - "reply_fr": French translation of reply_en.
 - "hint_en": ${OUVERTS.includes(fin) || fin === "switch" ? "the first sentence of a developed answer he could give" : "a natural QUESTION the learner could ask you now (well formed, polite)"}; "hint_fr": its French translation.
 - "fait": if the learner's message reveals a NEW lasting fact about his REAL life (studies, work, family, hobbies, tastes, projects, places he knows, opinions...) that is not already known above, write it as one short French sentence of 15 words max, about him ("Il ..."). Otherwise "".
+- "cible": today's challenge target is ${JSON.stringify((lecon() || choisirLecon()).cible.en)}. "ok" if this message contains a correct use of it (any form), "ko" if he tried to use it but got it wrong (then it is also a correction), "non" if he did not use it.
 - "command": "pause" ONLY if his whole message is a request to pause or stop the conversation (in English or French: "pause", "stop", "on arrête", "let's stop here", "I need a break"); then also set ok to true and corrections to []. Otherwise "".
 
 ${profilTexte()}
@@ -1423,7 +1501,7 @@ Use a fact ONLY when today's topic is directly about it (e.g. his studies when t
 Conversation so far:
 ${ancien}${transcript}
 
-${audio ? "The learner's answer is in the attached audio." : learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to []. " + (history.length ? "This is a NEW SESSION of an ongoing relationship: welcome him back in a few warm words (no recap of what was said before), then open today's topic" : "Start the conversation: greet him warmly in one short sentence and open today's topic") + " (with an open question that invites him to tell something, not a yes/no question; or, if he is the one asking the questions, invite him to ask you anything; or, for a mission, state the mission clearly). Stick to today's topic; use a known fact only if it fits it."}`;
+${audio ? "The learner's answer is in the attached audio." : learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to []. " + (history.length ? "This is a NEW SESSION of an ongoing relationship: welcome him back in a few warm words (no recap of what was said before), then announce today's challenge in one or two short sentences: " + (lecon()?.points ? "we keep working on it, he needs " + (3 - lecon().points) + " more good uses" : "a NEW challenge, with one short example of the target") + ", then open today's topic with a question that naturally calls for the target" : "Start the conversation: greet him warmly in one short sentence, announce today's challenge with one short example of the target, and open today's topic with a question that naturally calls for it") + " (with an open question that invites him to tell something, not a yes/no question; or, if he is the one asking the questions, invite him to ask you anything; or, for a mission, state the mission clearly). Stick to today's topic; use a known fact only if it fits it."}`;
 }
 
 // Les fautes sont marquees directement dans la bulle de l'apprenant (rouge souligne) ; un toucher
@@ -1570,7 +1648,7 @@ async function ask(learner, youEl, opts = {}){
       essai = {prev:learner, corrections:d.corrections, youEl, first:false};
       if (first) setSerie(0);
       journal.push({role:"user", content:learner, ok:false, tried:true, corrections:d.corrections || [], t:Date.now()}); sauverConv();
-      if (first) observer(d);                 // la 1re tentative compte dans le profil, pas les reprises
+      if (first) { observer(d); suivreLecon(d, learner); }   // la 1re tentative compte dans le profil, pas les reprises
       renderFix(d, youEl, () => {
         // "Passer" : on garde la phrase telle quelle et la conversation continue.
         history.push({role:"user", content:learner});
@@ -1592,7 +1670,7 @@ async function ask(learner, youEl, opts = {}){
       if (!essai && !opts.force) setSerie(serie + 1);
       const moi = [...history].reverse().find(h => h.role === "user");
       if (d.learner_asked && moi) { moi.asked = true; compterQuestion(); }
-      observer(d);
+      observer(d); if (!opts.force) suivreLecon(d, learner);
       feed.querySelectorAll(".you.attempt").forEach(x => x.classList.add("tried"));
     }
     essai = null;
@@ -1705,6 +1783,7 @@ function majPlusHaut(){
 const accueil = $("empty");
 function modeConversation(libre){
   document.body.classList.remove("home");
+  if (!lecon()) choisirLecon(); majLeconChip(); $("themeName").hidden = true;
   $("modeName").textContent = libre ? "Sujet libre" : "Conversation";
   $("newTheme").hidden = false; navDedans();
   // preference retenue : si le mode mains libres etait actif la derniere fois, on le remet
@@ -1718,7 +1797,7 @@ function allerAccueil(){
   stopSpeak(); hidePop();
   started = false; mlStop(); mlBtn.hidden = true; history = []; journal = []; essai = null; lastHint = null; setSerie(0);
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
-  $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("newTheme").hidden = true;
+  $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("themeName").hidden = false; $("newTheme").hidden = true; $("leconChip").hidden = true;
   mic.disabled = true;
   feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home");
   if (window.history.state?.tp === "in") window.history.replaceState(null, "");
@@ -1794,7 +1873,9 @@ function rendreReglages(){
     const pills = (liste, cls) => { const w = el("div", "pills"); liste.forEach(x => w.append(el("span", "pill " + cls, x))); return w; };
     if (!focus) choisirFocus();
     const blocs = [carte, stats];
-    if (focus?.structure) { blocs.push(el("div", "profsec", "En ce moment"), pills([NOM_STRUCT[focus.structure] || focus.structure], "")); }
+    const l = lecon() || choisirLecon();
+    blocs.push(el("div", "profsec", "Défi en cours"), pills([l.cible.fr + "  " + "●".repeat(l.points) + "○".repeat(3 - l.points)], ""));
+    if ((p.lecons || []).length) blocs.push(el("div", "profsec", "Défis réussis"), pills(p.lecons.map(id => (CIBLES.find(c => c.id === id) || {fr: id.startsWith("s:") ? "utiliser le " + (NOM_STRUCT[id.slice(2)] || id.slice(2)) : id}).fr), "ok"));
     if (p.acquis.length) { blocs.push(el("div", "profsec", "Acquis"), pills(p.acquis.map(x => NOM_STRUCT[x] || x), "ok")); }
     const fautes = Object.entries(p.fautes).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k]) => k);
     if (fautes.length) { blocs.push(el("div", "profsec", "À surveiller"), pills(fautes, "ko")); }

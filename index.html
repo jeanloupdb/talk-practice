@@ -146,6 +146,8 @@ body.home #stage{border-radius:0}
 .pop small{display:block;color:var(--muted);font-size:.82rem}
 .popplay{flex:none;width:38px;height:38px;border-radius:50%;border:none;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
 .popplay svg{width:16px;height:16px}
+.popplay.moi{background:var(--soft);color:var(--muted)}
+.popplay.moi svg{width:15px;height:15px}
 .popplay.inline{display:inline-grid;width:34px;height:34px;margin-left:10px;vertical-align:middle}
 .mothead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .motfr{margin:4px 0 10px;font-size:1.1rem}
@@ -764,6 +766,7 @@ function micChrome(){
   if (listening) { stopVoulu = true; rec.stop(); return; }
   stopSpeak(); unlockAudio(); hidePop();
   heard = ""; base = ""; stopVoulu = false; micErr = null; micStart = debutSession = Date.now(); relancesVides = 0;
+  reflouter();
   try { rec.start(); listening = true; mic.classList.add("on"); mic.setAttribute("aria-label","Arrêter et envoyer"); setStatus(""); }
   catch { setStatus("Le micro ne démarre pas."); }
 }
@@ -813,6 +816,7 @@ async function basculerEnreg(opts = {}){
     mlVides = 0;
     you.className = "you pending"; you.textContent = "";
     setStatus("");
+    try { you.dataset.rec = URL.createObjectURL(blob); } catch {}   // pour reecouter sa propre prononciation
     ask(null, you, {audio:{data: await blobB64(blob), mime:type}});
   };
   // Niveau de la voix en direct : le halo du micro et les barres de ta bulle bougent avec toi.
@@ -854,6 +858,7 @@ async function basculerEnreg(opts = {}){
   enreg.addEventListener("stop", stopAnalyse);
   enreg.forcer = () => { aParle = true; };
   if (auto && !analyse) aParle = true;   // sans analyse audio : pas de detection, envoi manuel ou a 20 s
+  reflouter();
   enreg.start(); enregDebut = Date.now(); document.body.classList.add("ecoute");
   mic.classList.add("on"); mic.setAttribute("aria-label", auto ? "Envoyer maintenant" : "Arrêter et envoyer");
   enregLive = el("div", "you live"); const dot = el("span", "recdot"), tps = el("span", null, "0:00"), ondes = el("span", "ondes");
@@ -1569,9 +1574,15 @@ function showFixPop(sp, items){
     const row = el("div", "poprow"), t = el("div", "poptxt");
     t.append(el("b", null, c.corrected || c.better || ""));
     const why = c.explanation_fr || c.why_fr; if (why) t.append(el("small", null, why));
-    const pl = el("button", "popplay"); pl.innerHTML = PLAY; pl.setAttribute("aria-label", "Écouter");
+    const pl = el("button", "popplay"); pl.innerHTML = PLAY; pl.setAttribute("aria-label", "Écouter la bonne prononciation");
     pl.onclick = e => { e.stopPropagation(); unlockAudio(); speak(c.corrected || c.better, pl, null); };
-    row.append(t, pl); box.append(row);
+    const url = sp.closest(".you")?.dataset.rec;
+    if (url) {
+      const moi = el("button", "popplay moi"); moi.innerHTML = ICO_MIC; moi.setAttribute("aria-label", "Réécouter ce que j’ai dit");
+      moi.onclick = e => { e.stopPropagation(); stopSpeak(); const a = new Audio(url); a.play().catch(() => {}); };
+      row.append(t, moi, pl);
+    } else row.append(t, pl);
+    box.append(row);
   }
   pop.classList.add("fixpop"); pop.replaceChildren(box); placerPop(sp);
 }
@@ -1591,8 +1602,17 @@ function renderFix(d, youEl, onSkip){
   return youEl;
 }
 
+// Remet le flou (et cache la traduction) sur toutes les repliques affichees : on ecoute, on ne lit pas.
+function reflouter(){
+  feed.querySelectorAll(".claude").forEach(c => {
+    c.querySelector(".msg")?.classList.add("hide"); c.classList.remove("trad");
+    const libs = c.querySelectorAll(".tbtn span"); if (libs[0]) libs[0].textContent = "Afficher"; if (libs[1]) libs[1].textContent = "Traduire";
+  });
+  hidePop();
+}
 function renderClaude(chunks, replyFr, passe){
   if (!passe) {
+    reflouter();
     feed.querySelectorAll(".claude").forEach(c => c.classList.add("old"));
     feed.querySelectorAll(".play.ready, .skip").forEach(b => b.classList.contains("skip") ? b.remove() : b.classList.remove("ready"));
   }
@@ -1776,7 +1796,7 @@ function rendreEntree(m){
   }
   const morceaux = Array.isArray(m.chunks) && m.chunks.length ? m.chunks : [{en:m.content, fr:m.fr || ""}];
   const t = renderClaude(morceaux, m.fr || "", true);
-  t.reveal(true); t.play.classList.remove("ready");
+  t.play.classList.remove("ready");
   return t.wrap;
 }
 function afficherEchanges(n = PAGE_INIT){

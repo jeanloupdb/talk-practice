@@ -74,27 +74,14 @@ svg{width:24px;height:24px;flex:none}
 .sujetligne:last-child{border-bottom:none}
 .gros.parler{margin:4px 0 10px}
 #rolesList .rgroup{margin:18px 4px 2px}
-.convbtn{width:100%;-webkit-touch-callout:none;user-select:none}
-.convbtn.selmode{border-bottom:none;border-radius:14px;padding:11px 10px;margin-bottom:2px;gap:14px;justify-content:flex-start}
-.cercle{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none;color:var(--on-accent);font-size:.8rem;font-weight:800;transition:background-color .15s,border-color .15s}
-.convbtn.sel{background:color-mix(in srgb,var(--accent) 10%,transparent)}
-.convbtn.sel .cercle{background:var(--accent);border-color:var(--accent)}
-.selbar{display:flex;align-items:center;gap:8px;padding:0 0 8px}
-.selcount{min-width:28px;height:28px;padding:0 9px;border-radius:999px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-weight:700;font-size:.9rem}
-.seltout{flex:1;text-align:left;background:none;border:none;color:var(--accent);font-weight:600;padding:6px 4px}
-.selbar .iconbtn.danger{color:var(--bad)}
-.selbar .iconbtn:disabled{opacity:.35}
-.sujetligne.reprise{color:var(--muted);font-weight:500}
-.sujetligne .ico{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:9px;vertical-align:-3px;color:var(--accent)}
-.sujetligne .ico svg{width:18px;height:18px}
 .sujetligne .fl{color:var(--muted);font-size:1.3rem;line-height:1}
+.sujetligne.zero{color:var(--muted);font-weight:500}
+.plushaut{display:block;margin:0 auto 6px;background:var(--soft);border:none;border-radius:999px;padding:8px 16px;color:var(--muted);font-size:.85rem;font-weight:600}
+.claude.passe .ctrl .tbtn span{display:none}
 .sujetligne:active{background:color-mix(in srgb,var(--accent) 8%,transparent)}
 .titleblock{min-width:0;flex:1}
 .iconbtn.back{margin-left:-10px;margin-right:-4px}
 .conv{display:flex;align-items:center;gap:8px}
-.convbtn{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px;background:none;border:none;border-bottom:1px solid var(--line);border-radius:0;padding:13px 6px;text-align:left}
-.convbtn b{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.convbtn small{color:var(--muted);font-size:.82rem;flex:none}
 .passe{opacity:.75}
 .versconv{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border:none;border-radius:999px;padding:8px 16px;font-weight:600;font-size:.92rem}
 body.home footer{display:none}
@@ -393,7 +380,6 @@ window.addEventListener("popstate", () => {
   const ouverte = FENETRES.find(id => !$(id).hidden && !$(id).classList.contains("ferme"));
   if (ouverte) {
     if (ouverte === "settings" && pageReg !== "main") { setPage("main"); navDedans(); return; }
-    if (ouverte === "roles" && selection) { annulerSelection(); navDedans(); return; }
     if (ouverte === "qa") qaDictee?.arreter();
     fermer(ouverte); stopSpeak();
     if (started) navDedans();          // on reste dans la conversation : on remet l'entree
@@ -425,8 +411,13 @@ if ((S.v || 1) < 3) {
   for (const c of (S.convs || [])) if (c.theme && !c.theme.libre) c.theme.role = "Keep chatting about this topic naturally, about his real life and opinions.";
   S.v = 3; saveS();
 }
+if ((S.v || 1) < 4) {
+  const c = Array.isArray(S.convs) ? S.convs[0] : null;
+  if (c) S.fil = {msgs:(c.msgs || []).slice(-40), journal:(c.journal || []).slice(-400), d:c.d || Date.now()};
+  delete S.convs; S.v = 4; saveS();
+}
 if (S.theme?.fr && S.theme?.en && S.theme?.role) setTheme(S.theme); else setTheme(THEMES[0]);
-queueMicrotask(() => afficherReprendre());
+
 
 /* ---------- Voix IA (Kokoro, dans le téléphone) ---------- */
 let tts = null, ttsState = "idle", actx = null, currentSrc = null, playToken = 0, speakingBtn = null, enLecture = false;
@@ -966,30 +957,21 @@ function majDepart(){
 }
 const ICO_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
 function afficherRoles(){
-  const l = convs();
-  if (selection) {
-    const bar = el("div", "selbar");
-    const annule = el("button", "iconbtn"); annule.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'; annule.setAttribute("aria-label", "Annuler la sélection"); annule.onclick = annulerSelection;
-    const n = el("span", "selcount", String(selection.size));
-    const tout = el("button", "seltout", selection.size === l.length ? "Aucune" : "Toutes");
-    tout.onclick = () => { selection = selection.size === l.length ? new Set() : new Set(l.map(c => c.id)); afficherRoles(); };
-    const suppr = el("button", "iconbtn danger"); suppr.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'; suppr.setAttribute("aria-label", "Supprimer la sélection"); suppr.disabled = !selection.size;
-    suppr.onclick = () => { S.convs = l.filter(c => !selection.has(c.id)); saveS(); selection = null; afficherRoles(); };
-    bar.append(annule, n, tout, suppr);
-    $("rolesList").replaceChildren(bar, ...convs().map(c => ligneConv(c)));
-    return;
-  }
   const premier = el("button", "gros second parler");
   premier.innerHTML = ICO_MIC; premier.append("Parler en premier");
   premier.onclick = () => { fermer("roles"); commencerLibre(); };
-  $("rolesList").replaceChildren(premier, ...l.map(c => ligneConv(c)));
+  const zero = el("button", "sujetligne zero");
+  zero.append(el("span", null, "Repartir à zéro"), el("span", "fl", "›"));
+  zero.onclick = () => { if (confirm("Effacer toute la conversation et repartir à zéro ?")) { repartirAZero(); fermer("roles"); } };
+  const f = fil();
+  $("rolesList").replaceChildren(premier, ...(f.journal?.length ? [zero] : []));
 }
 // "Je commence" : l'IA ouvre tout de suite sur un sujet (different du dernier) ; "Parler en premier" est dans le deroule.
 GO.btn.onclick = () => {
   const pool = THEMES.filter(t => !t.mission && !t.inverse && t.fr !== S.theme?.fr);
   setTheme(pool[Math.floor(Math.random() * pool.length)]); begin();
 };
-$("topicBtn").onclick = () => { if (busy) return; hidePop(); selection = null; afficherRoles(); ouvrir("roles"); };
+$("topicBtn").onclick = () => { if (busy) return; hidePop(); afficherRoles(); ouvrir("roles"); };
 $("roles").onclick = e => { if (e.target.id === "roles" || e.target.closest("#rolesClose")) fermer("roles"); };
 
 /* ---------- Question parallele (en francais, hors conversation) ---------- */
@@ -1373,6 +1355,8 @@ const FINS = MOUVEMENTS;
 function buildPrompt(learner, essai, audio){
   const fin = choisirFin(learner);
   const transcript = history.map(h => (h.role === "user" ? "Learner: " : "You: ") + h.content).join("\n") || "(nothing yet)";
+  // en nouvelle session, les anciens echanges servent de contexte : on les marque comme tels
+  const ancien = !learner && history.length ? "(earlier session)\n" : "";
   const retry = essai ? `
 The learner is RETRYING their answer to your last line. Their previous attempt was: """${essai.prev}"""
 and you corrected: ${essai.corrections.map(c => `"${c.original}" -> "${c.corrected}"`).join("; ")}.
@@ -1412,9 +1396,9 @@ ${memoTexte()}
 Use a fact ONLY when today's topic is directly about it (e.g. his studies when the topic is his studies). Do not mention unrelated facts, not even in a greeting. Never list them, never mention that you have notes.
 
 Conversation so far:
-${transcript}
+${ancien}${transcript}
 
-${audio ? "The learner's answer is in the attached audio." : learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to [], and start the conversation: greet him warmly in one short sentence and open today's topic (with an open question that invites him to tell something, not a yes/no question; or, if he is the one asking the questions, invite him to ask you anything; or, for a mission, state the mission clearly). Stick to today's topic; use a known fact only if it fits it."}`;
+${audio ? "The learner's answer is in the attached audio." : learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to []. " + (history.length ? "This is a NEW SESSION of an ongoing relationship: welcome him back in a few warm words (no recap of what was said before), then open today's topic" : "Start the conversation: greet him warmly in one short sentence and open today's topic") + " (with an open question that invites him to tell something, not a yes/no question; or, if he is the one asking the questions, invite him to ask you anything; or, for a mission, state the mission clearly). Stick to today's topic; use a known fact only if it fits it."}`;
 }
 
 // Les fautes sont marquees directement dans la bulle de l'apprenant (rouge souligne) ; un toucher
@@ -1470,9 +1454,11 @@ function renderFix(d, youEl, onSkip){
   return youEl;
 }
 
-function renderClaude(chunks, replyFr){
-  feed.querySelectorAll(".claude").forEach(c => c.classList.add("old"));
-  feed.querySelectorAll(".play.ready, .skip").forEach(b => b.classList.contains("skip") ? b.remove() : b.classList.remove("ready"));
+function renderClaude(chunks, replyFr, passe){
+  if (!passe) {
+    feed.querySelectorAll(".claude").forEach(c => c.classList.add("old"));
+    feed.querySelectorAll(".play.ready, .skip").forEach(b => b.classList.contains("skip") ? b.remove() : b.classList.remove("ready"));
+  }
   const wrap = el("div","claude");
   const msg = el("p","msg hide");
   chunks.forEach((c, i) => {
@@ -1493,8 +1479,8 @@ function renderClaude(chunks, replyFr){
   eye.onclick = () => { hidePop(); reveal(msg.classList.contains("hide")); };
   tr.onclick = () => { hidePop(); const on = !wrap.classList.contains("trad"); wrap.classList.toggle("trad", on); trL.textContent = on ? "Anglais" : "Traduire"; if (on) reveal(true); };
   ctrl.append(play, eye); if (replyFr) ctrl.append(tr);
-  wrap.append(msg, fr, ctrl); feed.append(wrap);
-  return {text, play, reveal};
+  wrap.append(msg, fr, ctrl); if (!passe) feed.append(wrap);
+  return {text, play, reveal, wrap};
 }
 
 // Phrases dites a voix haute quand il faut recommencer (courtes, en cache apres le 1er usage).
@@ -1627,100 +1613,55 @@ function submit(text){
   ask(t, you);
 }
 /* ---------- Historique des conversations (sur le telephone, 20 max, 40 messages max chacune) ---------- */
-const CONV_MAX = 20, MSG_MAX = 40, JOURNAL_MAX = 300;
-// references gardees : l'accueil sort du DOM pendant une conversation
-let convId = null;
-function convs(){ return Array.isArray(S.convs) ? S.convs : (S.convs = []); }
+/* ---------- Un seul fil de conversation ----------
+   Practice reprend toujours la suite ; le fil est garde sur le telephone (derniers echanges pour le modele,
+   journal complet pour l'affichage, borne a 400). Seuls les derniers echanges sont mis dans la page. */
+const MSG_MAX = 40, JOURNAL_MAX = 400, PAGE_INIT = 12, PAGE_PLUS = 20;
+function fil(){ if (!S.fil || typeof S.fil !== "object") S.fil = {msgs:[], journal:[], d:0}; return S.fil; }
 function sauverConv(){
-  if (!theme || !history.length) return;
-  const premier = history.find(h => h.role === "user")?.content || "";
-  let c = convs().find(x => x.id === convId);
-  if (!c) { convId = String(Date.now()); c = {id:convId}; }
-  Object.assign(c, {
-    theme: {fr:theme.fr, en:theme.en, role:theme.role, libre:!!theme.libre},
-    titre: theme.libre ? (premier.slice(0, 60) || "Sujet libre") : theme.fr,
-    msgs: history.slice(-MSG_MAX), journal: journal.slice(-JOURNAL_MAX), d: Date.now()
-  });
-  S.convs = [c, ...convs().filter(x => x.id !== c.id)].slice(0, CONV_MAX);
+  const f = fil();
+  f.msgs = history.slice(-MSG_MAX); f.journal = journal.slice(-JOURNAL_MAX); f.d = Date.now();
+  if (theme && !theme.libre) f.theme = {fr:theme.fr, en:theme.en, role:theme.role};
   saveS();
 }
-function quand(t){
-  const sec = Math.max(1, Math.round((Date.now() - t) / 1000));
-  if (sec < 60) return sec + "s";
-  const m = Math.round(sec / 60); if (m < 60) return m + "min";
-  const h = Math.round(m / 60); if (h < 24) return h + "h";
-  const j = Math.round(h / 24); return j === 1 ? "hier" : j + "j";
+function chargerFil(){
+  const f = fil();
+  history = (f.msgs || []).slice(-20); journal = (f.journal || []).slice(-JOURNAL_MAX);
 }
-let selection = null;   // mode selection dans l'historique (appui long) : Set d'identifiants
-function ligneConv(c){
-  const b = el("button", "convbtn" + (selection ? " selmode" : "") + (selection?.has(c.id) ? " sel" : ""));
-  if (selection) b.append(el("span", "cercle", selection.has(c.id) ? "✓" : ""));
-  b.append(el("b", null, c.titre));
-  if (!selection) b.append(el("small", null, quand(c.d)));
-  let timer;
-  const debut = () => { timer = setTimeout(() => { timer = null; if (!selection) { selection = new Set([c.id]); try { navigator.vibrate?.(15); } catch {} afficherRoles(); } }, 500); };
-  const fin = () => { if (timer) clearTimeout(timer); };
-  b.addEventListener("pointerdown", debut); b.addEventListener("pointerup", fin); b.addEventListener("pointercancel", fin); b.addEventListener("pointerleave", fin);
-  b.oncontextmenu = e => e.preventDefault();
-  b.onclick = () => {
-    if (timer === null) { timer = undefined; return; }        // le clic qui suit un appui long ne compte pas
-    if (selection) { selection.has(c.id) ? selection.delete(c.id) : selection.add(c.id); afficherRoles(); }
-    else { fermer("roles"); reprendreConv(c); }
-  };
-  return b;
-}
-function annulerSelection(){ selection = null; afficherRoles(); }
-// Bouton historique (en bas a gauche sur l'accueil) : il laisse voir la derniere conversation.
-function afficherReprendre(){}
-// Anciennes repliques enregistrees sans decoupage : Gemini les redecoupe en expressions (un seul appel),
-// exactement comme en direct, et on garde le resultat dans l'historique pour ne pas le refaire.
-const SCHEMA_DECOUPE = {type:"OBJECT", properties:{repliques:{type:"ARRAY", items:{type:"OBJECT",
-  properties:{chunks:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}, fr:{type:"STRING"}},
-  required:["chunks","fr"], propertyOrdering:["chunks","fr"]}}}, required:["repliques"]};
-async function decouperAnciennes(msgs){
-  const d = await llm(`For each English line below, in order:
-- "chunks": the line cut into consecutive pieces of 1 to 4 words; joined with spaces they must give the line exactly. Keep idioms, phrasal verbs and set expressions in one piece; punctuation stays attached. "fr" = the French meaning of THAT piece only, in context.
-- "fr": French translation of the whole line.
-Lines:
-${msgs.map((m, i) => (i + 1) + ". " + m.content).join("\n")}`, SCHEMA_DECOUPE);
-  (d.repliques || []).forEach((r, i) => {
-    const m = msgs[i];
-    if (m && Array.isArray(r.chunks) && r.chunks.length && r.chunks.map(c => c.en).join(" ").replace(/\s+/g, " ").trim() === m.content.replace(/\s+/g, " ").trim()) {
-      m.chunks = r.chunks; m.fr = r.fr || m.fr || "";
-    }
-  });
-}
-function afficherEchanges(){
-  feed.querySelectorAll(".you.passe, .claude").forEach(x => x.remove());
-  // conversation complete si elle a ete enregistree avec son journal, sinon les derniers echanges du modele
-  const source = journal.length ? journal : history.slice(-6);
-  for (const m of source) {
-    if (m.role === "user") {
-      const y = el("div", "you passe" + (m.tried ? " attempt tried" : ""), m.content); feed.append(y);
-      if (m.tried) marquer(y, m.corrections || [], "faute");
-      else if (m.ok && !m.forced) { y.classList.add("juste"); if (m.conseil?.better) marquer(y, [m.conseil], "mieux"); }
-      continue;
-    }
-    const morceaux = Array.isArray(m.chunks) && m.chunks.length ? m.chunks : [{en:m.content, fr:m.fr || ""}];
-    const t = renderClaude(morceaux, m.fr || "");
-    t.reveal(true); t.play.classList.remove("ready");
+function repartirAZero(){ S.fil = {msgs:[], journal:[], d:0}; history = []; journal = []; saveS(); }
+let affiches = 0;   // nombre d'entrees du journal deja mises dans la page (en partant de la fin)
+function rendreEntree(m){
+  if (m.role === "user") {
+    const y = el("div", "you passe" + (m.tried ? " attempt tried" : ""), m.content);
+    if (m.tried) marquer(y, m.corrections || [], "faute");
+    else if (m.ok && !m.forced) { y.classList.add("juste"); if (m.conseil?.better) marquer(y, [m.conseil], "mieux"); }
+    return y;
   }
-  scrollDown();
+  const morceaux = Array.isArray(m.chunks) && m.chunks.length ? m.chunks : [{en:m.content, fr:m.fr || ""}];
+  const t = renderClaude(morceaux, m.fr || "", true);
+  t.reveal(true); t.play.classList.remove("ready");
+  return t.wrap;
 }
-function reprendreConv(c){
-  if (!S.key) { openSettings(); return; }
-  unlockAudio(); stopSpeak();
-  setTheme(c.theme.libre ? LIBRE : c.theme);
-  started = true; history = (c.msgs || []).slice(-20); journal = Array.isArray(c.journal) ? c.journal.slice() : []; lastHint = null; essai = null; nbQuestions = 0; setSerie(0); convId = c.id;
-  modeConversation(!!c.theme.libre); $("themeName").textContent = c.theme.libre ? "" : c.theme.fr;
-  feed.replaceChildren(el("p","tip","Reprise de « " + c.titre + " » · " + quand(c.d)));
-  afficherEchanges();
-  mic.disabled = false;
-  const sansDecoupe = history.slice(-6).filter(m => m.role === "assistant" && !(Array.isArray(m.chunks) && m.chunks.length));
-  if (sansDecoupe.length) decouperAnciennes(sansDecoupe).then(() => {
-    if (convId !== c.id || busy) return;
-    afficherEchanges(); sauverConv();
-  }).catch(e => console.warn("redecoupage impossible pour l'instant", e));
+function afficherEchanges(n = PAGE_INIT){
+  feed.querySelectorAll(".you.passe, .claude, .plushaut").forEach(x => x.remove());
+  affiches = Math.min(journal.length, n);
+  const bloc = journal.slice(journal.length - affiches).map(rendreEntree);
+  feed.append(...bloc);
+  feed.querySelectorAll(".claude").forEach(c => c.classList.add("old", "passe"));
+  majPlusHaut(); scrollDown();
+}
+function majPlusHaut(){
+  feed.querySelector(".plushaut")?.remove();
+  if (affiches >= journal.length) return;
+  const b = el("button", "plushaut", "Plus haut");
+  b.onclick = () => {
+    const avant = feed.scrollHeight;
+    const nouveaux = journal.slice(Math.max(0, journal.length - affiches - PAGE_PLUS), journal.length - affiches).map(rendreEntree);
+    nouveaux.forEach(x => { if (x.classList.contains("claude")) x.classList.add("old", "passe"); });
+    b.after(...nouveaux); affiches += nouveaux.length; majPlusHaut();
+    feed.scrollTop += feed.scrollHeight - avant;
+  };
+  feed.prepend(b);
 }
 
 // Accueil <-> conversation
@@ -1742,25 +1683,26 @@ function allerAccueil(){
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
   $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("newTheme").hidden = true;
   mic.disabled = true;
-  feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home"); afficherReprendre();
+  feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home");
   if (window.history.state?.tp === "in") window.history.replaceState(null, "");
+}
+// Entree dans le fil : les derniers echanges s'affichent en leger, puis on continue.
+function ouvrirFil(libre){
+  unlockAudio(); stopSpeak(); if (voixKokoro()) loadTTS();
+  started = true; chargerFil(); lastHint = null; essai = null; nbQuestions = 0; setSerie(0);
+  modeConversation(libre);
+  feed.replaceChildren(); afficherEchanges();
 }
 function begin(){
   if (!S.key) { openSettings(); return; }
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
-  unlockAudio(); stopSpeak(); if (voixKokoro()) loadTTS();
-  started = true; history = []; journal = []; lastHint = null; essai = null; nbQuestions = 0; setSerie(0); convId = null;
-  modeConversation(false); $("themeName").textContent = theme.fr;
-  feed.replaceChildren();
+  ouvrirFil(false); $("themeName").textContent = theme.fr;
   ask(null);
 }
 function commencerLibre(){
   if (!S.key) { openSettings(); return; }
-  unlockAudio(); stopSpeak();
   setTheme(LIBRE);
-  started = true; history = []; journal = []; lastHint = null; essai = null; nbQuestions = 0; setSerie(0); convId = null;
-  modeConversation(true);
-  feed.replaceChildren(); mic.disabled = false;
+  ouvrirFil(true); mic.disabled = false;
   mic.onclick();
 }
 

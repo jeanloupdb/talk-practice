@@ -38,8 +38,16 @@ svg{width:24px;height:24px;flex:none}
 .theme{font-size:.9rem;color:var(--muted)}
 .leconchip{display:flex;align-items:center;gap:8px}
 /* la scene : un exercice par ecran, qui glisse */
-.scene{position:relative;flex:1;min-height:100%;display:flex;flex-direction:column}
-.etape{position:absolute;inset:0;display:flex;flex-direction:column;gap:16px;padding-top:4vh;animation:glisse .42s var(--ease) both}
+.scene{position:relative;flex:1;min-height:100%;display:flex;flex-direction:column;gap:14px}
+.scene .repere{flex:none}
+.scene .pile{position:relative;flex:1}
+.etape{position:absolute;inset:0;display:flex;flex-direction:column;gap:16px;padding-top:2vh;animation:glisse .42s var(--ease) both}
+.repere .carte{animation:entre .4s var(--ease) both}
+.carte.modele.compact{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:12px 16px;border-radius:18px}
+.compact .cmot{margin:0;font-size:1.35rem}
+.compact .cex{flex:1 1 100%;padding:3px 0;border-top:none}
+.compact .cex b{display:inline;font-size:.95rem;font-weight:600}
+.compact .cex span{display:inline;margin-left:8px;font-size:.82rem}
 .etape .reponses{display:flex;flex-direction:column;gap:14px;align-items:flex-end}
 .etape .reponses .carte{align-self:stretch}
 .etape.sort{animation:sortie .34s var(--ease) both;pointer-events:none}
@@ -841,7 +849,7 @@ function blobB64(b){ return new Promise((ok, ko) => { const r = new FileReader()
 async function basculerEnreg(opts = {}){
   const auto = !!opts.auto;
   if (enreg && enreg.state === "recording") { enreg.forcer?.(); enreg.stop(); return; }
-  if (busy || !started) return;
+  if (busy || enTransition || !started) return;
   stopSpeak(); unlockAudio(); hidePop();
   let flux;
   try { flux = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, channelCount:1}}); }
@@ -961,7 +969,7 @@ function mlMaj(){
 }
 function mlApres(){ if (mainsLibres && started) setTimeout(ecouterAuto, 350); }
 function ecouterAuto(){
-  if (!mainsLibres || !started || busy || enLecture) return;
+  if (!mainsLibres || !started || busy || enTransition || enLecture) return;
   if (enreg && enreg.state === "recording") return;
   basculerEnreg({auto:true});
 }
@@ -1616,17 +1624,27 @@ function etapeCourante(){
 function carte(cls, enfants){ const c = el("div", "carte " + cls); c.append(...enfants); return c; }
 /* La scene : pendant la seance, un exercice occupe l'ecran, la carte en haut, tes reponses dessous ;
    l'exercice suivant glisse par la droite et le precedent s'efface par la gauche. */
-let scene = null;
+let scene = null, enTransition = false;   // entre deux exercices : rien ne part
+function laScene(){
+  if (!scene || !scene.isConnected) { scene = el("div", "scene"); scene.append(el("div", "repere"), el("div", "pile")); feed.replaceChildren(scene); }
+  return scene;
+}
 function nouvelleEtape(carteEl){
-  if (!scene || !scene.isConnected) { scene = el("div", "scene"); feed.replaceChildren(scene); }
-  const prec = scene.querySelector(".etape.on");
+  const sc = laScene(), pile = sc.querySelector(".pile");
+  const prec = pile.querySelector(".etape.on");
   if (prec) { prec.classList.remove("on"); prec.classList.add("sort"); setTimeout(() => prec.remove(), 380); }
-  const e = el("div", "etape on"); e.append(carteEl, el("div", "reponses")); scene.append(e);
+  const e = el("div", "etape on"); e.append(carteEl, el("div", "reponses")); pile.append(e);
   feed.scrollTop = 0; return e;
+}
+// la carte du mot reste visible, en petit, au-dessus des exercices ; un toucher la relit
+function poserRepere(c){
+  const r = c.cloneNode(true); r.classList.add("compact");
+  r.onclick = () => { unlockAudio(); speak([...r.querySelectorAll(".cex b")].map(b => b.textContent).join(" "), null, null); };
+  laScene().querySelector(".repere").replaceChildren(r);
 }
 // ou vont les bulles (ta phrase, l'attente) : dans l'exercice en cours, sinon dans le fil
 function zone(){ const r = scene?.isConnected ? scene.querySelector(".etape.on .reponses") : null; return r || feed; }
-function quitterScene(){ scene = null; feed.replaceChildren(); afficherEchanges(0); }
+function quitterScene(){ scene = null; enTransition = false; feed.replaceChildren(); afficherEchanges(0); }
 const ICO_RAPPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
 // l'etape en cours : des points (un par consigne), pas de titre
 function points(i, n, rappel){
@@ -1638,7 +1656,7 @@ function points(i, n, rappel){
 function afficherEtape(){
   const e = etapeCourante(); if (!e) return;
   const total = seance.phase === "rappel" ? seance.rappels.length : seance.guide.length;
-  seance.essais = 0;
+  seance.essais = 0; enTransition = false;
   nouvelleEtape(carte("consigne", [points(seance.etape, total, seance.phase === "rappel"), el("p", "ctexte", e.fr)]));
   mic.disabled = false; mlApres();
 }
@@ -1649,11 +1667,13 @@ async function afficherModele(){
   nouvelleEtape(c);
   busy = true; mic.disabled = true;
   try { await speak((m.exemples || []).map(x => x.en).join(" "), null, null); } catch {}
+  await pause(900);
   busy = false;
+  poserRepere(c);
   seance.phase = "guide"; seance.etape = 0; majLeconChip(); etapeSuivante();
 }
 function afficherBilan(){
-  seance.phase = "bilan"; majLeconChip();
+  seance.phase = "bilan"; majLeconChip(); enTransition = false;
   const c = carte("bilan", []); nouvelleEtape(c);
   const faits = seance.faits.slice(-3);
   if (faits.length) { const ul = el("div", "cfaits"); faits.forEach(f => ul.append(el("div", null, "✓ " + f))); c.append(ul); }
@@ -1673,21 +1693,21 @@ function etapeSuivante(){
 }
 // reponse a une carte jugee
 function etapeReussie(d, learner){
-  const e = etapeCourante();
+  const e = etapeCourante(); enTransition = true; mic.disabled = true;
   seance.faits.push(learner);
   if (seance.phase === "rappel") { noterRappel(e.item, true); seance.rappelsOk++; stats().rOk++; }
   seance.etape++;
-  speak(d.reply_en && d.reply_en.length < 40 ? d.reply_en : "Perfect.", null, null).then(() => etapeSuivante());
+  speak(d.reply_en && d.reply_en.length < 40 ? d.reply_en : "Perfect.", null, null).then(() => pause(500)).then(() => etapeSuivante());
 }
 function etapeRatee(){
-  const e = etapeCourante();
+  const e = etapeCourante(); enTransition = true; mic.disabled = true;
   if (seance.phase === "rappel") noterRappel(e.item, false);
   // on montre la phrase attendue, on la dit, et on passe a la suite
   const c = carte("attendu", [el("p", "ctexte", e.en)]);
   const b = el("button", "cplay"); b.innerHTML = PLAY; b.onclick = () => { unlockAudio(); speak(e.en, null, null); }; c.prepend(b);
   zone().append(c);
   seance.etape++;
-  speak(e.en, null, null).then(() => etapeSuivante());
+  speak(e.en, null, null).then(() => pause(1400)).then(() => etapeSuivante());
 }
 async function lancerSeance(){
   seance = {phase:"prep", etape:0, rappels:[], guide:[], modele:null, faits:[], rappelsOk:0, libreTours:0, essais:0};
@@ -2047,7 +2067,7 @@ async function ask(learner, youEl, opts = {}){
 
 function submit(text){
   const t = (text || "").trim();
-  if (!t || busy || !started) return;
+  if (!t || busy || enTransition || !started) return;
   stopSpeak(); unlockAudio();
   const you = el("div","you",t); zone().append(you); scrollDown();
   history.push({role:"user", content:t});

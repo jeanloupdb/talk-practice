@@ -64,8 +64,10 @@ svg{width:24px;height:24px;flex:none}
 #goIco svg{width:22px;height:22px}
 .splitchev{flex:none;width:62px;padding:0;border-radius:10px 999px 999px 10px}
 .splitchev .chev{width:24px;height:24px;color:inherit}
-.rbtn .ico{display:inline-grid;place-items:center;width:20px;margin-right:10px;color:var(--accent);vertical-align:-4px}
-.rbtn .ico svg{width:18px;height:18px}
+.sujetligne{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;border-bottom:1px solid var(--line);padding:16px 4px;font-size:1.05rem;font-weight:500;text-align:left;color:var(--ink)}
+.sujetligne:last-child{border-bottom:none}
+.sujetligne .fl{color:var(--muted);font-size:1.3rem;line-height:1}
+.sujetligne:active{background:color-mix(in srgb,var(--accent) 8%,transparent)}
 .titleblock{min-width:0}
 .reprise{display:inline-flex;align-items:center;gap:7px;max-width:100%;margin:20px auto 0;background:none;border:none;color:var(--muted);font-size:.9rem;padding:8px 12px;border-radius:999px}
 .reprise svg{width:16px;height:16px;flex:none}
@@ -260,7 +262,7 @@ button:not(:disabled):active{transform:scale(.94)}
         <div class="choix">
           <div class="split">
             <button class="gros" id="go"><span id="goIco"></span><span id="goLabel">Je commence</span></button>
-            <button class="gros splitchev" id="topicBtn" aria-label="Choisir par quoi commencer"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+            <button class="gros splitchev" id="topicBtn" aria-label="Laisser Sam lancer un sujet"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           </div>
         </div>
         <button class="reprise" id="reprendre" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span id="repList"></span></button>
@@ -349,7 +351,7 @@ button:not(:disabled):active{transform:scale(.94)}
 <div class="pop" id="pop" hidden></div>
 <div class="sheetwrap" id="roles" hidden>
   <div class="sheet" role="dialog" aria-labelledby="rolesTitle">
-    <div class="mothead"><h2 id="rolesTitle">Commencer par</h2><button class="iconbtn" id="rolesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="mothead"><h2 id="rolesTitle">Sam lance un sujet</h2><button class="iconbtn" id="rolesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="rolesList"></div>
   </div>
 </div>
@@ -882,28 +884,20 @@ const SCHEMA_ROLE = {
 };
 const ICO_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
 const GO = {btn: document.getElementById("go"), ico: document.getElementById("goIco"), label: document.getElementById("goLabel")};
-function depart(){ const d = S.depart; return d && d.fr && d.en ? d : null; }     // null = "Je commence"
+// Le bouton reste "Je commence" (sujet libre). Le ▾ ouvre la liste des sujets : un toucher lance Sam dessus.
 function majDepart(){
-  const d = depart();
-  GO.ico.innerHTML = d ? PLAY : ICO_MIC;
-  GO.label.textContent = d ? d.fr : "Je commence";
-  GO.btn.setAttribute("aria-label", d ? "Commencer : " + d.fr : "Je commence, sujet libre");
+  GO.ico.innerHTML = ICO_MIC; GO.label.textContent = "Je commence";
+  GO.btn.setAttribute("aria-label", "Je commence, sujet libre");
 }
-function choisirDepart(t){ S.depart = t; saveS(); majDepart(); fermer("roles"); }
 function afficherRoles(){
-  const l = $("rolesList"), d = depart();
-  const ligne = (label, ico, actif, onclick) => {
-    const b = el("button", "rbtn" + (actif ? " cur" : ""));
-    const i = el("span","ico"); i.innerHTML = ico; b.append(i, document.createTextNode(label));
-    b.onclick = onclick;
-    const it = el("div","ritem"); it.append(b); return it;
-  };
-  l.replaceChildren(
-    ligne("Je commence", ICO_MIC, !d, () => choisirDepart(null)),
-    ...THEMES.map(t => ligne(t.fr, "", d && d.fr === t.fr, () => choisirDepart(t)))
-  );
+  $("rolesList").replaceChildren(...THEMES.map(t => {
+    const b = el("button", "sujetligne");
+    b.append(el("span", null, t.fr), el("span", "fl", "›"));
+    b.onclick = () => { fermer("roles"); setTheme(t); begin(); };
+    return b;
+  }));
 }
-GO.btn.onclick = () => { const d = depart(); if (d) { setTheme(d); begin(); } else commencerLibre(); };
+GO.btn.onclick = commencerLibre;
 $("topicBtn").onclick = () => { if (busy) return; hidePop(); afficherRoles(); $("roles").hidden = false; };
 $("roles").onclick = e => { if (e.target.id === "roles" || e.target.closest("#rolesClose")) fermer("roles"); };
 

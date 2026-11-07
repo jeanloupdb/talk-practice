@@ -68,6 +68,16 @@ svg{width:24px;height:24px;flex:none}
 .sujet .chev{color:var(--accent);flex:none}
 .ou{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.08em}
 .titleblock{min-width:0}
+.reprendre{max-width:420px;margin:18px auto 0;text-align:left}
+.rephead{display:flex;align-items:center;justify-content:space-between;margin:0 6px 6px}
+.rephead b{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lien{background:none;border:none;color:var(--accent);font-weight:600;font-size:.88rem;padding:4px}
+.conv{display:flex;align-items:center;gap:8px}
+.convbtn{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--card);border:1px solid var(--card-line);border-radius:16px;padding:11px 14px;margin-top:8px;text-align:left}
+.convbtn b{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.convbtn small{color:var(--muted);font-size:.82rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.passe{opacity:.75}
+.versconv{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:10px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);border:none;border-radius:999px;padding:11px 16px;font-weight:700}
 body.home .mainrow #mic,body.home .mainrow #hintBtn{visibility:hidden}
 .titleblock .title{display:flex;align-items:center;gap:2px}
 .primary{background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:14px 28px;font-weight:600;font-size:1.05rem}
@@ -251,6 +261,10 @@ button:not(:disabled):active{transform:scale(.94)}
             <button class="primary second" id="startFree"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Je commence</button>
           </div>
         </div>
+        <div class="reprendre" id="reprendre" hidden>
+          <div class="rephead"><b>Reprendre</b><button class="lien" id="toutVoir">Tout voir</button></div>
+          <div id="repList"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -344,6 +358,12 @@ button:not(:disabled):active{transform:scale(.94)}
     <div id="rolesList"></div>
   </div>
 </div>
+<div class="sheetwrap" id="histo" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="histoTitle">
+    <div class="mothead"><h2 id="histoTitle">Tes conversations</h2><button class="iconbtn" id="histoClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div id="histoList"></div>
+  </div>
+</div>
 <div class="sheetwrap" id="qa" hidden>
   <div class="sheet" role="dialog" aria-labelledby="qaTitle">
     <div class="mothead"><h2 id="qaTitle">Une question ?</h2><button class="iconbtn" id="qaClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -417,6 +437,7 @@ function setTheme(t){
 }
 function pickTheme(){ const tous = [...THEMES, ...(S.mesThemes || [])]; let t; do { t = tous[Math.floor(Math.random()*tous.length)]; } while (tous.length > 1 && t.fr === theme?.fr); setTheme(t); }
 if (S.theme?.fr && S.theme?.en && S.theme?.role) setTheme(S.theme); else pickTheme();
+queueMicrotask(() => afficherReprendre());
 
 /* ---------- Voix IA (Kokoro, dans le téléphone) ---------- */
 let tts = null, ttsState = "idle", actx = null, currentSrc = null, playToken = 0, speakingBtn = null;
@@ -925,12 +946,34 @@ Answer IN FRENCH, addressing him with « tu » (never « vous »), simply and co
       b.onclick = () => { unlockAudio(); speak(x.en, null, null); };
       box.append(b);
     }
+    const vers = el("button","versconv","En parler en anglais ›");
+    vers.onclick = () => conversationDepuisQuestion(q, d.reponse_fr, vers);
+    box.append(vers);
     f.append(box);
     box.scrollIntoView({block:"start", behavior:"smooth"});
   } catch (e) {
     dots.remove(); console.error(e);
     f.append(el("p","tip","Pas de réponse pour l’instant (" + (e?.code === "rate" ? "limite gratuite atteinte" : "réseau ou Google saturé") + "). Réessaie dans un moment."));
   } finally { qaBusy = false; if (!qaDictee?.ecoute) qaStatus("Touche le micro pour une autre question."); }
+}
+
+// "En parler en anglais" : la question devient le sujet d'une nouvelle conversation.
+async function conversationDepuisQuestion(q, r, btn){
+  if (qaBusy) return;
+  qaBusy = true; btn.disabled = true; btn.textContent = "Je prépare la conversation…";
+  try {
+    const t = await llm(`A French-speaking engineering student learning English asked this side question, in French: """${q}"""
+The answer he got: """${r}"""
+Create a short English role-play where he will naturally need to use what this question was about.
+- "fr": a short French title, 3 to 7 words.
+- "en": the situation in English, a few words.
+- "role": who YOU will play, in English, with a name or a detail that makes it alive. Your questions should lead him to use the words or grammar of his question.`, SCHEMA_ROLE);
+    if (!t?.fr || !t?.en || !t?.role) throw {code:"shape"};
+    fermer("qa"); setTheme(t); begin();
+  } catch (e) {
+    console.error(e); btn.disabled = false; btn.textContent = "En parler en anglais ›";
+    qaStatus("Je n’ai pas pu préparer la conversation (" + (e?.code === "rate" ? "limite gratuite atteinte" : "réseau ou Google saturé") + "). Réessaie.");
+  } finally { qaBusy = false; }
 }
 
 // Dictee reutilisable (fenetres question et jeu de role), meme principe que le micro principal :
@@ -1281,6 +1324,7 @@ async function ask(learner, youEl, opts = {}){
     essai = null;
     const t = renderClaude(chunks, d.reply_fr);
     history.push({role:"assistant", content:t.text});
+    sauverConv();
     if (history.length > 20) history = history.slice(-20);
     lastHint = d.hint_en ? {en:d.hint_en, fr:d.hint_fr || ""} : null;
     if (learner && d.fait) ajouterFait(d.fait);
@@ -1319,6 +1363,81 @@ function submit(text){
   history.push({role:"user", content:t});
   ask(t, you);
 }
+/* ---------- Historique des conversations (sur le telephone, 20 max, 40 messages max chacune) ---------- */
+const CONV_MAX = 20, MSG_MAX = 40;
+// references gardees : l'accueil sort du DOM pendant une conversation
+const REF = {reprendre: document.getElementById("reprendre"), repList: document.getElementById("repList"), toutVoir: document.getElementById("toutVoir")};
+let convId = null;
+function convs(){ return Array.isArray(S.convs) ? S.convs : (S.convs = []); }
+function sauverConv(){
+  if (!theme || !history.length) return;
+  const premier = history.find(h => h.role === "user")?.content || "";
+  let c = convs().find(x => x.id === convId);
+  if (!c) { convId = String(Date.now()); c = {id:convId}; }
+  Object.assign(c, {
+    theme: {fr:theme.fr, en:theme.en, role:theme.role, libre:!!theme.libre},
+    titre: theme.libre ? (premier.slice(0, 60) || "Sujet libre") : theme.fr,
+    msgs: history.slice(-MSG_MAX), d: Date.now()
+  });
+  S.convs = [c, ...convs().filter(x => x.id !== c.id)].slice(0, CONV_MAX);
+  saveS();
+}
+function quand(t){
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 1) return "à l’instant"; if (m < 60) return "il y a " + m + " min";
+  const h = Math.round(m / 60); if (h < 24) return "il y a " + h + " h";
+  const j = Math.round(h / 24); return j === 1 ? "hier" : "il y a " + j + " jours";
+}
+function ligneConv(c, avecSuppr){
+  const it = el("div","conv");
+  const b = el("button","convbtn");
+  const dernier = [...(c.msgs || [])].reverse().find(m => m.role === "assistant")?.content || "";
+  b.append(el("b", null, c.titre), el("small", null, quand(c.d) + (dernier ? " · " + dernier : "")));
+  b.onclick = () => { fermer("histo"); reprendreConv(c); };
+  it.append(b);
+  if (avecSuppr) {
+    const x = el("button","rdel","×"); x.setAttribute("aria-label","Supprimer « " + c.titre + " »");
+    x.onclick = () => { S.convs = convs().filter(v => v.id !== c.id); saveS(); afficherHisto(); afficherReprendre(); };
+    it.append(x);
+  }
+  return it;
+}
+function afficherReprendre(){
+  const l = convs();
+  REF.reprendre.hidden = !l.length;
+  REF.repList.replaceChildren(...l.slice(0, 3).map(c => ligneConv(c, false)));
+  REF.toutVoir.hidden = l.length <= 3;
+}
+function afficherHisto(){
+  const l = convs();
+  $("histoList").replaceChildren(...(l.length ? l.map(c => ligneConv(c, true)) : [el("p","tip","Aucune conversation pour l’instant.")]));
+}
+REF.toutVoir.onclick = () => { afficherHisto(); $("histo").hidden = false; };
+$("histo").onclick = e => { if (e.target.id === "histo" || e.target.closest("#histoClose")) fermer("histo"); };
+function reprendreConv(c){
+  if (!S.key) { openSettings(); return; }
+  unlockAudio(); stopSpeak();
+  setTheme(c.theme.libre ? LIBRE : c.theme);
+  started = true; history = (c.msgs || []).slice(-20); lastHint = null; essai = null; setSerie(0); convId = c.id;
+  modeConversation(!!c.theme.libre); $("themeName").textContent = c.theme.libre ? "" : c.theme.fr;
+  feed.replaceChildren(el("p","tip","Reprise de « " + c.titre + " » · " + quand(c.d)));
+  // on remet les derniers echanges, en texte simple
+  for (const m of history.slice(-6)) {
+    if (m.role === "user") feed.append(el("div","you passe", m.content));
+    else { const w = el("div","claude old passe"); w.append(el("p","msg", m.content)); feed.append(w); }
+  }
+  // la derniere replique de l'IA redevient "active" (grande, ecoutable)
+  const der = [...feed.querySelectorAll(".claude")].pop();
+  if (der) {
+    der.classList.remove("old","passe");
+    const txt = der.querySelector(".msg").textContent, play = el("button","play"); setPlay(play, false);
+    play.onclick = () => { if (speakingBtn === play) stopSpeak(); else speak(txt, play, null); };
+    const ctrl = el("div","ctrl"); ctrl.append(play); der.append(ctrl);
+  }
+  mic.disabled = false; scrollDown();
+  setStatus("À toi : touche le micro pour reprendre.");
+}
+
 // Accueil <-> conversation
 const accueil = $("empty");
 function modeConversation(libre){
@@ -1335,13 +1454,13 @@ function allerAccueil(){
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
   $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("newTheme").hidden = true;
   $("hintBox").hidden = true; $("hintBtn").disabled = true; mic.disabled = true;
-  feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home");
+  feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home"); afficherReprendre();
 }
 function begin(){
   if (!S.key) { openSettings(); return; }
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
   unlockAudio(); stopSpeak(); if (voixKokoro()) loadTTS();
-  started = true; history = []; lastHint = null; essai = null; setSerie(0);
+  started = true; history = []; lastHint = null; essai = null; setSerie(0); convId = null;
   modeConversation(false); $("themeName").textContent = theme.fr;
   feed.replaceChildren();
   ask(null);
@@ -1350,7 +1469,7 @@ function commencerLibre(){
   if (!S.key) { openSettings(); return; }
   unlockAudio(); stopSpeak();
   setTheme(LIBRE);
-  started = true; history = []; lastHint = null; essai = null; setSerie(0);
+  started = true; history = []; lastHint = null; essai = null; setSerie(0); convId = null;
   modeConversation(true);
   feed.replaceChildren(); mic.disabled = false;
   setStatus("Parle de ce que tu veux. Touche le micro rouge quand tu as fini.");

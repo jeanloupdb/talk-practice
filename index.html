@@ -67,14 +67,15 @@ svg{width:24px;height:24px;flex:none}
 .gros svg{width:24px;height:24px}
 .split{display:flex;gap:4px}
 .defi{background:linear-gradient(135deg,#2457C5,#5E4FDB);color:#fff;border:none;box-shadow:0 12px 34px color-mix(in srgb,#2457C5 28%,transparent)}
-.split #go{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:18px 20px 16px;border-radius:26px 12px 12px 26px;text-align:left}
-.defilbl{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
+.split #go{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:20px 20px 18px;border-radius:26px 12px 12px 26px;text-align:left}
 .defititre{font-size:clamp(1.25rem,5.6vw,1.55rem);font-weight:700;line-height:1.15;letter-spacing:-.01em}
 .defibas{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px}
-.defipts{letter-spacing:4px;font-size:.9rem;opacity:.95}
-.definiv{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;font-weight:700;background:rgba(255,255,255,.18);border-radius:999px;padding:4px 10px}
-.definiv i{display:block;width:34px;height:4px;border-radius:2px;background:rgba(255,255,255,.3);overflow:hidden}
-.definiv i b{display:block;height:100%;background:#fff;border-radius:2px}
+.defiseg{display:inline-flex;gap:5px}
+.defiseg i{display:block;width:26px;height:6px;border-radius:3px;background:rgba(255,255,255,.28);transition:background-color .3s}
+.defiseg i.on{background:#fff}
+.definiv{display:inline-flex;align-items:center;gap:8px;font-size:.8rem;font-weight:700;opacity:.95}
+.ring{width:30px;height:30px;border-radius:50%;background:conic-gradient(#fff calc(var(--p) * 1%),rgba(255,255,255,.25) 0);display:grid;place-items:center}
+.ring b{width:22px;height:22px;border-radius:50%;background:rgba(20,33,61,.38);display:grid;place-items:center;font-size:.72rem;font-weight:800;color:#fff}
 .splitchev{flex:none;width:58px;padding:0;border-radius:12px 26px 26px 12px;display:grid;place-items:center}
 .splitchev .chev{width:24px;height:24px;color:inherit}
 .defi:active{transform:scale(.985)}
@@ -89,6 +90,9 @@ svg{width:24px;height:24px;flex:none}
 .claude.passe .ctrl .tbtn span{display:none}
 .sujetligne:active{background:color-mix(in srgb,var(--accent) 8%,transparent)}
 .titleblock{min-width:0;flex:1}
+.marque{display:none;width:30px;height:30px}
+body.home .marque{display:block}
+body.home #modeName{display:none}
 .iconbtn.back{margin-left:-10px;margin-right:-4px}
 .conv{display:flex;align-items:center;gap:8px}
 .passe{opacity:.75}
@@ -316,7 +320,7 @@ button:not(:disabled):active{transform:scale(.94)}
     <div class="blobs" aria-hidden="true"><span class="blob b1"><i></i></span><span class="blob b2"><i></i></span><span class="blob b3"><i></i></span></div><span class="voix" aria-hidden="true"></span>
     <div class="bar">
       <button class="iconbtn back" id="newTheme" aria-label="Retour à l’accueil" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <div class="titleblock"><span class="title"><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span><span class="theme leconchip" id="leconChip" hidden></span></div>
+      <div class="titleblock"><span class="title"><svg class="marque" viewBox="0 0 512 512" role="img" aria-label="Talk Practice"><defs><linearGradient id="mq" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2457C5"/><stop offset="1" stop-color="#5E4FDB"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="url(#mq)"/><path d="M152 136h208a56 56 0 0 1 56 56v112a56 56 0 0 1-56 56H236l-62 50a10 10 0 0 1-16-8v-42h-6a56 56 0 0 1-56-56V192a56 56 0 0 1 56-56z" fill="#fff"/><g fill="#2457C5"><rect x="186" y="232" width="20" height="36" rx="10"/><rect x="222" y="206" width="20" height="88" rx="10"/><rect x="258" y="186" width="20" height="128" rx="10"/><rect x="294" y="212" width="20" height="76" rx="10"/><rect x="330" y="236" width="20" height="28" rx="10"/></g></svg><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span><span class="theme leconchip" id="leconChip" hidden></span></div>
       <div class="barbtns">
         <button class="iconbtn" id="mlBtn" aria-label="Mode mains libres" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="13" width="4.5" height="7" rx="2"/><rect x="16.5" y="13" width="4.5" height="7" rx="2"/></svg>
@@ -332,9 +336,8 @@ button:not(:disabled):active{transform:scale(.94)}
         <div class="choix">
           <div class="split">
             <button class="defi" id="go">
-              <span class="defilbl" id="goLbl">Défi en cours</span>
               <span class="defititre" id="goLabel">Practice</span>
-              <span class="defibas"><span class="defipts" id="goPts"></span><span class="definiv" id="goNiv"></span></span>
+              <span class="defibas"><span class="defiseg" id="goPts"><i></i><i></i><i></i></span><span class="definiv" id="goNiv"></span></span>
             </button>
             <button class="defi splitchev" id="topicBtn" aria-label="Parler en premier, historique"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           </div>
@@ -1042,15 +1045,15 @@ const SCHEMA_ROLE = {
   required:["fr","en","role"], propertyOrdering:["fr","en","role"]
 };
 const ICO_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
-const GO = {btn: document.getElementById("go"), lbl: document.getElementById("goLbl"), label: document.getElementById("goLabel"), pts: document.getElementById("goPts"), niv: document.getElementById("goNiv")};
+const GO = {btn: document.getElementById("go"), label: document.getElementById("goLabel"), pts: document.getElementById("goPts"), niv: document.getElementById("goNiv")};
 // Le bouton reste "Je commence" (sujet libre). Le ▾ ouvre la liste des sujets : un toucher lance l'IA dessus.
 function majDepart(){
   const l = lecon() || choisirLecon(), p = profil(), n = Math.min(10, Math.max(1, p.niveau || 4));
   const titre = l.cible.fr.charAt(0).toUpperCase() + l.cible.fr.slice(1);
-  GO.lbl.textContent = l.points ? "On continue" : "Défi en cours";
   GO.label.textContent = titre;
-  GO.pts.textContent = "●".repeat(l.points) + "○".repeat(Math.max(0, 3 - l.points));
-  GO.niv.replaceChildren(document.createTextNode("Niveau " + n + " · " + CEFR(n)), (() => { const i = el("i"), b = el("b"); b.style.width = (n * 10) + "%"; i.append(b); return i; })());
+  [...GO.pts.children].forEach((i, k) => i.classList.toggle("on", k < l.points));
+  const ring = el("span", "ring"); ring.style.setProperty("--p", n * 10); ring.append(el("b", null, String(n)));
+  GO.niv.replaceChildren(ring, document.createTextNode(CEFR(n)));
   GO.btn.setAttribute("aria-label", "Continuer : " + titre + ", niveau " + n);
 }
 const ICO_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';

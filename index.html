@@ -354,10 +354,10 @@ button:not(:disabled):active{transform:scale(.94)}
 <div class="pop" id="pop" hidden></div>
 <div class="sheetwrap" id="roles" hidden>
   <div class="sheet" role="dialog" aria-labelledby="rolesTitle">
-    <div class="mothead"><h2 id="rolesTitle">Jeu de rôle</h2><button class="iconbtn" id="rolesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="mothead"><h2 id="rolesTitle">Sujets</h2><button class="iconbtn" id="rolesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="create">
-      <button class="round" id="roleMic" aria-label="Décrire un nouveau jeu de rôle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
-      <div><b>Créer le tien</b><span id="roleStatus">Décris la situation en français, par exemple « je suis à la pharmacie et j’ai mal à la gorge ».</span></div>
+      <button class="round" id="roleMic" aria-label="Dire de quoi tu veux parler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
+      <div><b>Ton sujet</b><span id="roleStatus">Dis de quoi tu veux parler</span></div>
     </div>
     <div id="rolesList"></div>
   </div>
@@ -400,17 +400,19 @@ if ((S.v || 1) < 2) {
   S.v = 2; saveS();
 }
 
+// Des SUJETS de vraie conversation (pas de mise en scene) : Sam s'interesse a toi, ou t'invite a l'interroger.
+// "role" = l'angle que Sam prend sur le sujet.
 const THEMES = [
-  {fr:"Au pub à Dublin", en:"chatting at a pub in Dublin", role:"a chatty Dublin bartender"},
-  {fr:"Demander ton chemin à Galway", en:"asking for directions in Galway", role:"a helpful local in Galway"},
-  {fr:"Discuter avec ton hôte Airbnb", en:"small talk with your Airbnb host", role:"the learner’s Airbnb host in Cork"},
-  {fr:"Entretien de stage en systèmes embarqués", en:"a job interview for an embedded systems internship", role:"Sarah, engineering manager at a company building firmware for medical devices"},
-  {fr:"Parler de la météo", en:"talking about the weather", role:"a friendly Irish pensioner waiting at a bus stop"},
-  {fr:"Organiser un week-end en Irlande", en:"planning a weekend trip around Ireland", role:"a hostel receptionist who knows the country well"},
-  {fr:"Commander au restaurant", en:"ordering food in a restaurant", role:"a waiter in a busy Irish restaurant"},
-  {fr:"Expliquer tes études d’ingénieur", en:"explaining your engineering studies", role:"a curious Irish student the learner just met"},
-  {fr:"Acheter un billet de train", en:"buying a train ticket at Heuston station", role:"a ticket office clerk"},
-  {fr:"Regarder un match de rugby", en:"watching a rugby match with locals", role:"a passionate Irish rugby fan"}
+  {fr:"Ta journée", en:"how his day is going", role:"Ask about his day: what he did, what went well or badly, how he feels, what is next."},
+  {fr:"Tes études", en:"his studies", role:"Get curious about his studies: what he learns, what he likes or finds hard, his school life, his projects."},
+  {fr:"Ton voyage en Irlande", en:"his trip to Ireland", role:"Talk about his trip to Ireland: where he goes, what surprised him, what he wants to see; share your own tips as a local."},
+  {fr:"Tes passions", en:"his hobbies and passions", role:"Find out what he loves doing in his free time and dig into it with real curiosity."},
+  {fr:"Tes projets", en:"his plans and ambitions", role:"Ask about his plans: short term, career, dreams, side projects; ask why and how."},
+  {fr:"Ton week-end", en:"his weekend", role:"Ask what he did last weekend or plans for the next one; react and share a bit of yours."},
+  {fr:"Tech et actualité", en:"tech and current events", role:"Chat about tech, AI or news he finds interesting; ask his opinion and give yours."},
+  {fr:"Pose-moi tes questions", en:"the learner interviews you", role:"Invite him to ask YOU questions about your life, job, Ireland, your opinions. Answer briefly and warmly, then hand the floor back so he keeps asking. Encourage him to ask follow-up questions.", inverse:true},
+  {fr:"Donne ton avis", en:"sharing opinions on a light debate topic", role:"Bring up a light, open question (remote work, social media, city or countryside...) and ask his real opinion; push back gently so he argues."},
+  {fr:"Prépare un entretien", en:"a practice job interview about his real profile", role:"Act as a friendly interviewer for an internship that fits him. Ask about his REAL background, skills and motivation (ask, never assume)."}
 ];
 const PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5z"/></svg>';
 const PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
@@ -439,7 +441,14 @@ function setTheme(t){
   if (!t.libre) { S.theme = t; saveS(); topicNameEl.textContent = t.fr; }
 }
 function pickTheme(){ const tous = [...THEMES, ...(S.mesThemes || [])]; let t; do { t = tous[Math.floor(Math.random()*tous.length)]; } while (tous.length > 1 && t.fr === theme?.fr); setTheme(t); }
-if (S.theme?.fr && S.theme?.en && S.theme?.role) setTheme(S.theme); else pickTheme();
+// Les anciens "jeux de role" (mise en scene) sont remplaces par des sujets de vraie conversation.
+if ((S.v || 1) < 3) {
+  S.mesThemes = []; S.theme = null;
+  // conversations deja faites : on garde l'historique, mais sans la mise en scene
+  for (const c of (S.convs || [])) if (c.theme && !c.theme.libre) c.theme.role = "Keep chatting about this topic naturally, about his real life and opinions.";
+  S.v = 3; saveS();
+}
+if (S.theme?.fr && S.theme?.en && S.theme?.role) setTheme(S.theme); else setTheme(THEMES[0]);
 queueMicrotask(() => afficherReprendre());
 
 /* ---------- Voix IA (Kokoro, dans le téléphone) ---------- */
@@ -794,8 +803,21 @@ if (ENREG_OK) {
 /* ---------- Traduction au toucher ---------- */
 let selChunk = null;
 function hidePop(){ pop.hidden = true; selChunk?.classList.remove("sel"); selChunk = null; }
+const tradCache = new Map();
+async function traduireMorceau(en, phrase){
+  const k = en.toLowerCase() + "|" + phrase;
+  if (!tradCache.has(k)) tradCache.set(k, llm(`Translate the English word or expression "${en}" into French, as it is used in this sentence: "${phrase}". Give only the French translation (a few words).`,
+    {type:"OBJECT", properties:{fr:{type:"STRING"}}, required:["fr"]}).then(d => d.fr).catch(e => { tradCache.delete(k); throw e; }));
+  return tradCache.get(k);
+}
 function showPop(span, en, fr){
   hidePop(); selChunk = span; span.classList.add("sel");
+  if (!fr) {
+    // morceau sans traduction (ancienne conversation) : on la demande, puis on remontre la bulle
+    const phrase = span.closest(".msg")?.textContent || "";
+    traduireMorceau(en, phrase).then(t => { if (selChunk === span) showPop(span, en, t); }).catch(() => { if (selChunk === span) showPop(span, en, "—"); });
+    fr = "…";
+  }
   // le mot (et sa traduction) se touche pour voir des exemples ; le bouton a droite le fait ecouter
   const mot = el("button","popmot");
   mot.append(el("span","popfr",fr || "—"), el("small", null, en + " ›"));
@@ -885,22 +907,23 @@ function afficherRoles(){
     return it;
   };
   if ((S.mesThemes || []).length) { l.append(el("div","rgroup","Les tiens")); S.mesThemes.forEach(t => l.append(ligne(t, true))); }
-  l.append(el("div","rgroup","Idées")); THEMES.forEach(t => l.append(ligne(t, false)));
+  l.append(el("div","rgroup","Idées de sujets")); THEMES.forEach(t => l.append(ligne(t, false)));
 }
 async function creerRole(desc){
-  roleBusy = true; roleStatus("Je prépare ton jeu de rôle…");
+  roleBusy = true; roleStatus("…");
   try {
-    const t = await llm(`A French-speaking engineering student travelling in Ireland wants to practise spoken English in a role-play. He described the situation he wants, in French (dictated, ignore transcription errors): """${desc}"""
-- "fr": a short French title for this role-play, 3 to 7 words, like "Au pub à Dublin" or "Chez le médecin".
-- "en": the situation in English, a few words, like "chatting at a pub in Dublin".
-- "role": who YOU will play, in English, with a name or a detail that makes it alive, like "a chatty Dublin bartender called Sean".`, SCHEMA_ROLE);
+    const t = await llm(`A French-speaking engineering student wants to practise spoken English by chatting with Sam, a friendly Irish conversation partner, about a topic he chose. He described it in French (dictated, ignore transcription errors): """${desc}"""
+This is a REAL conversation about his real life and opinions, never a fictional scene and never a role for him.
+- "fr": a short French title for the topic, 2 to 5 words, like "Ta passion pour le vélo" or "Ton stage".
+- "en": the topic in English, a few words.
+- "role": how Sam should approach it, in English, 1 to 2 sentences: what to ask him about, what to share, so he talks a lot. If he wants to ask Sam questions, say so.`, SCHEMA_ROLE);
     if (!t?.fr || !t?.en || !t?.role) throw {code:"shape"};
     S.mesThemes = [t, ...(S.mesThemes || []).filter(m => m.fr !== t.fr)].slice(0, 12); saveS();
-    roleStatus("Décris la situation en français, par exemple « je suis à la pharmacie et j’ai mal à la gorge ».");
+    roleStatus("Dis de quoi tu veux parler");
     lancerTheme(t);
   } catch (e) {
     console.error(e);
-    roleStatus("Je n’ai pas pu créer le jeu de rôle (" + (e?.code === "rate" ? "limite gratuite atteinte" : "réseau ou Google saturé") + "). Réessaie.");
+    roleStatus(e?.code === "rate" ? "Limite gratuite atteinte, réessaie plus tard" : "Pas pu créer le sujet, réessaie");
   } finally { roleBusy = false; }
 }
 let roleDictee = null;
@@ -937,9 +960,9 @@ async function poserQuestion(q){
   const conv = history.slice(-6).map(h => (h.role === "user" ? "Learner: " : "Partner: ") + h.content).join("\n") || "(not started)";
   const avant = qaHisto.slice(-3).map(x => "Q: " + x.q + "\nA: " + x.r).join("\n") || "(none)";
   try {
-    const d = await llm(`You are a patient English teacher helping a French-speaking engineering student (intermediate level). He is in the middle of an English role-play and asks a side question, IN FRENCH (it was dictated, so ignore transcription errors).
-Role-play theme: ${theme ? theme.en : "free conversation"}.
-Recent role-play lines:
+    const d = await llm(`You are a patient English teacher helping a French-speaking engineering student (intermediate level). He is in the middle of an English conversation with Sam and asks a side question, IN FRENCH (it was dictated, so ignore transcription errors).
+Conversation topic: ${theme ? theme.en : "free conversation"}.
+Recent lines:
 ${conv}
 
 Earlier side questions:
@@ -976,10 +999,10 @@ async function conversationDepuisQuestion(q, r, btn){
   try {
     const t = await llm(`A French-speaking engineering student learning English asked this side question, in French: """${q}"""
 The answer he got: """${r}"""
-Create a short English role-play where he will naturally need to use what this question was about.
-- "fr": a short French title, 3 to 7 words.
-- "en": the situation in English, a few words.
-- "role": who YOU will play, in English, with a name or a detail that makes it alive. Your questions should lead him to use the words or grammar of his question.`, SCHEMA_ROLE);
+Create a topic for a REAL conversation with Sam, a friendly Irish conversation partner, where he will naturally need to use what this question was about (never a fictional scene, never a role for him).
+- "fr": a short French title, 2 to 5 words.
+- "en": the topic in English, a few words.
+- "role": how Sam should approach it, in English, 1 to 2 sentences: questions about his real life or opinions that make him use the words or grammar of his question.`, SCHEMA_ROLE);
     if (!t?.fr || !t?.en || !t?.role) throw {code:"shape"};
     fermer("qa"); setTheme(t); begin();
   } catch (e) {
@@ -1186,8 +1209,9 @@ and you corrected: ${essai.corrections.map(c => `"${c.original}" -> "${c.correct
 Judge the new attempt on its own: it may be worded differently, that is fine. If the mistakes above are now fixed and there is no NEW clear grammar mistake, ok MUST be true: do not nitpick style, word choice or relevance on a retry.` : "";
   const force = essai?.force ? `
 The learner chose to move on: set ok to true, corrections to [], and reply normally.` : "";
-  return `You are a friendly English conversation partner for a French-speaking engineering student travelling in Ireland who wants to speak English fluently (intermediate level).
-${theme.libre ? "There is no imposed theme: the learner chooses what to talk about today. Be a friendly, curious English-speaking friend: follow his topic, react to it and ask good follow-up questions." : `Theme: ${theme.en}. Play this role: ${theme.role}. Stay roughly on the theme, but follow the learner if they go elsewhere.`}
+  return `You are Sam, 29, a friendly Irish software engineer from Galway living in Dublin; you love hiking, rugby and live music. You are chatting in English with a French-speaking engineering student who wants to speak fluently (intermediate level). Speak as yourself, like a real friend would. If he asks whether you are an AI, say honestly that you are an AI conversation partner. Your own English must be flawless: you are his model.
+NEVER invent facts about the learner and NEVER put him in a fictional situation or give him a role: talk about his REAL life, and when you do not know something, ASK.
+${theme.libre ? "Today's topic: whatever he wants. Follow his topic, react to it and ask good follow-up questions." : `Today's topic: ${theme.en}. ${theme.role} Follow him if he goes elsewhere.`}
 
 STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDIO recording.
 - "heard": write exactly what he said, word for word, KEEPING his grammar mistakes (never fix them here). If nothing intelligible was said, write "" and set ok to true with empty fields.
@@ -1196,22 +1220,22 @@ STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDI
 - "corrections": the mistakes (at most 3), each with the exact wrong words, the corrected words, and a French explanation of 12 words max, addressing the learner with « tu » (never « vous »). Empty if ok.
 ${retry}${force}
 
-STEP 2, only if ok is true, REPLY in your role. If ok is false, leave reply_en, reply_fr, hint_en and hint_fr empty and chunks [].
-- "reply_en": your whole reply, READ ALOUD: 2 to 4 short spoken sentences, natural everyday English, no emojis, no lists, natural openers (Oh, Well, Right, Ah, So), clear punctuation. End with one question that keeps the conversation going.
+STEP 2, only if ok is true, REPLY as Sam. If ok is false, leave reply_en, reply_fr, hint_en and hint_fr empty and chunks [].
+- "reply_en": your whole reply, READ ALOUD: 2 to 4 short spoken sentences, natural everyday English, no emojis, no lists, natural openers (Oh, Well, Right, Ah, So), clear punctuation. ${theme.inverse ? "HE asks the questions in this topic: answer his question, then end by inviting him to ask you another one (do not interview him)." : "End with one question that keeps the conversation going."}
 - "chunks": reply_en cut into consecutive pieces of 1 to 4 words, in order; joined with spaces they must give reply_en exactly. Keep idioms, phrasal verbs and set expressions in one piece. Punctuation stays attached to its piece.
   "fr" = the French meaning of THAT piece only (never of the next or previous piece). Example: {"en":"Are you looking","fr":"Tu cherches"},{"en":"for a pub?","fr":"un pub ?"}
 - "reply_fr": French translation of reply_en.
 - "hint_en": a short, simple answer the learner could give; "hint_fr": its French translation.
-- "fait": if the learner's message reveals a NEW lasting fact about his REAL life (studies, work, family, hobbies, tastes, projects, places he knows, opinions...) that is not already known above, write it as one short French sentence of 15 words max, about him ("Il ..."). Ignore what only belongs to the role-play (ordering food, buying a ticket...). Otherwise "".
+- "fait": if the learner's message reveals a NEW lasting fact about his REAL life (studies, work, family, hobbies, tastes, projects, places he knows, opinions...) that is not already known above, write it as one short French sentence of 15 words max, about him ("Il ..."). Otherwise "".
 
-What you already know about the learner from earlier conversations (real life, not role-play):
+What you already know about the learner from earlier conversations:
 ${memoTexte()}
-Use it naturally to make the talk personal: now and then (especially early in a conversation) refer to one of these facts or ask a follow-up question that digs deeper, while staying in your role. Never list them, never mention that you have notes.
+Use a fact ONLY when today's topic is directly about it (e.g. his studies when the topic is his studies). Do not mention unrelated facts, not even in a greeting. Never list them, never mention that you have notes.
 
 Conversation so far:
 ${transcript}
 
-${audio ? "The learner's answer is in the attached audio." : learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to [], and start the conversation: greet the learner in your role and ask a first, easy question. If you already know facts about him (see above), pick one that fits your role and build your first question on it, to dig deeper."}`;
+${audio ? "The learner's answer is in the attached audio." : learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to [], and start the conversation: greet him warmly and open today's topic with a first, easy question about him (or, if he is the one asking the questions, invite him to ask you anything). Stick to today's topic; use a known fact only if it fits it."}`;
 }
 
 function renderFix(d, after, onSkip){
@@ -1335,7 +1359,7 @@ async function ask(learner, youEl, opts = {}){
     }
     essai = null;
     const t = renderClaude(chunks, d.reply_fr);
-    history.push({role:"assistant", content:t.text});
+    history.push({role:"assistant", content:t.text, chunks, fr:d.reply_fr || ""});
     sauverConv();
     if (history.length > 20) history = history.slice(-20);
     lastHint = d.hint_en ? {en:d.hint_en, fr:d.hint_fr || ""} : null;
@@ -1433,18 +1457,13 @@ function reprendreConv(c){
   started = true; history = (c.msgs || []).slice(-20); lastHint = null; essai = null; setSerie(0); convId = c.id;
   modeConversation(!!c.theme.libre); $("themeName").textContent = c.theme.libre ? "" : c.theme.fr;
   feed.replaceChildren(el("p","tip","Reprise de « " + c.titre + " » · " + quand(c.d)));
-  // on remet les derniers echanges, en texte simple
+  // on remet les derniers echanges ; les repliques de l'IA gardent leurs mots touchables
+  // (les anciennes conversations, sans decoupage, sont coupees en mots traduits a la demande)
   for (const m of history.slice(-6)) {
-    if (m.role === "user") feed.append(el("div","you passe", m.content));
-    else { const w = el("div","claude old passe"); w.append(el("p","msg", m.content)); feed.append(w); }
-  }
-  // la derniere replique de l'IA redevient "active" (grande, ecoutable)
-  const der = [...feed.querySelectorAll(".claude")].pop();
-  if (der) {
-    der.classList.remove("old","passe");
-    const txt = der.querySelector(".msg").textContent, play = el("button","play"); setPlay(play, false);
-    play.onclick = () => { if (speakingBtn === play) stopSpeak(); else speak(txt, play, null); };
-    const ctrl = el("div","ctrl"); ctrl.append(play); der.append(ctrl);
+    if (m.role === "user") { feed.append(el("div","you passe", m.content)); continue; }
+    const morceaux = Array.isArray(m.chunks) && m.chunks.length ? m.chunks : m.content.split(/\s+/).filter(Boolean).map(w => ({en:w, fr:""}));
+    const t = renderClaude(morceaux, m.fr || "");
+    t.reveal(true); t.play.classList.remove("ready");
   }
   mic.disabled = false; scrollDown();
   setStatus("À toi : touche le micro pour reprendre.");
@@ -1454,7 +1473,7 @@ function reprendreConv(c){
 const accueil = $("empty");
 function modeConversation(libre){
   document.body.classList.remove("home");
-  $("modeName").textContent = libre ? "Sujet libre" : "Jeu de rôle";
+  $("modeName").textContent = libre ? "Sujet libre" : "Conversation";
   $("newTheme").hidden = false;
 }
 function allerAccueil(){

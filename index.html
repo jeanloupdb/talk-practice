@@ -93,10 +93,6 @@ body:not(.home) .histpill{display:none}
 .you.live{opacity:.6}
 .you.pending{opacity:.5;letter-spacing:.2em}
 .recdot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--live);margin-right:8px;vertical-align:1px;animation:b 1s infinite}
-.fix{background:var(--card);border:1px solid var(--card-line);border-radius:18px;padding:12px 16px 10px;font-size:.95rem;backdrop-filter:blur(6px)}
-.fix ul{margin:0;padding:0;list-style:none}
-.fix li{padding:8px 0;border-top:1px solid var(--card-line)}
-.fix li:first-child{border-top:none;padding-top:2px}
 .wrong{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--bad);text-decoration-thickness:2px}
 .right{color:var(--good);font-weight:700}
 .why{display:block;color:var(--muted);font-size:.86rem;margin-top:3px}
@@ -104,14 +100,19 @@ body:not(.home) .histpill{display:none}
 .spk{display:inline-block;width:16px;height:16px;margin-left:6px;vertical-align:-2px;background:currentColor;
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z'/%3E%3C/svg%3E") center/contain no-repeat;
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z'/%3E%3C/svg%3E") center/contain no-repeat}
-.conseil{align-self:flex-end;text-align:right;max-width:92%;font-size:.9rem;margin-top:-10px;animation:entre .38s var(--ease) both}
-.conseil .clabel{color:var(--muted)}
-.conseil .say{font-weight:600}
-.fix.good{align-self:flex-end;background:color-mix(in srgb,var(--good) 14%,transparent);border:none;border-radius:999px;padding:4px 12px;font-size:.85rem;margin-top:-8px}
-.fixtitle{display:flex;align-items:center;gap:7px;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--bad);margin-bottom:6px}
-.fixtitle::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--bad)}
-.skip{display:block;margin:10px 0 0 auto;background:none;border:none;color:var(--muted);font-size:.85rem;text-decoration:underline;padding:4px}
-.you.tried{opacity:.45;font-size:1rem;text-decoration:line-through;text-decoration-color:var(--bad)}
+.skip{display:block;margin:-8px 0 0 auto;background:none;border:none;color:var(--muted);font-size:.85rem;text-decoration:underline;padding:4px}
+.faute{color:var(--bad);text-decoration:underline wavy color-mix(in srgb,var(--bad) 70%,transparent);text-decoration-thickness:1.5px;text-underline-offset:4px;cursor:pointer;border-radius:4px}
+.faute.sel,.mieux.sel{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.mieux{text-decoration:underline dotted var(--good);text-decoration-thickness:2px;text-underline-offset:4px;cursor:pointer;border-radius:4px}
+.you.juste::after{content:"✓";color:var(--good);font-size:.85em;margin-left:8px;animation:popin .45s var(--rebond) both}
+.pop.fixpop{display:block;padding:4px 12px;max-width:min(88vw,360px)}
+.poprow{display:flex;align-items:center;gap:12px;padding:8px 0}
+.poprow+.poprow{border-top:1px solid var(--line)}
+.poptxt{flex:1;min-width:0}
+.poptxt b{color:var(--good);font-weight:700}
+.poptxt small{display:block;color:var(--muted);font-size:.82rem;margin-top:2px}
+.you.tried{opacity:.45;font-size:1rem}
+.you.tried .faute{text-decoration:line-through;text-decoration-color:var(--bad)}
 .serie{display:inline-block;margin-left:8px;font-size:.78rem;font-weight:700;color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent);border-radius:999px;padding:2px 9px;vertical-align:2px}
 .play.ready{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent);animation:ring 1.8s infinite}
 @keyframes ring{70%{box-shadow:0 0 0 14px transparent}100%{box-shadow:0 0 0 0 transparent}}
@@ -211,9 +212,8 @@ footer{padding:10px 18px 16px}
 @keyframes barre{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 /* messages qui arrivent */
-.claude,.fix,.dots,.qar,.ex,.ritem,.card{animation:entre .38s var(--ease) both}
+.claude,.dots,.qar,.ex,.ritem,.card{animation:entre .38s var(--ease) both}
 .you,.qaq{animation:entreG .32s var(--ease) both}
-.fix.good{animation:popin .45s var(--rebond) both}
 .claude .msg{transition:filter .45s var(--ease),font-size .35s var(--ease),color .35s}
 .claude.old .msg{transition:font-size .35s var(--ease),color .35s}
 .serie.bump{animation:bump .45s var(--rebond)}
@@ -917,14 +917,16 @@ function showPop(span, en, fr){
   mot.onclick = e => { e.stopPropagation(); hidePop(); openMot(en, fr, span.closest(".msg")?.textContent || ""); };
   const ecoute = el("button","popplay"); ecoute.innerHTML = PLAY; ecoute.setAttribute("aria-label","Écouter « " + en + " »");
   ecoute.onclick = e => { e.stopPropagation(); unlockAudio(); speak(en.replace(/[.,!?;:"]+$/,""), ecoute, null); };
-  pop.replaceChildren(mot, ecoute);
+  pop.classList.remove("fixpop"); pop.replaceChildren(mot, ecoute); placerPop(span);
+}
+function placerPop(span){
   pop.hidden = false;
   const r = span.getBoundingClientRect(), p = pop.getBoundingClientRect();
   const left = Math.min(Math.max(8, r.left + r.width/2 - p.width/2), window.innerWidth - p.width - 8);
   let top = r.top - p.height - 10; if (top < 8) top = r.bottom + 10;
   pop.style.left = left + "px"; pop.style.top = top + "px";
 }
-document.addEventListener("click", e => { if (!e.target.closest(".chunk") && !e.target.closest("#pop")) hidePop(); });
+document.addEventListener("click", e => { if (!e.target.closest(".chunk, .faute, .mieux") && !e.target.closest("#pop")) hidePop(); });
 feed.addEventListener("scroll", hidePop);
 
 /* ---------- Fenetre "mot" : sens + exemples d'utilisation (demande a Gemini, mis en cache) ---------- */
@@ -1253,7 +1255,7 @@ const SCHEMA = {
     ok:{type:"BOOLEAN"},
     learner_asked:{type:"BOOLEAN"},
     corrections:{type:"ARRAY", items:{type:"OBJECT", properties:{original:{type:"STRING"}, corrected:{type:"STRING"}, explanation_fr:{type:"STRING"}}, required:["original","corrected","explanation_fr"], propertyOrdering:["original","corrected","explanation_fr"]}},
-    conseil:{type:"OBJECT", properties:{better:{type:"STRING"}, why_fr:{type:"STRING"}}, required:["better","why_fr"], propertyOrdering:["better","why_fr"]},
+    conseil:{type:"OBJECT", properties:{original:{type:"STRING"}, better:{type:"STRING"}, why_fr:{type:"STRING"}}, required:["original","better","why_fr"], propertyOrdering:["original","better","why_fr"]},
     reply_en:{type:"STRING"},
     chunks:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}},
     reply_fr:{type:"STRING"},
@@ -1305,7 +1307,7 @@ STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDI
 - QUESTIONS deserve special care, they are where French speakers slip: missing do/does/did ("Where you go?"), wrong word order ("Where you are going?"), indirect questions ("Can you tell me where is the station?" -> "where the station is"), missing auxiliary. These ARE mistakes.
 - "learner_asked": true if his message contains a real question to you (even a short one), false otherwise.
 - "ok": true if there is no real mistake in his English, false otherwise.
-- "conseil": only when ok is true but a question or phrase is correct yet sounds blunt or unnatural in Ireland: "better" = a more natural or polite version (e.g. "Would you mind telling me...", "Do you know if..."), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise both "".
+- "conseil": only when ok is true but a question or phrase is correct yet sounds blunt or unnatural in Ireland: "original" = his exact words concerned, "better" = a more natural or polite version (e.g. "Would you mind telling me...", "Do you know if..."), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".
 - "corrections": the mistakes (at most 3), each with the exact wrong words, the corrected words, and a French explanation of 12 words max, addressing the learner with « tu » (never « vous »). Empty if ok.
 ${retry}${force}
 
@@ -1328,42 +1330,57 @@ ${transcript}
 ${audio ? "The learner's answer is in the attached audio." : learner ? `The learner just said: """${learner}"""` : "There is no learner message yet: set ok to true, corrections to [], and start the conversation: greet him warmly and open today's topic (with a first, easy question about him; or, if he is the one asking the questions, invite him to ask you anything; or, for a mission, state the mission clearly). Stick to today's topic; use a known fact only if it fits it."}`;
 }
 
-function renderFix(d, after, onSkip){
+// Les fautes sont marquees directement dans la bulle de l'apprenant (rouge souligne) ; un toucher
+// ouvre la correction. Une tournure juste mais seche est soulignee en vert pointille (conseil).
+// Si les mots exacts ne sont pas retrouves (l'IA a reformule), toute la bulle porte la marque.
+function marquer(youEl, items, cls){
+  const texte = youEl.textContent, low = texte.toLowerCase();
+  const zones = [];
+  for (const it of items) {
+    const o = String(it.original || "").trim().toLowerCase().replace(/[.?!,]+$/, "");
+    if (!o) continue;
+    let i = low.indexOf(o);
+    while (i >= 0 && zones.some(z => i < z.fin && i + o.length > z.deb)) i = low.indexOf(o, i + 1);
+    if (i >= 0) zones.push({deb:i, fin:i + o.length, items:[it]});
+  }
+  youEl.replaceChildren();
+  const span = (txt, its) => { const sp = el("span", cls, txt); sp.tabIndex = 0; sp.onclick = e => { e.stopPropagation(); showFixPop(sp, its); }; sp.onkeydown = e => { if (e.key === "Enter") showFixPop(sp, its); }; return sp; };
+  if (!zones.length) { youEl.append(span(texte, items)); return; }
+  zones.sort((x, y) => x.deb - y.deb);
+  let pos = 0;
+  for (const z of zones) {
+    if (z.deb > pos) youEl.append(document.createTextNode(texte.slice(pos, z.deb)));
+    youEl.append(span(texte.slice(z.deb, z.fin), z.items)); pos = z.fin;
+  }
+  if (pos < texte.length) youEl.append(document.createTextNode(texte.slice(pos)));
+}
+function showFixPop(sp, items){
+  hidePop(); selChunk = sp; sp.classList.add("sel");
+  const box = el("div", "popfix");
+  for (const c of items) {
+    const row = el("div", "poprow"), t = el("div", "poptxt");
+    t.append(el("b", null, c.corrected || c.better || ""));
+    const why = c.explanation_fr || c.why_fr; if (why) t.append(el("small", null, why));
+    const pl = el("button", "popplay"); pl.innerHTML = PLAY; pl.setAttribute("aria-label", "Écouter");
+    pl.onclick = e => { e.stopPropagation(); unlockAudio(); speak(c.corrected || c.better, pl, null); };
+    row.append(t, pl); box.append(row);
+  }
+  pop.classList.add("fixpop"); pop.replaceChildren(box); placerPop(sp);
+}
+function renderFix(d, youEl, onSkip){
+  feed.querySelectorAll(".skip").forEach(b => b.remove());
   const list = Array.isArray(d.corrections) ? d.corrections.filter(c => c && c.corrected) : [];
-  const box = el("div", d.ok ? "fix good" : "fix");
   if (d.ok) {
-    box.append(el("div","right","✓ Parfait"));
+    youEl.classList.add("juste");
     const c = d.conseil;
-    if (c && c.better && c.better.trim()) {
-      const n = el("div","conseil");
-      const say = el("button","say"); say.append(c.better, el("span","spk"));
-      say.onclick = e => { e.stopPropagation(); unlockAudio(); speak(c.better, null, null); };
-      n.append(el("span","clabel","Plus naturel : "), say);
-      if (c.why_fr) n.append(el("span","why",c.why_fr));
-      setTimeout(() => box.after(n), 0);
-    }
+    if (c && c.better && c.better.trim()) marquer(youEl, [c], "mieux");
+    return youEl;
   }
-  else {
-    feed.querySelectorAll(".skip").forEach(b => b.remove());
-    box.append(el("div","fixtitle","À reprendre"));
-    const ul = el("ul");
-    for (const c of list) {
-      const li = el("li");
-      if (c.original) li.append(el("span","wrong",c.original), document.createTextNode(" → "));
-      const say = el("button","right say"); say.append(c.corrected, el("span","spk"));
-      say.setAttribute("aria-label", "Écouter : " + c.corrected);
-      say.onclick = e => { e.stopPropagation(); unlockAudio(); speak(c.corrected, null, null); };
-      li.append(say);
-      if (c.explanation_fr) li.append(el("span","why",c.explanation_fr));
-      ul.append(li);
-    }
-    box.append(ul);
-    const skip = el("button","skip","Passer");
-    skip.onclick = () => { skip.remove(); onSkip(); };
-    box.append(skip);
-  }
-  after.after(box);
-  return box;
+  marquer(youEl, list, "faute");
+  const skip = el("button", "skip", "Passer");
+  skip.onclick = () => { skip.remove(); onSkip(); };
+  youEl.after(skip);
+  return youEl;
 }
 
 function renderClaude(chunks, replyFr){

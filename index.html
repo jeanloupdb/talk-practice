@@ -56,8 +56,20 @@ svg{width:24px;height:24px;flex:none}
 .iconbtn{background:none;border:none;padding:8px;border-radius:50%;display:grid;place-items:center;color:var(--accent)}
 #voiceStatus{margin:0 18px;font-size:.85rem;color:var(--muted)}
 #feed{flex:1;overflow-y:auto;padding:12px 22px 26px;display:flex;flex-direction:column;gap:18px}
-.empty{margin:auto 0;text-align:center}
-.empty p{color:var(--muted);margin:0 auto 22px;max-width:30ch}
+.empty{margin:auto 0;text-align:center;animation:entre .45s var(--ease) both}
+.hello{font-size:clamp(1.6rem,7vw,2.1rem);font-weight:700;margin:0 0 22px;letter-spacing:-.01em}
+.choix{display:flex;flex-direction:column;gap:10px;max-width:420px;margin:0 auto}
+.choixcarte{background:var(--card);border:1px solid var(--card-line);border-radius:24px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;backdrop-filter:blur(6px)}
+.choixcarte b{font-size:1.05rem}
+.choixcarte span{color:var(--muted);font-size:.92rem}
+.choixcarte .primary{width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.primary.second{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.sujet{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:12px 14px;font-weight:600;text-align:left}
+.sujet .chev{color:var(--accent);flex:none}
+.ou{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.08em}
+.titleblock{min-width:0}
+body.home .mainrow #mic,body.home .mainrow #hintBtn{visibility:hidden}
+.titleblock .title{display:flex;align-items:center;gap:2px}
 .primary{background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:14px 28px;font-weight:600;font-size:1.05rem}
 .primary:disabled{opacity:.45;cursor:default}
 .you{align-self:flex-end;text-align:right;color:var(--accent);font-weight:600;font-size:1.25rem;line-height:1.3;max-width:92%}
@@ -208,25 +220,37 @@ button:not(:disabled):active{transform:scale(.94)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.play.ready{animation:none}.dots i{animation:none;opacity:.7}.msg{transition:none}}
 </style>
 </head>
-<body>
+<body class="home">
 <div class="app">
   <section id="stage">
     <div class="bar">
-      <button class="themebtn" id="themeBtn" aria-label="Choisir le jeu de rôle"><span class="title">Jeu de rôle <span class="serie" id="serie" hidden></span></span><span class="theme"><span id="themeName"></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></button>
+      <div class="titleblock"><span class="title"><span id="modeName">Talk Practice</span> <span class="serie" id="serie" hidden></span></span><span class="theme" id="themeName"></span></div>
       <div class="barbtns">
         <button class="iconbtn" id="gear" aria-label="Réglages">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
         </button>
-        <button class="iconbtn" id="newTheme" aria-label="Nouveau thème">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+        <button class="iconbtn" id="newTheme" aria-label="Retour à l’accueil" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg>
         </button>
       </div>
     </div>
     <p id="voiceStatus"></p>
     <div id="feed" aria-live="polite">
       <div class="empty" id="empty">
-        <p>Prêt à parler anglais ?</p>
-        <button class="primary" id="start">Commencer</button>
+        <h1 class="hello">Prêt à parler anglais ?</h1>
+        <div class="choix">
+          <div class="choixcarte">
+            <b>L’IA lance le sujet</b>
+            <button class="sujet" id="topicBtn" aria-label="Choisir le sujet"><span id="topicName"></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+            <button class="primary" id="start">Commencer</button>
+          </div>
+          <div class="ou">ou</div>
+          <div class="choixcarte">
+            <b>Tu lances le sujet</b>
+            <span>Parle de ce que tu veux aujourd’hui</span>
+            <button class="primary second" id="startFree"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Je commence</button>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -383,7 +407,14 @@ function fermer(id){
 }
 function setVoiceStatus(t){ $("voiceStatus").textContent = t || ""; }
 function scrollDown(){ feed.scrollTop = feed.scrollHeight; }
-function setTheme(t){ theme = t; $("themeName").textContent = t.fr; S.theme = t; saveS(); }
+// Conversation libre : c'est l'apprenant qui lance le sujet, l'IA suit.
+const topicNameEl = document.getElementById("topicName"); // garde la reference : l'accueil sort du DOM pendant une conversation
+const LIBRE = {fr:"Sujet libre", en:"a free conversation: the learner chooses what to talk about", role:"a friendly, curious English-speaking friend who follows the learner's topic and asks good follow-up questions", libre:true};
+function setTheme(t){
+  theme = t;
+  if (started) $("themeName").textContent = t.libre ? "" : t.fr;
+  if (!t.libre) { S.theme = t; saveS(); topicNameEl.textContent = t.fr; }
+}
 function pickTheme(){ const tous = [...THEMES, ...(S.mesThemes || [])]; let t; do { t = tous[Math.floor(Math.random()*tous.length)]; } while (tous.length > 1 && t.fr === theme?.fr); setTheme(t); }
 if (S.theme?.fr && S.theme?.en && S.theme?.role) setTheme(S.theme); else pickTheme();
 
@@ -674,7 +705,7 @@ mic.onclick = () => {
    Gemini entend ta vraie prononciation (Chrome, lui, devinait les mots et effacait tes fautes),
    et ne coupe jamais au milieu d'une phrase : l'envoi part quand tu retouches le micro. */
 const ENREG_OK = !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
-let enreg = null, enregDebut = 0, enregTimer = null, enregLive = null;
+let enreg = null, enregDebut = 0, enregTimer = null, enregLive = null, jeterEnreg = false;
 function blobB64(b){ return new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = ko; r.readAsDataURL(b); }); }
 async function basculerEnreg(){
   if (enreg && enreg.state === "recording") { enreg.stop(); return; }
@@ -693,6 +724,7 @@ async function basculerEnreg(){
     const type = (enreg.mimeType || mime || "audio/webm").split(";")[0];
     const blob = new Blob(morceaux, {type});
     const you = enregLive; enregLive = null;
+    if (jeterEnreg) { jeterEnreg = false; you?.remove(); return; }
     if (Date.now() - enregDebut < 700 || blob.size < 1200) { you?.remove(); setStatus("Trop court : touche le micro, parle, puis retouche-le."); return; }
     you.className = "you pending"; you.textContent = "";
     setStatus("");
@@ -804,7 +836,7 @@ const SCHEMA_ROLE = {
 };
 let roleBusy = false;
 function roleStatus(t){ $("roleStatus").textContent = t; }
-function lancerTheme(t){ setTheme(t); fermer("roles"); stopSpeak(); if (started) begin(); else setStatus("Touche « Commencer » quand tu es prêt."); }
+function lancerTheme(t){ setTheme(t); fermer("roles"); stopSpeak(); begin(); }
 function afficherRoles(){
   const l = $("rolesList"); l.replaceChildren();
   const ligne = (t, perso) => {
@@ -839,7 +871,7 @@ async function creerRole(desc){
   } finally { roleBusy = false; }
 }
 let roleDictee = null;
-$("themeBtn").onclick = () => {
+$("topicBtn").onclick = () => {
   if (busy) return;
   if (listening) { stopVoulu = true; rec.stop(); }
   hidePop(); afficherRoles(); $("roles").hidden = false;
@@ -1100,7 +1132,7 @@ Judge the new attempt on its own: it may be worded differently, that is fine. If
   const force = essai?.force ? `
 The learner chose to move on: set ok to true, corrections to [], and reply normally.` : "";
   return `You are a friendly English conversation partner for a French-speaking engineering student travelling in Ireland who wants to speak English fluently (intermediate level).
-Theme: ${theme.en}. Play this role: ${theme.role}. Stay roughly on the theme, but follow the learner if they go elsewhere.
+${theme.libre ? "There is no imposed theme: the learner chooses what to talk about today. Be a friendly, curious English-speaking friend: follow his topic, react to it and ask good follow-up questions." : `Theme: ${theme.en}. Play this role: ${theme.role}. Stay roughly on the theme, but follow the learner if they go elsewhere.`}
 
 STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDIO recording.
 - "heard": write exactly what he said, word for word, KEEPING his grammar mistakes (never fix them here). If nothing intelligible was said, write "" and set ok to true with empty fields.
@@ -1287,12 +1319,42 @@ function submit(text){
   history.push({role:"user", content:t});
   ask(t, you);
 }
+// Accueil <-> conversation
+const accueil = $("empty");
+function modeConversation(libre){
+  document.body.classList.remove("home");
+  $("modeName").textContent = libre ? "Sujet libre" : "Jeu de rôle";
+  $("newTheme").hidden = false;
+}
+function allerAccueil(){
+  if (busy) return;
+  if (enreg && enreg.state === "recording") { jeterEnreg = true; enreg.stop(); }
+  if (listening) { stopVoulu = true; rec.stop(); }
+  stopSpeak(); hidePop();
+  started = false; history = []; essai = null; lastHint = null; setSerie(0);
+  if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
+  $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("newTheme").hidden = true;
+  $("hintBox").hidden = true; $("hintBtn").disabled = true; mic.disabled = true;
+  feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home");
+}
 function begin(){
   if (!S.key) { openSettings(); return; }
+  if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
   unlockAudio(); stopSpeak(); if (voixKokoro()) loadTTS();
   started = true; history = []; lastHint = null; essai = null; setSerie(0);
+  modeConversation(false); $("themeName").textContent = theme.fr;
   feed.replaceChildren();
   ask(null);
+}
+function commencerLibre(){
+  if (!S.key) { openSettings(); return; }
+  unlockAudio(); stopSpeak();
+  setTheme(LIBRE);
+  started = true; history = []; lastHint = null; essai = null; setSerie(0);
+  modeConversation(true);
+  feed.replaceChildren(); mic.disabled = false;
+  setStatus("Parle de ce que tu veux. Touche le micro rouge quand tu as fini.");
+  if (ENREG_OK) basculerEnreg(); else mic.onclick();
 }
 
 /* ---------- Réglages UI ----------
@@ -1387,7 +1449,8 @@ $("hintBtn").onclick = () => {
   box.replaceChildren(el("b", null, lastHint.en), el("span", null, lastHint.fr));
   box.hidden = false;
 };
-$("newTheme").onclick = () => { if (busy) return; stopSpeak(); pickTheme(); if (started) begin(); };
+$("newTheme").onclick = allerAccueil;
+$("startFree").onclick = commencerLibre;
 
 if (!S.key) setStatus("Première fois ? Ajoute ta clé Gemini gratuite dans les réglages ⚙️.");
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

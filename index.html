@@ -71,10 +71,9 @@ svg{width:24px;height:24px;flex:none}
 .splitchev .chev{width:24px;height:24px;color:inherit}
 .sujetligne{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;border-bottom:1px solid var(--line);padding:16px 4px;font-size:1.05rem;font-weight:500;text-align:left;color:var(--ink)}
 .sujetligne:last-child{border-bottom:none}
-.sujetgrille{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 6px}
-.sujetcarte{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:2px;min-height:84px;padding:14px 16px;border:none;border-radius:20px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);font-size:1.05rem;font-weight:700;text-align:left;line-height:1.2}
-.sujetcarte.mission{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
-.sujetcarte small{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.8}
+.sujetgrille{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 14px}
+.sujetcarte{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:72px;padding:8px 14px;border:none;border-radius:18px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);font-size:1rem;font-weight:600;text-align:center;line-height:1.2}
+.sujetcarte small{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
 .sujetcarte:active{transform:scale(.97)}
 #rolesList .rgroup{margin:18px 4px 2px}
 .sujetligne.reprise{color:var(--muted);font-weight:500}
@@ -90,7 +89,7 @@ svg{width:24px;height:24px;flex:none}
 .convbtn small{color:var(--muted);font-size:.82rem;flex:none}
 .passe{opacity:.75}
 .versconv{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border:none;border-radius:999px;padding:8px 16px;font-weight:600;font-size:.92rem}
-body.home .mainrow #mic,body.home .mainrow #hintBtn{display:none}
+body.home .mainrow #mic{display:none}
 body.home .mainrow{grid-template-columns:1fr auto}
 .titleblock .title{display:flex;align-items:center;gap:2px}
 .primary{background:var(--accent);color:var(--on-accent);border:none;border-radius:999px;padding:14px 28px;font-weight:600;font-size:1.05rem}
@@ -170,16 +169,11 @@ body.home .mainrow{grid-template-columns:1fr auto}
 .exfr{display:block;color:var(--muted);font-size:.9rem}
 footer{padding:10px 18px 16px}
 .status{font-size:.88rem;color:var(--muted);min-height:1.2em;margin:0 0 10px;text-align:center}
-.hint{background:var(--soft);border-radius:16px;padding:12px 14px;margin-bottom:12px}
-.hint b{display:block;font-size:1.05rem}
-.hint span{color:var(--muted);font-size:.92rem}
 .row{display:flex;gap:10px;align-items:flex-end}
 .mainrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
-.mainrow #hintBtn{justify-self:start}
 .mainrow #askBtn{justify-self:end;width:52px;height:52px;background:var(--soft);color:var(--accent)}
 .qarow{justify-content:center}
 .round{width:48px;height:48px;flex:none;border-radius:50%;border:none;display:grid;place-items:center}
-#hintBtn{background:var(--soft)}
 #mic{width:72px;height:72px;background:var(--accent);color:var(--on-accent)}
 #mic.on{background:var(--live)}
 .round:disabled{opacity:.4;cursor:default}
@@ -287,9 +281,7 @@ button:not(:disabled):active{transform:scale(.94)}
 
   <footer>
     <p class="status" id="status"></p>
-    <div class="hint" id="hintBox" hidden></div>
     <div class="row mainrow">
-      <button class="round" id="hintBtn" disabled aria-label="Astuce"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></button>
       <button class="round" id="mic" aria-label="Parler" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
       <button class="round" id="askBtn" aria-label="Poser une question en français">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2-2.4 3.4"/><path d="M12 16.6h.01"/></svg>
@@ -759,7 +751,7 @@ mic.onclick = () => {
   if (listening) { stopVoulu = true; rec.stop(); return; }
   stopSpeak(); unlockAudio(); hidePop();
   heard = ""; base = ""; stopVoulu = false; micErr = null; micStart = debutSession = Date.now(); relancesVides = 0;
-  try { rec.start(); listening = true; mic.classList.add("on"); mic.setAttribute("aria-label","Arrêter et envoyer"); setStatus("Je t’écoute… Touche le micro rouge quand tu as fini."); }
+  try { rec.start(); listening = true; mic.classList.add("on"); mic.setAttribute("aria-label","Arrêter et envoyer"); setStatus(""); }
   catch { setStatus("Le micro ne démarre pas."); }
 };
 
@@ -773,7 +765,7 @@ async function basculerEnreg(opts = {}){
   const auto = !!opts.auto;
   if (enreg && enreg.state === "recording") { enreg.forcer?.(); enreg.stop(); return; }
   if (busy || !started) return;
-  stopSpeak(); unlockAudio(); hidePop(); $("hintBox").hidden = true;
+  stopSpeak(); unlockAudio(); hidePop();
   let flux;
   try { flux = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, channelCount:1}}); }
   catch (e) { setStatus(e.name === "NotAllowedError" ? MSG_MICRO["not-allowed"] : "Micro indisponible (" + e.name + ")."); return; }
@@ -791,15 +783,15 @@ async function basculerEnreg(opts = {}){
       const vide = jeterEnreg !== "quitte"; jeterEnreg = false; you?.remove();
       if (auto && mainsLibres && vide) {
         // rien entendu : on reecoute, et au bout de 3 fois on se met en pause pour ne pas tourner a vide
-        if (++mlVides >= 3) mlStop("Je n’entends rien : mains libres en pause. Touche le casque pour reprendre.");
-        else { setStatus("Je n’ai rien entendu, je t’écoute encore."); setTimeout(ecouterAuto, 400); }
+        if (++mlVides >= 3) mlStop("Je n’entends rien, mains libres en pause");
+        else setTimeout(ecouterAuto, 400);
       }
       return;
     }
     if (Date.now() - enregDebut < 700 || blob.size < 1200) {
       you?.remove();
-      if (auto && mainsLibres) { setStatus("Trop court, je t’écoute encore."); setTimeout(ecouterAuto, 400); }
-      else setStatus("Trop court : touche le micro, parle, puis retouche-le.");
+      if (auto && mainsLibres) setTimeout(ecouterAuto, 400);
+      else setStatus("Trop court");
       return;
     }
     mlVides = 0;
@@ -852,7 +844,7 @@ async function basculerEnreg(opts = {}){
   for (let i = 0; i < 5; i++) ondes.append(el("i"));
   enregLive.append(dot, tps, ondes); feed.append(enregLive); scrollDown();
   raf = requestAnimationFrame(anime);
-  setStatus(auto ? "Mains libres : je t’écoute, parle quand tu veux." : "Je t’écoute… Touche le micro rouge quand tu as fini.");
+  setStatus(auto ? "Mains libres" : "");
   enregTimer = setInterval(() => {
     const sec = Math.floor((Date.now() - enregDebut) / 1000);
     tps.textContent = Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
@@ -892,17 +884,17 @@ function ecouterAuto(){
 function mlStart(){
   if (!ENREG_OK || !started) return;
   mainsLibres = true; S.mainsLibres = true; saveS(); mlEchecs = 0; mlVides = 0; mlMaj(); mlWake(true);
-  if (enreg && enreg.state === "recording") { setStatus("Mains libres : je t’écoute, parle quand tu veux."); return; }
-  if (busy || enLecture) setStatus("Mains libres : je t’écouterai dès que l’IA a fini de parler.");
+  if (enreg && enreg.state === "recording") { setStatus("Mains libres"); return; }
+  if (busy || enLecture) setStatus("Mains libres");
   else ecouterAuto();
 }
 function mlStop(raison, oublier){
   mainsLibres = false; if (oublier) { S.mainsLibres = false; saveS(); }
   mlMaj(); mlWake(false);
   if (enreg && enreg.state === "recording") { jeterEnreg = true; enreg.stop(); }
-  if (raison) setStatus(raison);
+  if (raison !== undefined) setStatus(raison);
 }
-mlBtn.onclick = () => { if (mainsLibres) mlStop("Mains libres désactivé. Touche le micro pour parler.", true); else mlStart(); };
+mlBtn.onclick = () => { if (mainsLibres) mlStop("", true); else mlStart(); };
 // ecran cache (appel, autre appli) : on arrete d'ecouter ; au retour, on reprend
 document.addEventListener("visibilitychange", () => {
   if (!mainsLibres) return;
@@ -1013,17 +1005,17 @@ const ICO_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 let sujetsTires = [];
 function afficherRoles(){
   // 4 sujets differents a chaque ouverture, pour en decouvrir
-  const pool = THEMES.slice(); sujetsTires = [];
-  while (sujetsTires.length < 4 && pool.length) sujetsTires.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  const tirer = (liste, n) => { const p = liste.slice(), r = []; while (r.length < n && p.length) r.push(p.splice(Math.floor(Math.random() * p.length), 1)[0]); return r; };
+  sujetsTires = [...tirer(THEMES.filter(t => !t.mission), 3), ...tirer(THEMES.filter(t => t.mission), 1)];
   const grille = el("div", "sujetgrille");
   for (const t of sujetsTires) {
-    const b = el("button", "sujetcarte" + (t.mission ? " mission" : ""), t.fr.replace(/^Mission : /, ""));
+    const b = el("button", "sujetcarte", t.fr.replace(/^Mission : /, ""));
     if (t.mission) b.prepend(el("small", null, "Mission"));
     b.onclick = () => { fermer("roles"); setTheme(t); begin(); };
     grille.append(b);
   }
   const l = convs();
-  $("rolesList").replaceChildren(grille, ...(l.length ? [el("div", "rgroup", "Historique"), ...l.map(c => ligneConv(c, true))] : []));
+  $("rolesList").replaceChildren(grille, ...l.map(c => ligneConv(c, false)));
 }
 GO.btn.onclick = commencerLibre;
 $("topicBtn").onclick = () => { if (busy) return; hidePop(); afficherRoles(); ouvrir("roles"); };
@@ -1448,7 +1440,6 @@ function compterQuestion(){ nbQuestions++; majCompteur(true); }
 async function ask(learner, youEl, opts = {}){
   if (busy) return;
   busy = true; mic.disabled = true; hidePop();
-  $("hintBox").hidden = true; $("hintBtn").disabled = true;
   const dots = el("div","dots"); dots.append(el("i"), el("i"), el("i"));
   feed.append(dots); scrollDown(); setStatus("");
   const ctx = essai ? {...essai, force: !!opts.force} : (opts.force ? {prev:learner, corrections:[], force:true} : null);
@@ -1480,7 +1471,7 @@ async function ask(learner, youEl, opts = {}){
     if (opts.audio && d.command === "pause" && mainsLibres) {
       // "pause" / "stop" dit a voix haute : on sort du mode mains libres
       history.pop(); youEl?.remove();
-      mlStop("Mains libres en pause. Touche le casque pour reprendre.");
+      mlStop("Mains libres en pause");
       speak("Okay, I'll pause here. Tap the headphones when you want to continue.", null, null);
       return;
     }
@@ -1504,7 +1495,6 @@ async function ask(learner, youEl, opts = {}){
         history.push({role:"user", content:learner});
         ask(learner, youEl, {force:true});
       });
-      setStatus("Corrige et redis ta phrase.");
       scrollDown();
       let dire = RETRY_LINES[Math.floor(Math.random() * RETRY_LINES.length)];
       // mains libres : on dit aussi les corrections, puisqu'on ne lit pas l'ecran
@@ -1531,8 +1521,6 @@ async function ask(learner, youEl, opts = {}){
     if (history.length > 20) history = history.slice(-20);
     lastHint = d.hint_en ? {en:d.hint_en, fr:d.hint_fr || ""} : null;
     if (learner && d.fait) ajouterFait(d.fait);
-    $("hintBtn").disabled = !lastHint;
-    setStatus("À toi : touche le micro.");
     scrollDown();
     // Phrase juste : "ding", puis la reponse est lue directement (l'audio se prepare pendant le ding).
     prechargerVoix(t.text);
@@ -1553,6 +1541,7 @@ async function ask(learner, youEl, opts = {}){
       shape:"L’IA a répondu dans un format inattendu. Renvoie, en une phrase plus simple si possible.",
       http:"Erreur côté Google (" + (e?.detail || "").slice(0, 80) + "). Réessaie dans un instant."
     }[e?.code] || "La réponse n’est pas arrivée. Réessaie.");
+    if (mainsLibres && e?.code !== "key" && e?.code !== "rate") setTimeout(ecouterAuto, 1500);
   } finally {
     busy = false; mic.disabled = !started;
   }
@@ -1585,10 +1574,11 @@ function sauverConv(){
   saveS();
 }
 function quand(t){
-  const m = Math.round((Date.now() - t) / 60000);
-  if (m < 1) return "à l’instant"; if (m < 60) return "il y a " + m + " min";
-  const h = Math.round(m / 60); if (h < 24) return "il y a " + h + " h";
-  const j = Math.round(h / 24); return j === 1 ? "hier" : "il y a " + j + " jours";
+  const sec = Math.max(1, Math.round((Date.now() - t) / 1000));
+  if (sec < 60) return sec + "s";
+  const m = Math.round(sec / 60); if (m < 60) return m + "min";
+  const h = Math.round(m / 60); if (h < 24) return h + "h";
+  const j = Math.round(h / 24); return j === 1 ? "hier" : j + "j";
 }
 function ligneConv(c, avecSuppr){
   const it = el("div","conv");
@@ -1650,7 +1640,6 @@ function reprendreConv(c){
   feed.replaceChildren(el("p","tip","Reprise de « " + c.titre + " » · " + quand(c.d)));
   afficherEchanges();
   mic.disabled = false;
-  setStatus("À toi : touche le micro pour reprendre.");
   const sansDecoupe = history.slice(-6).filter(m => m.role === "assistant" && !(Array.isArray(m.chunks) && m.chunks.length));
   if (sansDecoupe.length) decouperAnciennes(sansDecoupe).then(() => {
     if (convId !== c.id || busy) return;
@@ -1676,7 +1665,7 @@ function allerAccueil(){
   started = false; mlStop(); mlBtn.hidden = true; history = []; journal = []; essai = null; lastHint = null; setSerie(0);
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
   $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("newTheme").hidden = true;
-  $("hintBox").hidden = true; $("hintBtn").disabled = true; mic.disabled = true;
+  mic.disabled = true;
   feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home"); afficherReprendre();
   if (window.history.state?.tp === "in") window.history.replaceState(null, "");
 }
@@ -1696,7 +1685,6 @@ function commencerLibre(){
   started = true; history = []; journal = []; lastHint = null; essai = null; nbQuestions = 0; setSerie(0); convId = null;
   modeConversation(true);
   feed.replaceChildren(); mic.disabled = false;
-  setStatus("Parle de ce que tu veux. Touche le micro rouge quand tu as fini.");
   if (ENREG_OK) basculerEnreg({auto: mainsLibres}); else mic.onclick();
 }
 
@@ -1774,7 +1762,6 @@ $("setClose").onclick = () => { fermer("settings"); };
 $("memoClear").onclick = () => { if (confirm("Oublier tout ce que l’appli sait de toi ?")) { S.memo = []; saveS(); afficherMemo(); } };
 $("saveSettings").onclick = () => {
   lireReglages(); saveS(); fermer("settings");
-  if (!started && S.key) setStatus("C’est prêt. Touche « Commencer ».");
 };
 $("settings").onclick = e => { if (e.target.id === "settings") fermer("settings"); };
 $("testVoice").onclick = async () => {
@@ -1784,13 +1771,6 @@ $("testVoice").onclick = async () => {
   majReglages();
 };
 
-$("hintBtn").onclick = () => {
-  const box = $("hintBox");
-  if (!box.hidden) { box.hidden = true; return; }
-  if (!lastHint) return;
-  box.replaceChildren(el("b", null, lastHint.en), el("span", null, lastHint.fr));
-  box.hidden = false;
-};
 $("newTheme").onclick = allerAccueil;
 majDepart();
 

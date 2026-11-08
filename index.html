@@ -997,7 +997,7 @@ if (ENREG_OK) {
    puis elle se remet a ecouter toute seule. Jamais pendant que l'IA parle (elle s'entendrait).
    Sortie : le casque en haut, ou "pause" / "stop" dit a voix haute. Un toucher sur le micro pendant
    l'ecoute envoie tout de suite. */
-let mainsLibres = false, mlEchecs = 0, mlVides = 0, wakeLock = null;
+let mainsLibres = false, mlEchecs = 0, mlVides = 0, mlErreurs = 0, wakeLock = null;
 const mlBtn = document.getElementById("mlBtn");
 async function mlWake(on){
   try {
@@ -2127,7 +2127,7 @@ async function ask(learner, youEl, opts = {}){
       speak(dire, null, null).then(() => { if (d.vocab?.en && d.vocab?.fr) ouvrirVocab(d.vocab); mlApres(); });
       return;
     }
-    mlEchecs = 0;
+    mlEchecs = 0; mlErreurs = 0;
 
     if (learner) {
       if (!opts.force) renderFix(d, youEl);
@@ -2175,7 +2175,9 @@ async function ask(learner, youEl, opts = {}){
       parse:"L’IA a répondu dans un format inattendu. Renvoie, en une phrase plus simple si possible.",
       shape:"L’IA a répondu dans un format inattendu. Renvoie, en une phrase plus simple si possible.",
       http:"Erreur côté Google (" + (e?.detail || "").slice(0, 80) + "). Réessaie dans un instant."
-    }[e?.code] || "La réponse n’est pas arrivée. Réessaie.");
+    }[e?.code] || ("La réponse n’est pas arrivée (" + String(e?.message || e).slice(0, 90) + "). Réessaie."));
+    // erreur interne repetee en mains libres : on s'arrete au lieu de tourner en boucle
+    if (!e?.code && mainsLibres && ++mlErreurs >= 3) { mlStop(); return; }
     if (mainsLibres && e?.code !== "key" && e?.code !== "rate") setTimeout(ecouterAuto, 1500);
   } finally {
     busy = false; mic.disabled = !started;

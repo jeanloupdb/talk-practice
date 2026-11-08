@@ -1730,7 +1730,7 @@ function observer(d){
    Cibles : des structures (du parcours) et des mots ou expressions a haut rendement. */
 const CIBLES = [
   {id:"get", fr:"bien utiliser « get »", en:"the verb GET in its everyday meanings (get up, get to, get a coffee, get tired, get it)", min:1, re:/\b(get|gets|got|gotten|getting)\b/i},
-  {id:"make-do", fr:"« make » ou « do »", en:"MAKE vs DO (make a decision, make a mistake, do homework, do the dishes)", min:2},
+  {id:"make-do", fr:"« make » ou « do »", en:"MAKE vs DO (make a decision, make a mistake, do homework, do the dishes)", min:2, re:/\b(make|makes|made|making)\b|\b(do|does|did|doing|done)\b(?!\s*(n't|not|you|i|we|they|he|she|it|your|that|this)\b)/i},
   {id:"used-to", fr:"« used to » pour le passé", en:"USED TO for past habits (I used to play football)", min:3, re:/\bused to\b/i},
   {id:"been-ing", fr:"« I've been -ing »", en:"the present perfect continuous (I've been working on it since Monday)", min:4, re:/\b(have|has|'ve|'s) been \w+ing\b/i},
   {id:"should-have", fr:"« should have » pour regretter", en:"SHOULD HAVE / COULD HAVE + past participle to talk about regrets or alternatives", min:5, re:/\b(should|could|would)('ve| have) \w+/i},
@@ -1739,7 +1739,7 @@ const CIBLES = [
   {id:"depends", fr:"« it depends on »", en:"IT DEPENDS ON + noun / whether (it depends on the weather)", min:3, re:/\bdepends? on\b/i},
   {id:"polite", fr:"demander poliment", en:"polite requests: COULD YOU..., WOULD YOU MIND + -ing, DO YOU KNOW IF...", min:2, re:/\b(could you|would you mind|do you know (if|whether|where|how|what))\b/i},
   {id:"wish", fr:"« I wish »", en:"I WISH + past simple for present wishes (I wish I had more time)", min:5, re:/\bI wish\b/i},
-  {id:"tags", fr:"les question tags", en:"question tags (It's cold, isn't it? You went there, didn't you?)", min:5},
+  {id:"tags", fr:"les question tags", en:"question tags (It's cold, isn't it? You went there, didn't you?)", min:5, re:/,\s*(is|are|was|were|do|does|did|have|has|had|can|could|will|would|should)(n't)?\s+(i|you|he|she|it|we|they|there)\s*\?/i},
   {id:"phrasal-up-out", fr:"phrasal verbs avec up et out", en:"common phrasal verbs with UP and OUT (set up, give up, find out, work out, run out of)", min:4, re:/\b(set|sets|setting|give|gives|gave|giving|find|finds|found|finding|work|works|worked|working|run|runs|ran|running|pick|picked|picking|turn|turned|turning|end|ended|ending|show|showed|showing|catch|caught|catching|figure|figured|figuring) (up|out)\b/i}
 ];
 function cibleStructure(st){ return {id:"s:" + st, fr:"utiliser le " + (NOM_STRUCT[st] || st), en:"the " + st + " tense/structure", min:0, structure:st}; }
@@ -2197,7 +2197,7 @@ STEP 1, CHECK the learner's message. ${seanceCtx?.cible ? "GUIDED EXERCISE: " + 
 - "learner_asked": true if his message contains a real question to you (even a short one), false otherwise.
 - "ok": true if there is no real mistake in his English, false otherwise.
 - "conseil": NEVER suggest a version that removes today's challenge target (if he used it, keep it). ${seanceCtx?.cible ? "This is a guided exercise: conseil must be all \"\". " : ""}Only when ok is true and EITHER a phrase sounds blunt or unnatural in Ireland, OR his sentence is correct but basic for his level (an overused verb, a very simple structure where the focus structure would fit): OR one of his ACQUIRED CHALLENGES would have been the natural way to say it: "original" = his exact words concerned, "better" = the same idea one notch above (more natural, richer verb, the focus structure, the acquired challenge), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".
-- "corrections": ALL his mistakes (up to 5), never just the first one: wrong word (vocabulary), missing word, wrong tense, preposition, word order, and the challenge target; each with the exact wrong words, the corrected words, a French explanation of 12 words max, addressing the learner with « tu » (never « vous »), "debut"/"fin" (0 and 0 when there is no audio), and "type" = the category in 2 or 3 French words, reused consistently (e.g. "prétérit oublié", "question sans do", "article", "préposition", "pluriel", "ordre des mots", "accord sujet-verbe", "vocabulaire", "prononciation"); use EXACTLY "cible" when the mistake is about today's challenge target (missing or wrong), and EXACTLY "prononciation" for pronunciation. Empty if ok.
+- "corrections": ALL his mistakes (up to 5), never just the first one: wrong word (vocabulary), missing word, wrong tense, preposition, word order, and the challenge target; each with the exact wrong words, the corrected words, a French explanation of 12 words max, addressing the learner with « tu » (never « vous »), "debut"/"fin" (0 and 0 when there is no audio), and "type" = the category in 2 or 3 French words, reused consistently (e.g. "prétérit oublié", "question sans do", "article", "préposition", "pluriel", "ordre des mots", "accord sujet-verbe", "vocabulaire", "prononciation"); use EXACTLY "cible" when the mistake is about today's challenge target (missing or wrong), INCLUDING when he uses a target word where it does not fit (e.g. challenge make/do and he says "doing code": the right verb is "write"): then explanation_fr must say why the target does not fit here and which verb English uses (e.g. « Pour du code, on dit write, ni make ni do. »), and EXACTLY "prononciation" for pronunciation. Empty if ok.
 - "fixed_en": his WHOLE sentence corrected, natural, same meaning and same length (this is what he will say again). "" if ok.
 - "vocab": ONLY if one correction is a vocabulary gap (he used a wrong, French-sounding or missing word for a concept he meant, e.g. "afternoon" for « le soir »): "fr" = the French concept, "en" = the right English word, "lies" = 3 related words of the same family (e.g. morning / afternoon / night), each {fr, en}. Otherwise fr "", en "", lies [].
 - "obs" (about his message, even when ok): "structures" = the grammar structures he used CORRECTLY, only from this list: ${STRUCTURES.join(", ")} (empty if none); "verbs" = the main verbs he used, base form, 6 max; "level" = the level of this message from 1 (A1) to 10 (C2). For an empty or inaudible message: [], [], 0.
@@ -2401,6 +2401,8 @@ async function ask(learner, youEl, opts = {}){
     if (enCarte && learner && !d.ok && phraseConnue(learner)) { d.ok = true; d.corrections = []; d.cible = "ok"; }
     const pron = c => c.type === "prononciation" || /^prononciation/i.test(c.explanation_fr || "");
     if (enCarte && learner && !d.ok && (d.corrections || []).length && d.corrections.every(pron)) { d.pron = d.corrections; d.corrections = []; d.ok = true; if (d.cible !== "non") d.cible = "ok"; }
+    const reCible = lecon()?.cible?.re;
+    if (reCible instanceof RegExp) for (const c of d.corrections || []) if (c.type !== "prononciation" && reCible.test(String(c.original || ""))) c.type = "cible";
     if (learner && !d.ok) {
       // Erreur : on montre ce qui ne va pas, on le dit a l'oral, et on attend un nouvel essai.
       history.pop();                                   // la tentative ratee ne fait pas partie de la conversation

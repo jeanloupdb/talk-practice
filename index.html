@@ -1961,7 +1961,7 @@ STEP 1, CHECK the learner's message. ${seanceCtx?.cible ? "GUIDED EXERCISE: " + 
 - QUESTIONS deserve special care, they are where French speakers slip: missing do/does/did ("Where you go?"), wrong word order ("Where you are going?"), indirect questions ("Can you tell me where is the station?" -> "where the station is"), missing auxiliary. These ARE mistakes.
 - "learner_asked": true if his message contains a real question to you (even a short one), false otherwise.
 - "ok": true if there is no real mistake in his English, false otherwise.
-- "conseil": only when ok is true and EITHER a phrase sounds blunt or unnatural in Ireland, OR his sentence is correct but basic for his level (an overused verb, a very simple structure where the focus structure would fit): OR one of his ACQUIRED CHALLENGES would have been the natural way to say it: "original" = his exact words concerned, "better" = the same idea one notch above (more natural, richer verb, the focus structure, the acquired challenge), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".
+- "conseil": NEVER suggest a version that removes today's challenge target (if he used it, keep it). ${seanceCtx?.cible ? "This is a guided exercise: conseil must be all \"\". " : ""}Only when ok is true and EITHER a phrase sounds blunt or unnatural in Ireland, OR his sentence is correct but basic for his level (an overused verb, a very simple structure where the focus structure would fit): OR one of his ACQUIRED CHALLENGES would have been the natural way to say it: "original" = his exact words concerned, "better" = the same idea one notch above (more natural, richer verb, the focus structure, the acquired challenge), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".
 - "corrections": ALL his mistakes (up to 5), never just the first one: wrong word (vocabulary), missing word, wrong tense, preposition, word order, and the challenge target; each with the exact wrong words, the corrected words, a French explanation of 12 words max, addressing the learner with « tu » (never « vous »), "debut"/"fin" (0 and 0 when there is no audio), and "type" = the category in 2 or 3 French words, reused consistently (e.g. "prétérit oublié", "question sans do", "article", "préposition", "pluriel", "ordre des mots", "accord sujet-verbe", "vocabulaire", "prononciation"); use EXACTLY "cible" when the mistake is about today's challenge target (missing or wrong), and EXACTLY "prononciation" for pronunciation. Empty if ok.
 - "fixed_en": his WHOLE sentence corrected, natural, same meaning and same length (this is what he will say again). "" if ok.
 - "vocab": ONLY if one correction is a vocabulary gap (he used a wrong, French-sounding or missing word for a concept he meant, e.g. "afternoon" for « le soir »): "fr" = the French concept, "en" = the right English word, "lies" = 3 related words of the same family (e.g. morning / afternoon / night), each {fr, en}. Otherwise fr "", en "", lies [].
@@ -2054,7 +2054,10 @@ function renderFix(d, youEl, onSkip){
     youEl.classList.add("juste");
     if (d.pron?.length) marquer(youEl, d.pron, "pron");
     const c = d.conseil;
-    if (c && c.better && c.better.trim() && journal.length - dernierConseil >= 6) { dernierConseil = journal.length; marquer(youEl, [c], "mieux"); }
+    const enExo = seance && (seance.phase === "rappel" || seance.phase === "guide");
+    const re = lecon()?.cible?.re;
+    const retireCible = re instanceof RegExp && re.test(String(c?.original || "")) && !re.test(String(c?.better || ""));
+    if (!enExo && !retireCible && c && c.better && c.better.trim() && journal.length - dernierConseil >= 6) { dernierConseil = journal.length; marquer(youEl, [c], "mieux"); }
     return youEl;
   }
   marquer(youEl, list, "faute");

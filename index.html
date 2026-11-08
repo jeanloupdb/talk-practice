@@ -1335,7 +1335,7 @@ function majDepart(){
 }
 const ICO_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
 function tempsCourt(t){
-  if (!t) return "";
+  if (!t || t < 1e12) return "";
   const m = Math.floor((Date.now() - t) / 60000);
   return m < 60 ? Math.max(1, m) + " min" : m < 1440 ? Math.floor(m / 60) + " h" : Math.floor(m / 1440) + " j";
 }
@@ -1351,7 +1351,9 @@ function afficherRoles(){
   const mini = el("span", "dmini"); mini.style.setProperty("--p", Math.min(3, l.points) / 3);
   liste.append(ligne(l.cible.fr, mini, () => { fermer("roles"); begin(); }));
   // puis les defis faits, du plus recent au plus ancien
-  for (const d of [...defis()].filter(x => x.id !== l.cible.id).sort((x, y) => (y.t || 0) - (x.t || 0))) {
+  const ordre = profil().lecons || [];
+  const quand = d => d.t || (ordre.indexOf(d.id) + 1);   // sans date : l'ordre de reussite
+  for (const d of [...defis()].filter(x => x.id !== l.cible.id).sort((x, y) => quand(y) - quand(x))) {
     const dr = el("span", "ddroite"); const ok = el("span", "okico"); ok.innerHTML = ICO_OK; dr.append(el("span", "dtemps", tempsCourt(d.t)), ok);
     liste.append(ligne(d.fr, dr, () => afficherDefi(d)));
   }

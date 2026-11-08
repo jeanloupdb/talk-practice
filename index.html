@@ -128,10 +128,6 @@ svg{width:24px;height:24px;flex:none}
 .gros.parler{margin:4px 0 10px}
 #rolesList .rgroup{margin:18px 4px 2px}
 .sujetligne .fl{color:var(--muted);font-size:1.3rem;line-height:1}
-.sujetligne.zero{color:var(--muted);font-weight:500}
-.filtools{display:flex;justify-content:center;gap:8px;margin-bottom:6px}
-.plushaut{display:block;margin:0;background:var(--soft);border:none;border-radius:999px;padding:8px 16px;color:var(--muted);font-size:.85rem;font-weight:600}
-.claude.passe .ctrl .tbtn span{display:none}
 .sujetligne:active{background:color-mix(in srgb,var(--accent) 8%,transparent)}
 .titleblock{min-width:0;flex:1}
 .marque{display:none;width:30px;height:30px}
@@ -221,6 +217,16 @@ body.home #stage::after{content:"";position:absolute;left:0;right:0;bottom:0;hei
 .motfr{margin:4px 0 10px;font-size:1.1rem}
 .ex.vocmain .exen{font-size:1.4rem;font-weight:700}
 .ex.vocmain{border-bottom-width:2px;margin-bottom:4px}
+/* fiches de vocabulaire : carrousel, la precedente depasse a gauche */
+.vsheet{padding-left:0;padding-right:0}
+.vhead{padding:0 20px;min-height:40px}
+.vcount{font-size:.85rem;font-weight:700;color:var(--muted)}
+.vcards{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 20px 8px 14%;scrollbar-width:none;overscroll-behavior-x:contain}
+.vcards::-webkit-scrollbar{display:none}
+.vcard{flex:0 0 86%;scroll-snap-align:end;background:var(--soft);border-radius:22px;padding:14px 16px 8px}
+.vcard .vfr{font-size:.85rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.vcard .ex{border-bottom-color:var(--line)}
+.vcard .ex:last-child{border-bottom:none}
 .motfr small{display:block;color:var(--muted);font-size:.85rem;font-weight:400}
 .motnote{margin:0 0 6px;font-size:.92rem;color:var(--muted)}
 .ex{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);border-radius:0;padding:12px 2px}
@@ -233,6 +239,7 @@ body.home #stage::after{content:"";position:absolute;left:0;right:0;bottom:0;hei
 #qaFeed{flex:1;display:flex;flex-direction:column;gap:12px;margin:12px 0;overflow-y:auto}
 .qaq{align-self:flex-end;text-align:right;color:var(--accent);font-weight:600;max-width:90%}
 .qaq.live{opacity:.6}
+.qajour{align-self:center;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:6px 0 -4px}
 .qar p{margin:0 0 6px;line-height:1.5;font-size:1.02rem}
 .qarow{margin-top:auto}
 #qaMic{width:72px;height:72px;background:var(--accent);color:var(--on-accent)}
@@ -277,12 +284,6 @@ footer{padding:10px 18px 16px}
 .pill{padding:6px 11px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);font-size:.88rem;font-weight:600}
 .pill.ok{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
 .pill.ko{background:color-mix(in srgb,var(--bad) 12%,transparent);color:var(--bad)}
-.histo{display:flex;flex-direction:column;gap:8px}
-.hline{font-size:.95rem;line-height:1.35;max-width:88%}
-.hline.moi{align-self:flex-end;text-align:right;color:var(--accent);font-weight:600}
-.hline.moi.rate{opacity:.5;text-decoration:line-through;text-decoration-color:var(--bad)}
-.hline.ia{color:var(--muted)}
-#setBody .plushaut{margin:0 auto 10px}
 #setBody .skip{margin:16px auto 0}
 .regrow{display:flex;align-items:center;gap:10px;width:100%;background:var(--soft);border:none;border-radius:16px;padding:14px 16px;margin-bottom:8px;font-size:1.02rem;text-align:left;color:var(--ink)}
 .regrow:last-child{margin-bottom:0}
@@ -388,6 +389,9 @@ button:not(:disabled):active{transform:scale(.94)}
       <button class="iconbtn back" id="newTheme" aria-label="Retour à l’accueil" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="titleblock"><span class="title"><svg class="marque" viewBox="0 0 512 512" role="img" aria-label="Talk Practice"><defs><linearGradient id="mq" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2457C5"/><stop offset="1" stop-color="#5E4FDB"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="url(#mq)"/><path d="M152 136h208a56 56 0 0 1 56 56v112a56 56 0 0 1-56 56H236l-62 50a10 10 0 0 1-16-8v-42h-6a56 56 0 0 1-56-56V192a56 56 0 0 1 56-56z" fill="#fff"/><g fill="#2457C5"><rect x="186" y="232" width="20" height="36" rx="10"/><rect x="222" y="206" width="20" height="88" rx="10"/><rect x="258" y="186" width="20" height="128" rx="10"/><rect x="294" y="212" width="20" height="76" rx="10"/><rect x="330" y="236" width="20" height="28" rx="10"/></g></svg><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span><span class="theme leconchip" id="leconChip" hidden></span></div>
       <div class="barbtns">
+        <button class="iconbtn" id="vocBtn" aria-label="Mes fiches de vocabulaire" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M7 10h7M7 14h4"/></svg>
+        </button>
         <button class="iconbtn" id="mlBtn" aria-label="Mode mains libres" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="13" width="4.5" height="7" rx="2"/><rect x="16.5" y="13" width="4.5" height="7" rx="2"/></svg>
         </button>
@@ -436,6 +440,12 @@ button:not(:disabled):active{transform:scale(.94)}
   <div class="sheet" role="dialog" aria-labelledby="rolesTitle">
     <div class="mothead"><h2 id="rolesTitle">Ou plutôt…</h2><button class="iconbtn" id="rolesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="rolesList"></div>
+  </div>
+</div>
+<div class="sheetwrap" id="vocab" hidden>
+  <div class="sheet vsheet" role="dialog" aria-label="Fiches de vocabulaire">
+    <div class="mothead vhead"><span class="vcount" id="vocCount"></span><button class="iconbtn" id="vocClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="vcards" id="vocCards"></div>
   </div>
 </div>
 <div class="sheetwrap" id="qa" hidden>
@@ -505,7 +515,7 @@ function setStatus(t){ statusEl.textContent = t || ""; homeNote.textContent = t 
 /* Bouton retour du telephone (historique du navigateur) : une seule entree "dedans" posee des qu'on entre
    dans une conversation ou qu'on ouvre une fenetre. Retour = fermer la fenetre ouverte, sinon revenir a
    l'accueil ; on ne quitte l'appli qu'en faisant retour depuis l'accueil. */
-const FENETRES = ["settings", "mot", "roles", "qa"];
+const FENETRES = ["settings", "mot", "roles", "qa", "vocab"];
 function navDedans(){ if (window.history.state?.tp !== "in") window.history.pushState({tp:"in"}, ""); }
 function ouvrir(id){ navDedans(); $(id).hidden = false; }
 window.addEventListener("popstate", () => {
@@ -545,10 +555,11 @@ if ((S.v || 1) < 3) {
 }
 if ((S.v || 1) < 4) {
   const c = Array.isArray(S.convs) ? S.convs[0] : null;
-  if (c) S.fil = {msgs:(c.msgs || []).slice(-40), journal:(c.journal || []).slice(-400), d:c.d || Date.now()};
+  if (c) S.fil = {msgs:(c.msgs || []).slice(-40), d:c.d || Date.now()};
   delete S.convs; S.v = 4; saveS();
 }
 if (S.theme?.fr && S.theme?.en && S.theme?.role) setTheme(S.theme); else setTheme(THEMES[0]);
+majVocBtn();
 
 
 /* ---------- Voix IA (Kokoro, dans le téléphone) ---------- */
@@ -1062,18 +1073,34 @@ const SCHEMA_MOT = {
 const motCache = new Map();
 let motToken = 0;
 // Point vocabulaire : le mot qui manquait, et sa petite famille ; on ferme, on continue.
-function ouvrirVocab(v){
-  motToken++;
-  $("motTitle").replaceChildren(document.createTextNode(v.fr));
-  const box = $("motBody");
+function vocabListe(){ if (!Array.isArray(S.vocab)) S.vocab = []; const lim = Date.now() - 60 * 864e5; S.vocab = S.vocab.filter(x => x.t > lim).slice(-40); return S.vocab; }
+function ajouterVocab(v){
+  const l = vocabListe(), cle = normPhrase(v.en);
+  const i = l.findIndex(x => normPhrase(x.en) === cle); if (i >= 0) l.splice(i, 1);
+  l.push({fr:v.fr, en:v.en, lies:(v.lies || []).slice(0, 4).filter(x => x.en && x.fr), t:Date.now()}); saveS(); majVocBtn();
+}
+function majVocBtn(){ $("vocBtn").hidden = !vocabListe().length; }
+function carteVocab(v){
+  const c = el("div", "vcard");
   const ligne = (en, fr, gros) => {
     const b = el("button", "ex" + (gros ? " vocmain" : "")); const t = el("span", "extxt"); t.append(el("span", "exen", en), el("span", "exfr", fr)); const ic = el("span", "explay"); ic.innerHTML = PLAY; b.append(t, ic);
     b.onclick = () => { unlockAudio(); speak(en, null, null); }; return b;
   };
-  box.replaceChildren(ligne(v.en, v.fr, true), ...(v.lies || []).slice(0, 4).filter(x => x.en && x.fr).map(x => ligne(x.en, x.fr)));
-  ouvrir("mot");
-  speak(v.en, null, null);
+  c.append(el("div", "vfr", v.fr), ligne(v.en, v.fr, true), ...(v.lies || []).map(x => ligne(x.en, x.fr)));
+  return c;
 }
+// ouvre le panneau sur la derniere fiche ; on glisse vers la droite pour revoir les precedentes
+function ouvrirFiches(){
+  const l = vocabListe(); if (!l.length) return;
+  const w = $("vocCards"); w.replaceChildren(...l.map(carteVocab));
+  $("vocCount").textContent = l.length > 1 ? l.length : "";
+  ouvrir("vocab");
+  requestAnimationFrame(() => { w.scrollLeft = w.scrollWidth; });
+}
+// point vocabulaire apres une correction : on garde la fiche et on l'ouvre
+function ouvrirVocab(v){ ajouterVocab(v); ouvrirFiches(); speak(v.en, null, null); }
+$("vocBtn").onclick = () => { if (busy) return; stopSpeak(); hidePop(); ouvrirFiches(); };
+$("vocab").onclick = e => { if (e.target.id === "vocab" || e.target.closest("#vocClose")) { fermer("vocab"); stopSpeak(); } };
 async function openMot(en, fr, phrase){
   const tok = ++motToken;
   const box = $("motBody");
@@ -1165,10 +1192,7 @@ function afficherRoles(){
   const premier = el("button", "gros second parler");
   premier.innerHTML = ICO_MIC; premier.append("Parler en premier");
   premier.onclick = () => { fermer("roles"); commencerLibre(); };
-  const histo = el("button", "sujetligne zero");
-  histo.append(el("span", null, "Historique"), el("span", "fl", "›"));
-  histo.onclick = () => { fermer("roles"); pageReg = "historique"; rendreReglages(); ouvrir("settings"); };
-  $("rolesList").replaceChildren(premier, ...(fil().journal?.length ? [histo] : []));
+  $("rolesList").replaceChildren(premier);
 }
 // "Je commence" : l'IA ouvre tout de suite sur un sujet (different du dernier) ; "Parler en premier" est dans le deroule.
 GO.btn.onclick = () => {
@@ -1187,7 +1211,29 @@ const SCHEMA_QA = {
   },
   required:["reponse_fr","exemples"], propertyOrdering:["reponse_fr","exemples"]
 };
-let qaHisto = [], qaBusy = false;
+let qaBusy = false;
+// Les questions en francais sont gardees 30 jours (40 max) et reviennent quand on rouvre le panneau.
+function qaListe(){ if (!Array.isArray(S.qa)) S.qa = []; const lim = Date.now() - 30 * 864e5; S.qa = S.qa.filter(x => x.t > lim).slice(-40); return S.qa; }
+function rendreQa(x){
+  const q = el("div", "qaq", x.q);
+  const box = el("div", "qar");
+  String(x.r || "").split(/\n+/).filter(Boolean).forEach(t => box.append(el("p", null, t)));
+  for (const ex of x.exemples || []) {
+    const b = el("button", "ex"); const t = el("span", "extxt"); t.append(el("span", "exen", ex.en), el("span", "exfr", ex.fr)); const ic = el("span", "explay"); ic.innerHTML = PLAY; b.append(t, ic);
+    b.onclick = () => { unlockAudio(); speak(ex.en, null, null); };
+    box.append(b);
+  }
+  const vers = el("button", "versconv", "En parler en anglais");
+  vers.onclick = () => conversationDepuisQuestion(x.q, x.r, vers);
+  box.append(vers);
+  return [q, box];
+}
+const jourCourt = t => { const d = new Date(t), now = new Date(); const diff = Math.floor((now.setHours(0,0,0,0) - new Date(d).setHours(0,0,0,0)) / 864e5); return diff === 0 ? "" : diff === 1 ? "Hier" : d.toLocaleDateString("fr-FR", {day:"numeric", month:"short"}); };
+function afficherQa(){
+  const f = $("qaFeed"); f.replaceChildren(); let dernier = null;
+  for (const x of qaListe()) { const j = jourCourt(x.t); if (j !== dernier && j) f.append(el("div", "qajour", j)); dernier = j; f.append(...rendreQa(x)); }
+  requestAnimationFrame(() => { f.scrollTop = f.scrollHeight; });
+}
 function qaStatus(t){ $("qaStatus").textContent = t; }
 async function poserQuestion(q){
   q = (q || "").trim();
@@ -1197,7 +1243,7 @@ async function poserQuestion(q){
   f.append(el("div","qaq",q));
   const dots = el("div","dots"); dots.append(el("i"), el("i"), el("i")); f.append(dots); f.scrollTop = f.scrollHeight;
   const conv = history.slice(-6).map(h => (h.role === "user" ? "Learner: " : "Partner: ") + h.content).join("\n") || "(not started)";
-  const avant = qaHisto.slice(-3).map(x => "Q: " + x.q + "\nA: " + x.r).join("\n") || "(none)";
+  const avant = qaListe().slice(-3).map(x => "Q: " + x.q + "\nA: " + x.r).join("\n") || "(none)";
   try {
     const d = await llm(`You are a patient English teacher helping a French-speaking engineering student (intermediate level). He is in the middle of an English conversation with an AI partner and asks a side question, IN FRENCH (it was dictated, so ignore transcription errors).
 Conversation topic: ${theme ? theme.en : "free conversation"}.
@@ -1212,17 +1258,9 @@ His question: """${q}"""
 Answer IN FRENCH, addressing him with « tu » (never « vous »), simply and concretely, like a good teacher talking: 2 to 5 short sentences, no jargon, no lists, no markdown. If he asks how to say something, give the natural English wording. Quote English words inside « ».
 "exemples": 0 to 3 short natural English sentences that illustrate the answer, each with its French translation. Empty if not useful.`, SCHEMA_QA);
     dots.remove();
-    qaHisto.push({q, r:d.reponse_fr});
-    const box = el("div","qar");
-    String(d.reponse_fr || "").split(/\n+/).filter(Boolean).forEach(t => box.append(el("p", null, t)));
-    for (const x of d.exemples || []) {
-      const b = el("button","ex"); const t = el("span","extxt"); t.append(el("span","exen",x.en), el("span","exfr",x.fr)); const ic = el("span","explay"); ic.innerHTML = PLAY; b.append(t, ic);
-      b.onclick = () => { unlockAudio(); speak(x.en, null, null); };
-      box.append(b);
-    }
-    const vers = el("button","versconv","En parler en anglais");
-    vers.onclick = () => conversationDepuisQuestion(q, d.reponse_fr, vers);
-    box.append(vers);
+    const item = {q, r:d.reponse_fr, exemples:(d.exemples || []).slice(0, 3), t:Date.now()};
+    qaListe().push(item); saveS();
+    const [, box] = rendreQa(item);
     f.append(box);
     box.scrollIntoView({block:"start", behavior:"smooth"});
   } catch (e) {
@@ -1321,7 +1359,7 @@ const qaDictee = creerDictee("fr-FR", $("qaMic"), {
 });
 $("askBtn").onclick = $("askHome").onclick = () => {
   if (listening) { stopVoulu = true; rec.stop(); }
-  stopSpeak(); hidePop(); ouvrir("qa");
+  stopSpeak(); hidePop(); afficherQa(); ouvrir("qa");
 };
 const fermerQa = () => { qaDictee?.arreter(); fermer("qa"); stopSpeak(); };
 $("qa").onclick = e => { if (e.target.id === "qa" || e.target.closest("#qaClose")) fermerQa(); };
@@ -1698,7 +1736,7 @@ function poserRepere(c){
 }
 // ou vont les bulles (ta phrase, l'attente) : dans l'exercice en cours, sinon dans le fil
 function zone(){ const r = scene?.isConnected ? scene.querySelector(".etape.on .reponses") : null; if (r) voirEtape(); return r || feed; }
-function quitterScene(){ scene = null; enTransition = false; feed.replaceChildren(); afficherEchanges(0); }
+function quitterScene(){ scene = null; enTransition = false; feed.replaceChildren(); afficherEchanges(); }
 const ICO_RAPPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
 // l'etape en cours : des points (un par consigne), pas de titre
 function points(i, n, rappel){
@@ -2141,70 +2179,27 @@ function submit(text){
 /* ---------- Un seul fil de conversation ----------
    Practice reprend toujours la suite ; le fil est garde sur le telephone (derniers echanges pour le modele,
    journal complet pour l'affichage, borne a 400). Seuls les derniers echanges sont mis dans la page. */
-const MSG_MAX = 40, JOURNAL_MAX = 400, PAGE_INIT = 12, PAGE_PLUS = 20;
-function fil(){ if (!S.fil || typeof S.fil !== "object") S.fil = {msgs:[], journal:[], d:0}; return S.fil; }
+const MSG_MAX = 40, CONTEXTE_JOURS = 3;
+function fil(){ if (!S.fil || typeof S.fil !== "object") S.fil = {msgs:[], d:0}; return S.fil; }
 function sauverConv(){
   const f = fil();
-  f.msgs = history.slice(-MSG_MAX); f.journal = journal.slice(-JOURNAL_MAX); f.d = Date.now();
+  f.msgs = history.slice(-MSG_MAX).map(h => h.t ? h : {...h, t:Date.now()}); delete f.journal; f.d = Date.now();
   if (theme && !theme.libre) f.theme = {fr:theme.fr, en:theme.en, role:theme.role};
   saveS();
 }
 function chargerFil(){
   const f = fil();
-  history = (f.msgs || []).slice(-20); journal = (f.journal || []).slice(-JOURNAL_MAX);
+  // le passe s'efface tout seul : au-dela de quelques jours, le modele repart sans contexte
+  const limite = Date.now() - CONTEXTE_JOURS * 864e5;
+  history = (f.msgs || []).filter(h => !h.t || h.t > limite).slice(-20); journal = [];
 }
-function repartirAZero(){ S.fil = {msgs:[], journal:[], d:0}; history = []; journal = []; saveS(); }
-let affiches = 0;   // nombre d'entrees du journal deja mises dans la page (en partant de la fin)
-function rendreEntree(m){
-  if (m.role === "user") {
-    const y = el("div", "you passe" + (m.tried ? " attempt tried" : ""), m.content);
-    if (m.tried) marquer(y, m.corrections || [], "faute");
-    else if (m.ok && !m.forced) { y.classList.add("juste"); if (m.conseil?.better) marquer(y, [m.conseil], "mieux"); }
-    return y;
-  }
-  const morceaux = Array.isArray(m.chunks) && m.chunks.length ? m.chunks : [{en:m.content, fr:m.fr || ""}];
-  const t = renderClaude(morceaux, m.fr || "", true);
-  t.play.classList.remove("ready");
-  return t.wrap;
-}
-function afficherEchanges(n = PAGE_INIT){
-  feed.querySelectorAll(".you.passe, .claude, .filtools").forEach(x => x.remove());
-  affiches = Math.min(journal.length, n);
-  const bloc = journal.slice(journal.length - affiches).map(rendreEntree);
-  feed.append(...bloc);
-  feed.querySelectorAll(".claude").forEach(c => c.classList.add("old", "passe"));
-  if (journal.length) {
-    // seul endroit ou l'on peut repartir a zero : en haut du fil, dans la conversation
-    const tools = el("div", "filtools");
-    const zero = el("button", "plushaut zero", "Repartir à zéro");
-    zero.onclick = () => {
-      if (busy || !confirm("Effacer toute la conversation et repartir à zéro ?")) return;
-      repartirAZero(); feed.querySelectorAll(".you, .claude, .filtools, .tip, .skip").forEach(x => x.remove()); essai = null;
-      if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
-      modeConversation(false); $("themeName").textContent = theme.fr; ask(null);
-    };
-    tools.append(zero); feed.prepend(tools);
-  }
-  majPlusHaut(); scrollDown();
-}
-function majPlusHaut(){
-  feed.querySelector(".plushaut:not(.zero)")?.remove();
-  if (affiches >= journal.length) return;
-  const b = el("button", "plushaut", "Plus haut");
-  b.onclick = () => {
-    const avant = feed.scrollHeight;
-    const nouveaux = journal.slice(Math.max(0, journal.length - affiches - PAGE_PLUS), journal.length - affiches).map(rendreEntree);
-    nouveaux.forEach(x => { if (x.classList.contains("claude")) x.classList.add("old", "passe"); });
-    feed.querySelector(".filtools").after(...nouveaux); affiches += nouveaux.length; majPlusHaut();
-    feed.scrollTop += feed.scrollHeight - avant;
-  };
-  feed.querySelector(".filtools").prepend(b);
-}
+// Le fil demarre toujours sur une page vide : le passe n'est pas affiche (le modele, lui, garde 3 jours de contexte).
+function afficherEchanges(){ feed.querySelectorAll(".you.passe, .claude").forEach(x => x.remove()); scrollDown(); }
 
 // Accueil <-> conversation
 const accueil = $("empty");
 function modeConversation(libre){
-  document.body.classList.remove("home"); majDroitMicro();
+  document.body.classList.remove("home"); majDroitMicro(); majVocBtn();
   if (!lecon()) choisirLecon(); majLeconChip(); $("themeName").hidden = true;
   $("modeName").textContent = libre ? "Sujet libre" : "Conversation";
   $("newTheme").hidden = false; navDedans();
@@ -2229,7 +2224,7 @@ function ouvrirFil(libre){
   unlockAudio(); stopSpeak(); if (voixKokoro()) loadTTS();
   started = true; chargerFil(); lastHint = null; essai = null; nbQuestions = 0; setSerie(0); seance = null; scene = null;
   modeConversation(libre);
-  feed.replaceChildren(); afficherEchanges(libre ? PAGE_INIT : 0);   // la seance demarre sur un ecran vide (Plus haut pour revoir)
+  feed.replaceChildren(); afficherEchanges();
 }
 function begin(){
   if (!S.key) { openSettings(); return; }
@@ -2309,7 +2304,6 @@ function rendreReglages(){
     blocs.push(el("div", "profsec", "Cette semaine"), audit);
     blocs.push(el("div", "profsec", "Réglages"));
     body.replaceChildren(...blocs,
-      ligneReg("Historique", (() => { const n = Math.ceil((fil().journal?.length || 0) / 2); return n ? n + (n > 1 ? " échanges" : " échange") : "vide"; })(), () => setPage("historique")),
       ligneReg("Voix", voixLabel, () => setPage("voix")),
       ligneReg("Écoute", ecouteGemini() ? "Gemini" : "Dictée Chrome", () => setPage("ecoute")),
       ligneReg("Vitesse", vit, () => setPage("vitesse")),
@@ -2332,26 +2326,6 @@ function rendreReglages(){
     const test = el("button", "ghostbtn full", "Tester la voix");
     test.onclick = async () => { unlockAudio(); test.textContent = "…"; await speak("Hi there! How are you getting on? Is this voice easy to understand?", null, null); test.textContent = derniereVoix ? "Testé : " + derniereVoix : "Tester la voix"; };
     body.replaceChildren(seg, ...alertes, ...rows, test);
-  } else if (pageReg === "historique") {
-    titre.textContent = "Historique";
-    const j = (fil().journal || []);
-    if (!j.length) { body.replaceChildren(el("p", "tip", "Rien pour l’instant.")); return; }
-    const jour = t => { if (!t) return "Avant"; const d = new Date(t), now = new Date(); const diff = Math.floor((now.setHours(0,0,0,0) - new Date(d).setHours(0,0,0,0)) / 864e5); return diff === 0 ? "Aujourd’hui" : diff === 1 ? "Hier" : d.toLocaleDateString("fr-FR", {day:"numeric", month:"long"}); };
-    const liste = el("div", "histo"); let dernierJour = null, pos = j.length;
-    const rendre = (deb, fin) => {
-      const frag = document.createDocumentFragment();
-      for (let k = deb; k < fin; k++) {
-        const m = j[k], dj = jour(m.t);
-        if (dj !== dernierJour) { dernierJour = dj; frag.append(el("div", "profsec", dj)); }
-        const li = el("div", "hline " + (m.role === "user" ? "moi" : "ia") + (m.tried ? " rate" : ""), m.content);
-        frag.append(li);
-      }
-      return frag;
-    };
-    const plus = el("button", "plushaut", "Plus haut");
-    const page = () => { const deb = Math.max(0, pos - 60); dernierJour = null; const frag = rendre(deb, pos); liste.prepend(frag); pos = deb; plus.hidden = pos === 0; };
-    plus.onclick = page;
-    body.replaceChildren(plus, liste); page();
   } else if (pageReg === "ecoute") {
     titre.textContent = "Écoute";
     const gem = ligneRadio("Gemini", ENREG_OK ? "entend ta vraie prononciation" : "indisponible dans ce navigateur", ecouteGemini(), () => { if (ENREG_OK) { S.ecoute = "gemini"; saveS(); rendreReglages(); } });

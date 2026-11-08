@@ -269,7 +269,22 @@ footer{padding:10px 18px 16px}
 .sheetbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 .ghostbtn{background:var(--soft);border:none;border-radius:999px;padding:12px 22px;font-weight:600}
 .motheadl{display:flex;align-items:center;gap:2px;min-width:0}
-.profcard{background:linear-gradient(135deg,#2457C5,#5E4FDB);color:#fff;border-radius:22px;padding:18px 18px 16px;margin:4px 0 10px;box-shadow:0 10px 30px color-mix(in srgb,#2457C5 25%,transparent)}
+.profcard{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#2457C5,#5E4FDB);color:#fff;border-radius:22px;padding:18px 18px 16px;margin:4px 0 10px;box-shadow:0 10px 30px color-mix(in srgb,#2457C5 25%,transparent)}
+.profring{position:relative;flex:none;width:64px;height:64px}
+.profring svg{width:64px;height:64px}
+.profring b{position:absolute;inset:0;display:grid;place-items:center;font-size:1.5rem;font-weight:800}
+.proftxt{display:flex;flex-direction:column;gap:2px}
+.proftxt b{font-size:1.35rem;font-weight:700;letter-spacing:-.01em}
+.proftxt span{font-weight:700;opacity:.85}
+.proftxt .estim{font-style:normal;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;opacity:.7}
+.tuiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.tuile{display:flex;flex-direction:column;align-items:flex-start;gap:3px;background:var(--soft);border:none;border-radius:18px;padding:14px;text-align:left;color:var(--ink);min-height:92px}
+.tuile.large{grid-column:1/-1}
+.tuile:active{background:var(--line)}
+.tuile .tl{font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.tuile .tv{font-size:1.3rem;font-weight:700;line-height:1.2}
+.tuile .tdots{margin-left:8px;color:var(--accent);letter-spacing:2px;font-size:.85rem;vertical-align:2px}
+.tuile .ts{font-size:.82rem;color:var(--muted)}
 .profhead{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 12px}
 .profhead b{font-size:1.6rem;font-weight:700;letter-spacing:-.01em}
 .profhead span{font-weight:700;opacity:.85}
@@ -521,7 +536,7 @@ function ouvrir(id){ navDedans(); $(id).hidden = false; }
 window.addEventListener("popstate", () => {
   const ouverte = FENETRES.find(id => !$(id).hidden && !$(id).classList.contains("ferme"));
   if (ouverte) {
-    if (ouverte === "settings" && pageReg !== "main") { setPage("main"); navDedans(); return; }
+    if (ouverte === "settings" && pageReg !== "main") { setPage(SOUS_REGLAGES.includes(pageReg) ? "reglages" : "main"); navDedans(); return; }
     if (ouverte === "qa") qaDictee?.arreter();
     fermer(ouverte); stopSpeak();
     if (started) navDedans();          // on reste dans la conversation : on remet l'entree
@@ -2277,33 +2292,54 @@ function rendreReglages(){
   const prov = provDe(S.voice);
   const voixLabel = prov === "sys" ? "Téléphone" : nomVoix(S.voice) + " · " + NOM_PROV[prov];
   const vit = (VITESSES.find(v => Number(v[0]) === Number(S.speed)) || VITESSES[1])[1];
+  const p = profil(), n = Math.min(10, Math.max(1, p.niveau || 4));
+  const pills = (liste, cls) => { const w = el("div", "pills"); liste.forEach(x => w.append(el("span", "pill " + cls, x))); return w; };
+  const stat = (v, l) => { const d = el("div", "stat"); d.append(el("b", null, String(v)), el("span", null, l)); return d; };
+  const l = lecon() || choisirLecon();
+  const nomDefi = id => (CIBLES.find(c => c.id === id) || {fr: id.startsWith("s:") ? "utiliser le " + (NOM_STRUCT[id.slice(2)] || id.slice(2)) : id}).fr;
+  const fautes = Object.entries(p.fautes).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k]) => k);
+  const st = stats(), part = st.moi + st.ia ? Math.round(100 * st.moi / (st.moi + st.ia)) : 0;
+  const reut = st.rTot ? Math.round(100 * st.rOk / st.rTot) : 0, dus = rappels().filter(x => x.due <= Date.now()).length;
   if (pageReg === "main") {
     titre.textContent = "Profil";
-    const p = profil(), n = Math.min(10, Math.max(1, p.niveau || 4));
+    // niveau : un anneau, le chiffre, et bien dit que c'est une estimation
     const carte = el("div", "profcard");
-    const head = el("div", "profhead"); head.append(el("b", null, "Niveau " + n), el("span", null, CEFR(n)));
-    const bar = el("div", "profbar"); const i = el("i"); i.style.width = (n * 10) + "%"; bar.append(i);
-    carte.append(head, bar);
-    const chiffres = el("div", "profstats");
-    const stat = (v, l) => { const d = el("div", "stat"); d.append(el("b", null, String(v)), el("span", null, l)); return d; };
-    chiffres.append(stat(p.tours || 0, "échanges"), stat(p.acquis.length, "acquis"), stat(Object.keys(p.fautes).length, "à surveiller"));
-    const pills = (liste, cls) => { const w = el("div", "pills"); liste.forEach(x => w.append(el("span", "pill " + cls, x))); return w; };
-    if (!focus) choisirFocus();
-    const blocs = [carte, chiffres];
-    const l = lecon() || choisirLecon();
-    blocs.push(el("div", "profsec", "Défi en cours"), pills([l.cible.fr + "  " + "●".repeat(l.points) + "○".repeat(3 - l.points)], ""));
-    if ((p.lecons || []).length) blocs.push(el("div", "profsec", "Défis réussis"), pills(p.lecons.map(id => (CIBLES.find(c => c.id === id) || {fr: id.startsWith("s:") ? "utiliser le " + (NOM_STRUCT[id.slice(2)] || id.slice(2)) : id}).fr), "ok"));
-    if (p.acquis.length) { blocs.push(el("div", "profsec", "Acquis"), pills(p.acquis.map(x => NOM_STRUCT[x] || x), "ok")); }
-    const fautes = Object.entries(p.fautes).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k]) => k);
-    if (fautes.length) { blocs.push(el("div", "profsec", "À surveiller"), pills(fautes, "ko")); }
-    const st = stats(), part = st.moi + st.ia ? Math.round(100 * st.moi / (st.moi + st.ia)) : 0;
-    const reut = st.rTot ? Math.round(100 * st.rOk / st.rTot) : 0, dus = rappels().filter(x => x.due <= Date.now()).length;
-    const audit = el("div", "profstats");
-    const stat2 = (v, l) => { const d = el("div", "stat"); d.append(el("b", null, String(v)), el("span", null, l)); return d; };
-    audit.append(stat2(part + " %", "toi"), stat2(st.rTot ? reut + " %" : "–", "réutilisé"), stat2(dus, "à redire"));
-    blocs.push(el("div", "profsec", "Cette semaine"), audit);
-    blocs.push(el("div", "profsec", "Réglages"));
-    body.replaceChildren(...blocs,
+    const ring = el("div", "profring"); ring.innerHTML = '<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="4"/><circle cx="24" cy="24" r="20" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-dasharray="' + (2 * Math.PI * 20).toFixed(1) + '" stroke-dashoffset="' + (2 * Math.PI * 20 * (1 - n / 10)).toFixed(1) + '" transform="rotate(-90 24 24)"/></svg>';
+    ring.append(el("b", null, String(n)));
+    const txt = el("div", "proftxt"); txt.append(el("b", null, "Niveau " + n), el("span", null, "≈ " + CEFR(n)), el("i", "estim", "estimation"));
+    carte.append(ring, txt);
+    // quatre tuiles : tout est la, le detail s'ouvre au toucher
+    const tuile = (cls, label, valeur, sous, page) => {
+      const t = el("button", "tuile " + cls); t.append(el("span", "tl", label), el("span", "tv", valeur), el("span", "ts", sous));
+      t.onclick = () => setPage(page); return t;
+    };
+    const grille = el("div", "tuiles");
+    const defi = tuile("large", "Défi", l.cible.fr, (p.lecons || []).length ? (p.lecons.length + (p.lecons.length > 1 ? " réussis" : " réussi")) : "premier défi", "defis");
+    defi.querySelector(".tv").append(el("span", "tdots", "●".repeat(l.points) + "○".repeat(3 - l.points)));
+    grille.append(defi,
+      tuile("", "Acquis", String(p.acquis.length), fautes.length ? fautes.length + " à surveiller" : "rien à surveiller", "acquis"),
+      tuile("", "Cette semaine", part + " %", dus ? dus + " à redire" : "à jour", "semaine"));
+    body.replaceChildren(carte, grille, ligneReg("Réglages", voixLabel, () => setPage("reglages"), S.key ? "" : "alerte"));
+  } else if (pageReg === "defis") {
+    titre.textContent = "Défis";
+    const blocs = [el("div", "profsec", "En cours"), pills([l.cible.fr + "  " + "●".repeat(l.points) + "○".repeat(3 - l.points)], "")];
+    if ((p.lecons || []).length) blocs.push(el("div", "profsec", "Réussis"), pills(p.lecons.map(nomDefi), "ok"));
+    body.replaceChildren(...blocs);
+  } else if (pageReg === "acquis") {
+    titre.textContent = "Acquis";
+    const chiffres = el("div", "profstats"); chiffres.append(stat(p.tours || 0, "échanges"), stat(p.acquis.length, "acquis"), stat(fautes.length, "à surveiller"));
+    const blocs = [chiffres];
+    if (p.acquis.length) blocs.push(el("div", "profsec", "Acquis"), pills(p.acquis.map(x => NOM_STRUCT[x] || x), "ok"));
+    if (fautes.length) blocs.push(el("div", "profsec", "À surveiller"), pills(fautes, "ko"));
+    body.replaceChildren(...blocs);
+  } else if (pageReg === "semaine") {
+    titre.textContent = "Cette semaine";
+    const audit = el("div", "profstats"); audit.append(stat(part + " %", "toi"), stat(st.rTot ? reut + " %" : "–", "réutilisé"), stat(dus, "à redire"));
+    const barre = el("div", "cpart"); const ic = el("span", "cico"); ic.innerHTML = ICO_MIC; const jauge = el("div", "cjauge"); const moi = el("i"); moi.style.width = part + "%"; jauge.append(moi); barre.append(ic, jauge);
+    body.replaceChildren(audit, barre);
+  } else if (pageReg === "reglages") {
+    titre.textContent = "Réglages";
+    body.replaceChildren(
       ligneReg("Voix", voixLabel, () => setPage("voix")),
       ligneReg("Écoute", ecouteGemini() ? "Gemini" : "Dictée Chrome", () => setPage("ecoute")),
       ligneReg("Vitesse", vit, () => setPage("vitesse")),
@@ -2357,7 +2393,8 @@ function rendreReglages(){
 function setPage(pg){ pageReg = pg; provVue = null; rendreReglages(); $("settings").querySelector(".sheet").scrollTop = 0; }
 function openSettings(){ pageReg = "main"; rendreReglages(); ouvrir("settings"); }
 $("gear").onclick = openSettings;
-$("setBack").onclick = () => setPage("main");
+const SOUS_REGLAGES = ["voix", "ecoute", "vitesse", "cles", "memo"];
+$("setBack").onclick = () => setPage(SOUS_REGLAGES.includes(pageReg) ? "reglages" : "main");
 $("setClose").onclick = () => fermer("settings");
 $("settings").onclick = e => { if (e.target.id === "settings") fermer("settings"); };
 

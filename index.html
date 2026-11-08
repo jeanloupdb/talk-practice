@@ -1381,11 +1381,15 @@ function afficherDefi(d){
 // on met de cote le defi en cours ; il revient au retour a l'accueil
 function prendreDefi(d, points){ if (!S.leconSuspendue) S.leconSuspendue = S.lecon; S.lecon = {cible:cibleDe(d.id), points, tours:0, sansUsage:0, debut:Date.now()}; saveS(); }
 function boutonDefi(on){ $("redoBtn").hidden = !on; $("askBtn").hidden = !!on; }
-$("redoBtn").onclick = () => { if (busy || !entrainement) return; const d = entrainement; boutonDefi(false); recommencerDefi(d); };
+$("redoBtn").onclick = () => {
+  if (busy || enTransition) return;
+  if (entrainement) { const d = entrainement; recommencerDefi(d); return; }
+  if (seance) { stopSpeak(); mlStop(); begin(); }   // la seance du defi en cours repart du debut
+};
 function enParler(d){
   if (!S.key) { openSettings(); return; }
-  prendreDefi(d, 3); entrainement = d; boutonDefi(true);
-  setTheme(LIBRE); ouvrirFil(true); history = [];   // une discussion neuve, centree sur ce defi
+  prendreDefi(d, 3); entrainement = d;
+  setTheme(LIBRE); ouvrirFil(true); history = []; boutonDefi(true);   // une discussion neuve, centree sur ce defi
   ask(null);
 }
 function recommencerDefi(d){ if (!S.key) { openSettings(); return; } prendreDefi(d, 0); entrainement = null; begin(); }
@@ -2115,7 +2119,7 @@ function prechargerSeance(){
 async function lancerSeance(){
   seance = {phase:"prep", etape:0, rappels:[], guide:[], modele:null, faits:[], rappelsOk:0, libreTours:0, essais:0, defiFait:false, progres:0, total:0};
   // la pastille suit la seance : carte du mot, chaque consigne, la partie libre ; finir = valider
-  const ld = lecon() || choisirLecon(); seance.defiNom = ld.cible.fr; majLeconChip();
+  const ld = lecon() || choisirLecon(); seance.defiNom = ld.cible.fr; majLeconChip(); boutonDefi(true);
   const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); zone().append(dots);
   busy = true; mic.disabled = true;
   try {
@@ -2551,7 +2555,7 @@ function allerAccueil(){
 // Entree dans le fil : les derniers echanges s'affichent en leger, puis on continue.
 function ouvrirFil(libre){
   unlockAudio(); stopSpeak(); if (voixKokoro()) loadTTS();
-  started = true; chargerFil(); lastHint = null; essai = null; nbQuestions = 0; setSerie(0); seance = null; scene = null;
+  started = true; chargerFil(); lastHint = null; essai = null; nbQuestions = 0; setSerie(0); seance = null; scene = null; boutonDefi(false);
   modeConversation(libre);
   feed.replaceChildren(); afficherEchanges();
 }

@@ -1906,7 +1906,7 @@ const FINS = MOUVEMENTS;
 function buildPrompt(learner, essai, audio){
   const fin = choisirFin(learner);
   const seanceCtx = contexteSeance(learner);
-  const transcript = history.map(h => (h.role === "user" ? "Learner: " : "You: ") + h.content).join("\n") || "(nothing yet)";
+  const transcript = (seanceCtx?.cible ? "" : history.map(h => (h.role === "user" ? "Learner: " : "You: ") + h.content).join("\n")) || "(nothing yet)";
   // en nouvelle session, les anciens echanges servent de contexte : on les marque comme tels
   const ancien = !learner && history.length ? "(earlier session)\n" : "";
   const retry = essai ? `
@@ -1919,7 +1919,7 @@ The learner chose to move on: set ok to true, corrections to [], and reply norma
 NEVER invent facts about the learner and NEVER put him in a fictional situation or give him a role: talk about his REAL life, and when you do not know something, ASK.
 ${theme.libre ? "Today's topic: whatever he wants. Follow his topic, react to it and ask good follow-up questions." : `Today's topic: ${theme.en}. ${theme.role} Follow him if he goes elsewhere.`}
 
-STEP 1, CHECK the learner's message. ${seanceCtx?.cible ? "GUIDED EXERCISE: " + seanceCtx.cible + " Here, a word that does not say what the French instruction asks IS a mistake (example: the instruction says « le soir » and he says \"afternoon\": correction \"afternoon\" -> \"evening\", type \"vocabulaire\", vocab fr « le soir », en \"evening\", ok false).\n" : ""}${audio ? `His message is the attached AUDIO recording.
+STEP 1, CHECK the learner's message. ${seanceCtx?.cible ? "GUIDED EXERCISE: " + seanceCtx.cible + " Here, a word that does not say what the French instruction asks IS a mistake (example: the instruction says « le soir » and he says \"afternoon\": correction \"afternoon\" -> \"evening\", type \"vocabulaire\", vocab fr « le soir », en \"evening\", ok false).\n" : ""}${audio ? `His message is the attached AUDIO recording. It is a BRAND-NEW recording: it is never one of the lines written above. Transcribe only the sounds in it; if what you think you hear is identical to an earlier line, you are guessing: write "".
 - "heard": write exactly what he said, word for word, KEEPING his grammar mistakes (never fix them here). If the audio is silent, too quiet or not intelligible, write "" and set ok to true with empty fields: NEVER guess, and NEVER reuse a sentence from the conversation above. "clair": true only if EVERY word was clearly intelligible; if you had to guess even one word, set "clair" to false and "heard" to "" (he will simply say it again).
 - For EACH correction, "debut" and "fin" = where the corrected words are spoken in the audio, in seconds from the start of the recording (decimals allowed, e.g. 1.4 and 2.1). Be as precise as you can.
 - You can HEAR his pronunciation: if a word is clearly mispronounced, so that a native speaker could misunderstand it, add a correction: "original" = the word, "corrected" = the same word, explanation in French starting with "Prononciation :" saying how to say it (e.g. "Prononciation : le « th » se fait langue entre les dents"). Never correct the French accent itself, only real mispronunciations. At most one pronunciation correction.` : `It is transcribed from SPEECH: ignore spelling, punctuation and capital letters. "heard": "".`} Look only for real mistakes a native speaker would notice: grammar, wrong word, missing word, wrong tense, word order, a French-style phrase that sounds wrong in English. If a word looks wrongly transcribed in a way that suggests a pronunciation problem, add a correction whose explanation starts with "Prononciation ?". Do not correct things that are merely less elegant.
@@ -2099,7 +2099,8 @@ async function ask(learner, youEl, opts = {}){
         d = await llm(buildPrompt(learner, ctx, !!opts.audio), SCHEMA, opts.audio || null);
         if (opts.audio) {
           const h = String(d?.heard || "").trim();
-          if (!h || d.clair === false || (opts.audio.faible && dejaDit(h))) throw {code:"inaudible"};
+          const carteEnCours = seance && (seance.phase === "rappel" || seance.phase === "guide");
+          if (!h || d.clair === false || ((opts.audio.faible || carteEnCours) && dejaDit(h) && !phraseConnue(h))) throw {code:"inaudible"};
           learner = h; youEl.textContent = h; youEl.classList.remove("pending");
           history.push({role:"user", content:h});
         }

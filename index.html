@@ -149,6 +149,36 @@ svg{width:24px;height:24px;flex:none}
 .ring b{width:22px;height:22px;border-radius:50%;background:rgba(20,33,61,.38);display:grid;place-items:center;font-size:.72rem;font-weight:800;color:#fff}
 .splitchev{flex:none;width:58px;padding:0;border-radius:12px 26px 26px 12px;display:grid;place-items:center}
 .splitchev .chev{width:24px;height:24px;color:inherit}
+.splitchev.charge .chev{opacity:0}
+.splitchev.charge::after{width:22px;height:22px;margin:-12px 0 0 -12px;border-width:2.5px}
+#go.valide .defititre::after{content:"";display:inline-block;width:22px;height:22px;margin-left:10px;vertical-align:-3px;border-radius:50%;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2318784A' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/14px no-repeat;animation:popin .45s var(--rebond) both}
+.defititre.sort{animation:sortie .3s var(--ease) both}
+.defititre.arrive{animation:arrive .42s var(--ease) both}
+@keyframes sortie{to{opacity:0;transform:translateX(-30px)}}
+@keyframes arrive{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+.leconchip.brille{animation:brille .9s var(--ease)}
+@keyframes brille{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--good) 55%,transparent)}100%{box-shadow:0 0 0 12px transparent}}
+/* deroule : les defis */
+.dliste{display:flex;flex-direction:column}
+.drow{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;background:none;border:none;border-bottom:1px solid var(--line);padding:15px 4px;color:var(--ink);font-size:1rem;font-weight:600;text-align:left}
+.drow:last-child{border-bottom:none}
+.drow:active{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.dtitre{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ddroite{display:flex;align-items:center;gap:10px;flex:none}
+.dtemps{font-size:.8rem;font-weight:600;color:var(--muted)}
+.dmini{position:relative;flex:none;width:56px;height:6px;border-radius:3px;background:color-mix(in srgb,var(--accent) 18%,transparent);overflow:hidden}
+.dmini::before{content:"";position:absolute;inset:0 auto 0 0;width:calc(var(--p) * 100%);background:var(--accent);border-radius:3px}
+.dretour{margin:-8px 0 -8px -10px}
+.dcarte{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:20px;border-radius:26px;text-align:left;margin-bottom:12px}
+.dhaut{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%}
+.dok{flex:none;width:26px;height:26px;border-radius:50%;background:#fff;color:#18784A;display:grid;place-items:center}
+.dok svg{width:15px;height:15px}
+.dex{display:block;font-size:.92rem;line-height:1.35}
+.dex b{display:block;font-weight:600}
+.dex span{opacity:.75}
+.dpied{display:inline-flex;align-items:center;gap:8px;margin-top:6px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.2);font-weight:700;font-size:.92rem}
+.dico{display:grid;place-items:center}
+.dico svg{width:16px;height:16px}
 .defi:active{transform:scale(.985)}
 .sujetligne{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;border-bottom:1px solid var(--line);padding:16px 4px;font-size:1.05rem;font-weight:500;text-align:left;color:var(--ink)}
 .sujetligne:last-child{border-bottom:none}
@@ -615,6 +645,7 @@ if ((S.v || 1) < 4) {
   delete S.convs; S.v = 4; saveS();
 }
 if (S.theme?.fr && S.theme?.en && S.theme?.role) setTheme(S.theme); else setTheme(THEMES[0]);
+if (S.leconSuspendue) { S.lecon = S.leconSuspendue; delete S.leconSuspendue; saveS(); }
 majVocBtn();
 
 
@@ -1279,6 +1310,20 @@ function montrerBas(you, txt, blob){
 const ICO_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
 const GO = {btn: document.getElementById("go"), label: document.getElementById("goLabel"), pts: document.getElementById("goPts"), niv: document.getElementById("goNiv")};
 // Le bouton reste "Je commence" (sujet libre). Le ▾ ouvre la liste des sujets : un toucher lance l'IA dessus.
+// L'accueil fete le defi valide : la barre se remplit, la coche, des confettis ; la fleche tourne
+// pendant que le defi suivant se prepare, puis le nouveau titre arrive.
+async function animerValidation(v){
+  const chev = $("topicBtn"), titre = v.nom.charAt(0).toUpperCase() + v.nom.slice(1);
+  GO.btn.disabled = true; chev.disabled = true; chev.classList.add("charge");
+  GO.label.textContent = titre; GO.pts.style.setProperty("--p", .66);
+  await pause(350); GO.pts.style.setProperty("--p", 1);
+  await pause(550); GO.btn.classList.add("valide"); confettis(GO.btn); ding();
+  await Promise.all([prechargerSeance().catch(() => {}), pause(1800)]);
+  GO.label.classList.add("sort"); await pause(300);
+  GO.btn.classList.remove("valide"); majDepart(); GO.label.classList.remove("sort"); GO.label.classList.add("arrive");
+  chev.classList.remove("charge"); GO.btn.disabled = false; chev.disabled = false;
+  setTimeout(() => GO.label.classList.remove("arrive"), 450);
+}
 function majDepart(){
   const l = lecon() || choisirLecon(), p = profil(), n = Math.min(10, Math.max(1, p.niveau || 4));
   const titre = l.cible.fr.charAt(0).toUpperCase() + l.cible.fr.slice(1);
@@ -1289,12 +1334,54 @@ function majDepart(){
   GO.btn.setAttribute("aria-label", "Continuer : " + titre + ", niveau " + n);
 }
 const ICO_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
-function afficherRoles(){
-  const premier = el("button", "gros second parler");
-  premier.innerHTML = ICO_MIC; premier.append("Parler en premier");
-  premier.onclick = () => { fermer("roles"); commencerLibre(); };
-  $("rolesList").replaceChildren(premier);
+function tempsCourt(t){
+  if (!t) return "";
+  const m = Math.floor((Date.now() - t) / 60000);
+  return m < 60 ? Math.max(1, m) + " min" : m < 1440 ? Math.floor(m / 60) + " h" : Math.floor(m / 1440) + " j";
 }
+function afficherRoles(){
+  $("rolesTitle").textContent = "";
+  const libre = el("button", "gros second parler");
+  libre.innerHTML = ICO_MIC; libre.append("Mode libre");
+  libre.onclick = () => { fermer("roles"); commencerLibre(); };
+  const ligne = (titre, droite, onclick) => { const b = el("button", "drow"); b.append(el("span", "dtitre", titre), droite); b.onclick = onclick; return b; };
+  const liste = el("div", "dliste");
+  // le defi en cours d'abord, avec sa petite barre
+  const l = lecon() || choisirLecon();
+  const mini = el("span", "dmini"); mini.style.setProperty("--p", Math.min(3, l.points) / 3);
+  liste.append(ligne(l.cible.fr, mini, () => { fermer("roles"); begin(); }));
+  // puis les defis faits, du plus recent au plus ancien
+  for (const d of [...defis()].filter(x => x.id !== l.cible.id).sort((x, y) => (y.t || 0) - (x.t || 0))) {
+    const dr = el("span", "ddroite"); const ok = el("span", "okico"); ok.innerHTML = ICO_OK; dr.append(el("span", "dtemps", tempsCourt(d.t)), ok);
+    liste.append(ligne(d.fr, dr, () => afficherDefi(d)));
+  }
+  $("rolesList").replaceChildren(libre, el("div", "profsec", "Défis"), liste);
+}
+// la page d'un defi : la meme forme que l'accueil ; la carte = en parler, en dessous = recommencer
+function afficherDefi(d){
+  const retour = el("button", "iconbtn dretour"); retour.setAttribute("aria-label", "Retour"); retour.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>';
+  retour.onclick = afficherRoles;
+  const carteD = el("button", "defi dcarte");
+  const haut = el("span", "dhaut"); const ok = el("span", "dok"); ok.innerHTML = ICO_OK; haut.append(el("span", "defititre", d.fr.charAt(0).toUpperCase() + d.fr.slice(1)), ok);
+  carteD.append(haut);
+  for (const ex of d.exemples || []) { const e = el("span", "dex"); e.append(el("b", null, ex.en), el("span", null, ex.fr)); carteD.append(e); }
+  const pied = el("span", "dpied"); const ic = el("span", "dico"); ic.innerHTML = ICO_MIC; pied.append(ic, "En parler"); carteD.append(pied);
+  carteD.onclick = () => { fermer("roles"); enParler(d); };
+  const refaire = el("button", "gros second");
+  refaire.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>'; refaire.append("Recommencer");
+  refaire.onclick = () => { fermer("roles"); recommencerDefi(d); };
+  $("rolesTitle").replaceChildren(retour);   // le retour dans l'en-tete, en face de la croix
+  $("rolesList").replaceChildren(carteD, refaire);
+}
+// on met de cote le defi en cours ; il revient au retour a l'accueil
+function prendreDefi(d, points){ if (!S.leconSuspendue) S.leconSuspendue = S.lecon; S.lecon = {cible:cibleDe(d.id), points, tours:0, sansUsage:0, debut:Date.now()}; saveS(); }
+function enParler(d){
+  if (!S.key) { openSettings(); return; }
+  prendreDefi(d, 3); entrainement = d;
+  setTheme(LIBRE); ouvrirFil(true); history = [];   // une discussion neuve, centree sur ce defi
+  ask(null);
+}
+function recommencerDefi(d){ if (!S.key) { openSettings(); return; } prendreDefi(d, 0); entrainement = null; begin(); }
 // "Je commence" : l'IA ouvre tout de suite sur un sujet (different du dernier) ; "Parler en premier" est dans le deroule.
 GO.btn.onclick = () => {
   const pool = THEMES.filter(t => !t.mission && !t.inverse && t.fr !== S.theme?.fr);
@@ -1673,6 +1760,8 @@ function choisirLecon(){
   majLeconChip(); return S.lecon;
 }
 let feteDefi = 0;   // pendant la petite fete d'un defi valide, la pastille reste pleine
+let entrainement = null;   // defi deja valide sur lequel on discute ("En parler")
+function briller(){ const c = $("leconChip"); c.classList.remove("brille"); void c.offsetWidth; c.classList.add("brille"); }
 function majLeconChip(){
   const chip = $("leconChip"), l = lecon();
   if (!l || !started) { chip.hidden = true; return; }
@@ -1680,7 +1769,7 @@ function majLeconChip(){
   // on garde le meme element pour que le remplissage glisse au lieu de sauter
   let lbl = chip.querySelector(".lbl"); if (!lbl) { chip.replaceChildren(); lbl = el("span", "lbl"); chip.append(lbl); }
   lbl.textContent = l.cible.fr; chip.classList.remove("fait");
-  chip.style.setProperty("--p", Math.min(3, l.points) / 3);
+  chip.style.setProperty("--p", seance?.total ? seance.progres / seance.total : entrainement ? 1 : Math.min(3, l.points) / 3);
   chip.setAttribute("aria-label", "Défi : " + l.cible.fr + ", " + l.points + " sur 3");
   chip.hidden = false;
 }
@@ -1704,6 +1793,11 @@ function suivreLecon(d, texte){
     else if (c.re instanceof RegExp && c.re.test(t)) usage = "ok";
   }
   if (!d.ok && usage !== "ko" && c.re instanceof RegExp && (d.corrections || []).some(x => c.re.test(String(x.original || "")))) usage = "ko";
+  if (seance) {
+    if (seance.phase === "libre" && usage === "ok") { seance.defiFait = true; seance.progres = seance.total; majLeconChip(); }
+    return;
+  }
+  if (entrainement) { if (usage === "ok") briller(); return; }
   if (usage === "ok") { l.points++; l.sansUsage = 0; if (seance && seance.phase !== "libre") l.points = Math.min(l.points, 2); if (l.points >= 3) { feterDefi(); if (seance) seance.defiFait = true; (profil().lecons = profil().lecons || []).push(l.cible.id); if (seance?.guide?.[0]?.en) ajouterRappel({type:"defi", en:seance.guide[0].en}); saveS(); choisirLecon(); return; } }
   else if (usage === "ko") { l.points = seance ? Math.max(0, l.points - 1) : 0; l.sansUsage = 0; }
   else l.sansUsage++;
@@ -1800,13 +1894,19 @@ async function preparerSeance(){
   const d = await llm(`Prepare a short spoken English session for a French-speaking engineering student, level ${p.niveau || 4}/10 (1 = beginner, 10 = native-like).
 TODAY'S TARGET: ${l.cible.en} (French title: "${l.cible.fr}").
 1) "modele": "mot" = the English target itself as a 1-3 word title, in English only (e.g. "get", "used to", "make / do"), never the French title; "exemples" = 2 short everyday sentences using it (8 words max each), with French translations.
-2) "guide": 3 French instructions, each asking him to say ONE sentence in English that needs the target, about his REAL life (studies, daily routine, a trip, friends), never fiction, never a role. Form: "Dis que tu te lèves à 7 h." / "Demande-moi si je bois du café le matin." Progressive, and each one must call for a sentence DIFFERENT from the two examples of "modele". "en" = the expected English sentence (short, natural).
+2) "guide": 4 French instructions (the 4th is a spare, used only if he struggles), each asking him to say ONE sentence in English that needs the target, about his REAL life (studies, daily routine, a trip, friends), never fiction, never a role. Form: "Dis que tu te lèves à 7 h." / "Demande-moi si je bois du café le matin." Progressive, and each one must call for a sentence DIFFERENT from the two examples of "modele". "en" = the expected English sentence (short, natural).
 3) "rappels": for each review item below, "fr" = a French instruction that makes him produce that English again (do not show the English), "en" = the expected English, close to the item. Items: ${JSON.stringify(dus.map((x, i) => ({i, en:x.en})))}
 Keep every French instruction under 14 words.`, SCHEMA_SEANCE);
   const rap = dus.map((item, i) => { const r = (d.rappels || []).find(x => x.i === i) || {}; return {item, fr:r.fr || "Redis : " + item.en, en:r.en || item.en}; });
-  return {modele:d.modele, guide:(d.guide || []).slice(0, 3), rappels:rap};
+  const g = (d.guide || []).filter(x => x && x.fr && x.en);
+  return {modele:d.modele, guide:g.slice(0, 3), secours:g[3] || g[2] || null, rappels:rap};
 }
 function contexteSeance(learner){
+  if (!seance && entrainement) {
+    const cib = (lecon() || choisirLecon()).cible.en;
+    if (!learner) return {cible:"", reponse:"", ouverture:`PRACTICE ON A POINT HE ALREADY KNOWS (${cib}): set ok to true, corrections to []. Ask ONE short question (12 words max) about his real life whose natural answer needs the target. No greeting, no announcement. `};
+    return {cible:"", ouverture:"", reponse:`PRACTICE ON A POINT HE ALREADY KNOWS (${cib}): react in a few words, then ask ONE short question (12 words max) about his real life whose natural answer needs the target.`};
+  }
   if (!seance) return null;
   if (seance.phase === "rappel" || seance.phase === "guide") {
     const e = etapeCourante(); if (!e) return null;
@@ -1894,6 +1994,7 @@ async function afficherModele(){
   await pause(900);
   busy = false;
   poserRepere(c);
+  seance.progres = 1;
   seance.phase = "guide"; seance.etape = 0; majLeconChip(); etapeSuivante();
 }
 const ICO_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12.5l4 4 8-9"/></svg>';
@@ -1913,22 +2014,40 @@ function confettis(depuis){
     document.body.append(c); setTimeout(() => c.remove(), 900);
   }
 }
+// --- les defis faits : gardes 120 jours, pour en reparler ou les refaire ---
+function cibleDe(id){ return String(id).startsWith("s:") ? cibleStructure(String(id).slice(2)) : (CIBLES.find(c => c.id === id) || {id, fr:id, en:id}); }
+function defis(){
+  if (!Array.isArray(S.defis)) S.defis = [];
+  for (const id of profil().lecons || []) if (!S.defis.some(x => x.id === id)) S.defis.push({id, fr:cibleDe(id).fr, t:0, n:1});
+  const lim = Date.now() - 120 * 864e5; S.defis = S.defis.filter(x => !x.t || x.t > lim);
+  return S.defis;
+}
+function enregistrerDefi(cible, modele, guide){
+  const l = defis(); let d = l.find(x => x.id === cible.id); if (!d) { d = {id:cible.id, n:0}; l.push(d); }
+  Object.assign(d, {fr:cible.fr, mot:modele?.mot || d.mot || "", exemples:(modele?.exemples || d.exemples || []).slice(0, 2), t:Date.now()}); d.n = (d.n || 0) + 1; saveS();
+}
+let validationAccueil = null;   // le defi qu'on vient de valider : l'accueil le fete
+function validerDefi(){
+  const ld = lecon(); if (!ld) return;
+  enregistrerDefi(ld.cible, seance.modele, seance.guide);
+  const p = profil(); p.lecons = p.lecons || []; if (!p.lecons.includes(ld.cible.id)) p.lecons.push(ld.cible.id);
+  if (seance.guide?.[0]?.en) ajouterRappel({type:"defi", en:seance.guide[0].en});
+  validationAccueil = {nom:ld.cible.fr};
+  if (!S.leconSuspendue) choisirLecon();   // un defi refait : on revient ensuite au defi en cours
+  saveS();
+}
 function afficherBilan(){
   seance.phase = "bilan"; majLeconChip(); enTransition = false;
   const c = carte("bilan", []); nouvelleEtape(c);
   const ld = lecon();
   noterJour();
+  if (seance.defiFait) validerDefi();
   // la pastille du defi se remplit sous tes yeux, puis la coche si c'est gagne
   const past = el("div", "leconchip bilanchip"); past.append(el("span", "lbl", seance.defiNom || ld?.cible.fr || ""));
   past.style.setProperty("--p", 0); c.append(past);
   const cible = seance.defiFait ? 1 : Math.min(3, ld?.points || 0) / 3;
   setTimeout(() => past.style.setProperty("--p", cible), 250);
   if (seance.defiFait) setTimeout(() => past.classList.add("fait"), 800);
-  if (!seance.defiFait && ld && (ld.seances || 0) >= 3) {
-    // trois seances sans y arriver : on n'insiste plus aujourd'hui, les phrases reviendront en rappel
-    for (const g of seance.guide || []) ajouterRappel({type:"defi", en:g.en});
-    (profil().aRevoir = profil().aRevoir || []).push(ld.cible.id); choisirLecon(); majLeconChip();
-  }
   // deux chiffres qui parlent d'eux-memes : la serie de jours, les phrases justes
   const n = serieJours(), justes = seance.faits.length;
   const tuile = (ico, cls, val, lib) => { const t = el("div", "btuile " + cls); const i = el("span", "bico"); i.innerHTML = ico; t.append(i, el("b", null, String(val)), el("span", null, lib)); return t; };
@@ -1938,16 +2057,23 @@ function afficherBilan(){
   const faits = seance.faits.slice(-3);
   if (faits.length) { const ul = el("div", "cfaits"); faits.forEach(f => { const l = el("div", "cfait"); const i = el("span", "okico"); i.innerHTML = ICO_OK; l.append(i, el("span", null, f)); ul.append(l); }); c.append(ul); }
   const fin = el("button", "gros cfin", "Terminer");
-  fin.onclick = () => { if (fin.disabled) return; fin.disabled = true; confettis(fin); ding(); setTimeout(allerAccueil, 650); };
+  fin.onclick = () => { if (fin.disabled) return; fin.disabled = true; allerAccueil(); };
   c.append(fin);
   mic.disabled = true; mlStop();
   (seance.defiFait ? fanfare() : ding()).then(() => { if (mainsLibres) speak("Well done, that's it for today.", null, null); });
+}
+// la partie libre n'a pas amene la cible : une consigne directe, comme un exercice, et la seance se conclut
+function lancerSecours(){
+  const sec = seance.secours || seance.guide[seance.guide.length - 1];
+  if (!sec) { seance.defiFait = true; seance.progres = seance.total; afficherBilan(); return; }
+  seance.enSecours = true; seance.guide.push(sec); seance.phase = "guide"; seance.etape = seance.guide.length - 1;
+  majLeconChip(); afficherEtape();
 }
 function etapeSuivante(){
   if (!seance) return;
   if (seance.phase === "rappel") { if (seance.etape < seance.rappels.length) { afficherEtape(); return; } seance.phase = "modele"; seance.etape = 0; }
   if (seance.phase === "modele") { afficherModele(); return; }
-  if (seance.phase === "guide") { if (seance.etape < seance.guide.length) { afficherEtape(); return; } seance.phase = "libre"; seance.etape = 0; majLeconChip(); quitterScene(); ask(null); return; }
+  if (seance.phase === "guide") { if (seance.etape < seance.guide.length) { afficherEtape(); return; } if (seance.enSecours) { seance.defiFait = true; seance.progres = seance.total; afficherBilan(); return; } seance.phase = "libre"; seance.etape = 0; majLeconChip(); quitterScene(); ask(null); return; }
   if (seance.phase === "libre") { afficherBilan(); }
 }
 // reponse a une carte jugee
@@ -1955,12 +2081,14 @@ function etapeReussie(d, learner){
   const e = etapeCourante(); enTransition = true; mic.disabled = true;
   seance.faits.push(learner);
   if (seance.phase === "rappel") { noterRappel(e.item, true); seance.rappelsOk++; stats().rOk++; }
+  else { seance.progres++; majLeconChip(); }
   seance.etape++;
   ding().then(() => speak(d.reply_en && d.reply_en.length < 40 ? d.reply_en : "Perfect.", null, null)).then(() => pause(500)).then(() => etapeSuivante());
 }
 function etapeRatee(){
   const e = etapeCourante(); enTransition = true; mic.disabled = true;
   if (seance.phase === "rappel") noterRappel(e.item, false);
+  else { seance.progres++; majLeconChip(); ajouterRappel({type:"defi", en:e.en}); }   // ratee : elle reviendra en rappel
   // on montre la phrase attendue, on la dit, et on passe a la suite
   const c = carte("attendu", [el("p", "ctexte", e.en)]);
   const b = el("button", "cplay"); b.innerHTML = PLAY; b.onclick = () => { unlockAudio(); speak(e.en, b, null); }; c.prepend(b);
@@ -1968,15 +2096,27 @@ function etapeRatee(){
   seance.etape++;
   speak(e.en, b, null).then(() => pause(1400)).then(() => etapeSuivante());
 }
+let seancePrete = null;   // {id, prom} : la seance du prochain defi, preparee a l'avance
+function prechargerSeance(){
+  if (!S.key) return Promise.resolve();
+  const l = lecon() || choisirLecon();
+  if (seancePrete?.id === l.cible.id) return seancePrete.prom;
+  const prom = preparerSeance(); seancePrete = {id:l.cible.id, prom};
+  prom.catch(() => { if (seancePrete?.prom === prom) seancePrete = null; });
+  return prom;
+}
 async function lancerSeance(){
-  seance = {phase:"prep", etape:0, rappels:[], guide:[], modele:null, faits:[], rappelsOk:0, libreTours:0, essais:0, defiFait:false};
-  // chaque seance est une tentative complete du defi : on repart de zero (plus de 2/3 herite d'avant)
-  const ld = lecon() || choisirLecon(); ld.points = 0; ld.seances = (ld.seances || 0) + 1; seance.defiNom = ld.cible.fr; saveS(); majLeconChip();
+  seance = {phase:"prep", etape:0, rappels:[], guide:[], modele:null, faits:[], rappelsOk:0, libreTours:0, essais:0, defiFait:false, progres:0, total:0};
+  // la pastille suit la seance : carte du mot, chaque consigne, la partie libre ; finir = valider
+  const ld = lecon() || choisirLecon(); seance.defiNom = ld.cible.fr; majLeconChip();
   const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); zone().append(dots);
   busy = true; mic.disabled = true;
   try {
-    const prep = await preparerSeance();
+    // la seance a souvent ete preparee pendant la validation a l'accueil
+    const pret = seancePrete?.id === ld.cible.id ? seancePrete.prom : null; seancePrete = null;
+    const prep = await (pret ? pret.catch(() => preparerSeance()) : preparerSeance());
     Object.assign(seance, prep); seance.phase = seance.rappels.length ? "rappel" : "modele";
+    seance.total = 1 + seance.guide.length + 1;
     const st = stats(); st.rTot += seance.rappels.length; saveS();
   } catch (e) { console.warn("seance non preparee, conversation simple", e); seance = null; }
   dots.remove(); busy = false;
@@ -2318,7 +2458,8 @@ async function ask(learner, youEl, opts = {}){
     t.play.classList.remove("ready");
     stats().ia += nbMots(t.text); saveS();
     (learner && !opts.force ? ding() : Promise.resolve()).then(() => speak(t.text, t.play, t.reveal)).then(() => {
-      if (seance && seance.phase === "libre" && (seance.defiFait || seance.libreTours >= 4)) { afficherBilan(); return; }
+      if (seance && seance.phase === "libre" && seance.defiFait) { afficherBilan(); return; }
+      if (seance && seance.phase === "libre" && seance.libreTours >= 3) { lancerSecours(); return; }
       mlApres();
     });
   } catch (e) {
@@ -2394,7 +2535,10 @@ function allerAccueil(){
   if (theme?.libre) setTheme(S.theme?.fr ? S.theme : THEMES[0]);
   $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("themeName").hidden = false; $("newTheme").hidden = true; $("leconChip").hidden = true;
   mic.disabled = true;
+  if (S.leconSuspendue) { S.lecon = S.leconSuspendue; delete S.leconSuspendue; saveS(); }
+  entrainement = null;
   feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home"); majDepart();
+  if (validationAccueil) { const v = validationAccueil; validationAccueil = null; animerValidation(v); }
   if (window.history.state?.tp === "in") window.history.replaceState(null, "");
 }
 // Entree dans le fil : les derniers echanges s'affichent en leger, puis on continue.
@@ -2474,7 +2618,7 @@ function rendreReglages(){
     // quatre tuiles : tout est la, le detail s'ouvre au toucher
     const tuile = (cls, label, valeur, sous, page) => {
       const t = el("button", "tuile " + cls); t.append(el("span", "tl", label), el("span", "tv", valeur), el("span", "ts", sous));
-      t.onclick = () => setPage(page); return t;
+      t.onclick = () => { if (page === "defis") { fermer("settings"); afficherRoles(); ouvrir("roles"); } else setPage(page); }; return t;
     };
     const grille = el("div", "tuiles");
     const defi = tuile("large", "Défi", l.cible.fr, (p.lecons || []).length ? (p.lecons.length + (p.lecons.length > 1 ? " réussis" : " réussi")) : "premier défi", "defis");

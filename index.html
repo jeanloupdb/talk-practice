@@ -325,6 +325,7 @@ footer{padding:10px 18px 16px}
 .srcmic{display:inline-block;width:18px;height:18px;margin-right:8px;vertical-align:-4px;opacity:.75}
 .srcmic svg{width:18px;height:18px}
 .round:disabled{opacity:.4;cursor:default}
+#mic.occupe{opacity:.4}
 .sheetwrap{position:fixed;inset:0;z-index:30;background:rgba(10,15,35,.45);display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:620px;max-height:90%;overflow-y:auto;border-radius:24px 24px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px))}
 .sheet h2{margin:0 0 4px;font-size:1.2rem}
@@ -986,6 +987,14 @@ function micChrome(){
   catch { setStatus("Le micro ne démarre pas."); }
 }
 mic.onclick = micChrome;
+// en mains libres, le micro reste touchable meme quand l'IA reflechit : c'est le moyen de couper le mode
+{
+  const d = Object.getOwnPropertyDescriptor(HTMLButtonElement.prototype, "disabled");
+  Object.defineProperty(mic, "disabled", {
+    get(){ return d.get.call(this); },
+    set(v){ let ml = false; try { ml = mainsLibres; } catch {} d.set.call(this, !!v && !ml); this.classList.toggle("occupe", !!v); }
+  });
+}
 
 /* ---------- Micro principal : on enregistre ta voix et on l'envoie a Gemini ----------
    Gemini entend ta vraie prononciation (Chrome, lui, devinait les mots et effacait tes fautes),
@@ -1108,7 +1117,16 @@ async function basculerEnreg(opts = {}){
   }, 250);
 }
 if (ENREG_OK) {
-  mic.hidden = false; mic.onclick = () => { if (ecouteGemini()) basculerEnreg({auto: mainsLibres}); else micChrome(); };
+  mic.hidden = false; mic.onclick = () => {
+    // en mains libres, toucher le micro coupe le mode : ce qui etait en cours est envoye, puis plus d'ecoute auto
+    if (mainsLibres) {
+      if (enreg && enreg.state === "recording") { enreg.forcer?.(); enreg.stop(); }
+      mainsLibres = false; S.mainsLibres = false; saveS(); mlMaj(); mlWake(false);
+      mic.disabled = busy || !started;
+      return;
+    }
+    if (ecouteGemini()) basculerEnreg({auto: false}); else micChrome();
+  };
   if (statusEl.textContent.startsWith("La dictée")) setStatus("");
 }
 
@@ -1130,6 +1148,7 @@ function mlMaj(){
   mlBtn.classList.toggle("actif", mainsLibres);
   mlBtn.setAttribute("aria-label", mainsLibres ? "Quitter le mode mains libres" : "Mode mains libres");
   mic.classList.toggle("ml", mainsLibres);
+  if (started) mic.disabled = mic.classList.contains("occupe");   // reapplique la regle : touchable en mains libres
 }
 function mlApres(){ if (mainsLibres && started) setTimeout(ecouterAuto, 350); }
 function ecouterAuto(){

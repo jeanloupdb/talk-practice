@@ -36,7 +36,12 @@ svg{width:24px;height:24px;flex:none}
 .bar{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px 6px}
 .title{font-weight:600;font-size:1.05rem}
 .theme{font-size:.9rem;color:var(--muted)}
-.leconchip{display:flex;align-items:center;gap:8px}
+.leconchip{position:relative;display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:5px 13px;border-radius:999px;overflow:hidden;isolation:isolate;
+  background:color-mix(in srgb,var(--accent) 8%,transparent);--p:0}
+.leconchip::before{content:"";position:absolute;inset:0 auto 0 0;z-index:-1;width:calc(var(--p) * 100%);border-radius:inherit;
+  background:color-mix(in srgb,var(--accent) 24%,transparent);transition:width .55s var(--ease)}
+.leconchip .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.leconchip.fait::after{content:"✓";color:var(--good);font-weight:800;animation:entre .3s var(--ease) both}
 /* la scene : un exercice par ecran, qui glisse */
 .scene{position:relative;flex:1;min-height:100%;display:flex;flex-direction:column;gap:14px}
 .scene .repere{flex:none}
@@ -88,7 +93,6 @@ svg{width:24px;height:24px;flex:none}
 .cjauge{flex:1;height:8px;border-radius:4px;background:color-mix(in srgb,var(--muted) 22%,transparent);overflow:hidden}
 .cjauge i{display:block;height:100%;border-radius:4px;background:var(--accent)}
 .cfin{margin-top:14px}
-.leconchip .pts{color:var(--accent);letter-spacing:2px;font-size:.8rem}
 .barbtns{display:flex}
 .themebtn{background:none;border:none;padding:4px 8px;margin:-4px -8px;border-radius:14px;text-align:left;display:block;min-width:0}
 .themebtn:active{background:color-mix(in srgb,var(--accent) 10%,transparent)}
@@ -121,9 +125,8 @@ svg{width:24px;height:24px;flex:none}
 .split #go{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:20px 20px 18px;border-radius:26px 12px 12px 26px;text-align:left}
 .defititre{font-size:clamp(1.25rem,5.6vw,1.55rem);font-weight:700;line-height:1.15;letter-spacing:-.01em}
 .defibas{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px}
-.defiseg{display:inline-flex;gap:5px}
-.defiseg i{display:block;width:26px;height:6px;border-radius:3px;background:rgba(255,255,255,.28);transition:background-color .3s}
-.defiseg i.on{background:#fff}
+.defiseg{position:relative;display:block;width:88px;height:6px;border-radius:3px;background:rgba(255,255,255,.28);overflow:hidden;--p:0}
+.defiseg::before{content:"";position:absolute;inset:0 auto 0 0;width:calc(var(--p) * 100%);background:#fff;border-radius:3px;transition:width .55s var(--ease)}
 .definiv{display:inline-flex;align-items:center;gap:8px;font-size:.8rem;font-weight:700;opacity:.95}
 .ring{width:30px;height:30px;border-radius:50%;background:conic-gradient(#fff calc(var(--p) * 1%),rgba(255,255,255,.25) 0);display:grid;place-items:center}
 .ring b{width:22px;height:22px;border-radius:50%;background:rgba(20,33,61,.38);display:grid;place-items:center;font-size:.72rem;font-weight:800;color:#fff}
@@ -439,7 +442,7 @@ button:not(:disabled):active{transform:scale(.94)}
           <div class="split">
             <button class="defi" id="go">
               <span class="defititre" id="goLabel">Practice</span>
-              <span class="defibas"><span class="defiseg" id="goPts"><i></i><i></i><i></i></span><span class="definiv" id="goNiv"></span></span>
+              <span class="defibas"><span class="defiseg" id="goPts"></span><span class="definiv" id="goNiv"></span></span>
             </button>
             <button class="defi splitchev" id="topicBtn" aria-label="Parler en premier, historique"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           </div>
@@ -1222,7 +1225,7 @@ function majDepart(){
   const l = lecon() || choisirLecon(), p = profil(), n = Math.min(10, Math.max(1, p.niveau || 4));
   const titre = l.cible.fr.charAt(0).toUpperCase() + l.cible.fr.slice(1);
   GO.label.textContent = titre;
-  [...GO.pts.children].forEach((i, k) => i.classList.toggle("on", k < l.points));
+  GO.pts.style.setProperty("--p", Math.min(3, l.points) / 3);
   const ring = el("span", "ring"); ring.style.setProperty("--p", n * 10); ring.append(el("b", null, String(n)));
   GO.niv.replaceChildren(ring, document.createTextNode(CEFR(n)));
   GO.btn.setAttribute("aria-label", "Continuer : " + titre + ", niveau " + n);
@@ -1611,11 +1614,24 @@ function choisirLecon(){
   S.lecon = {cible, points:0, tours:0, sansUsage:0, debut:Date.now()}; profil().derniereLecon = cible.id; saveS();
   majLeconChip(); return S.lecon;
 }
+let feteDefi = 0;   // pendant la petite fete d'un defi valide, la pastille reste pleine
 function majLeconChip(){
   const chip = $("leconChip"), l = lecon();
   if (!l || !started) { chip.hidden = true; return; }
-  chip.replaceChildren(el("span", "lbl", l.cible.fr), el("span", "pts", "●".repeat(l.points) + "○".repeat(Math.max(0, 3 - l.points))));
+  if (Date.now() < feteDefi) return;
+  // on garde le meme element pour que le remplissage glisse au lieu de sauter
+  let lbl = chip.querySelector(".lbl"); if (!lbl) { chip.replaceChildren(); lbl = el("span", "lbl"); chip.append(lbl); }
+  lbl.textContent = l.cible.fr; chip.classList.remove("fait");
+  chip.style.setProperty("--p", Math.min(3, l.points) / 3);
+  chip.setAttribute("aria-label", "Défi : " + l.cible.fr + ", " + l.points + " sur 3");
   chip.hidden = false;
+}
+// defi valide : la pastille se remplit, une coche, puis le defi suivant
+function feterDefi(){
+  const chip = $("leconChip"); if (chip.hidden) return;
+  feteDefi = Date.now() + 1500;
+  chip.style.setProperty("--p", 1); chip.classList.add("fait");
+  setTimeout(() => { feteDefi = 0; chip.style.setProperty("--p", 0); setTimeout(majLeconChip, 350); }, 1500);
 }
 // Apres chaque phrase jugee : la cible a-t-elle ete utilisee ?
 function suivreLecon(d, texte){
@@ -1630,7 +1646,7 @@ function suivreLecon(d, texte){
     else if (c.re instanceof RegExp && c.re.test(t)) usage = "ok";
   }
   if (!d.ok && usage !== "ko" && c.re instanceof RegExp && (d.corrections || []).some(x => c.re.test(String(x.original || "")))) usage = "ko";
-  if (usage === "ok") { l.points++; l.sansUsage = 0; if (seance && seance.phase !== "libre") l.points = Math.min(l.points, 2); if (l.points >= 3) { (profil().lecons = profil().lecons || []).push(l.cible.id); if (seance?.guide?.[0]?.en) ajouterRappel({type:"defi", en:seance.guide[0].en}); saveS(); choisirLecon(); return; } }
+  if (usage === "ok") { l.points++; l.sansUsage = 0; if (seance && seance.phase !== "libre") l.points = Math.min(l.points, 2); if (l.points >= 3) { feterDefi(); (profil().lecons = profil().lecons || []).push(l.cible.id); if (seance?.guide?.[0]?.en) ajouterRappel({type:"defi", en:seance.guide[0].en}); saveS(); choisirLecon(); return; } }
   else if (d.cible === "ko") { l.points = 0; l.sansUsage = 0; }
   else l.sansUsage++;
   saveS(); majLeconChip();

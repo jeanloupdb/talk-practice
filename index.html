@@ -71,6 +71,13 @@ svg{width:24px;height:24px;flex:none}
 .ctexte{margin:0;font-size:clamp(1.3rem,5.6vw,1.6rem);font-weight:600;line-height:1.3}
 .carte.attendu .ctexte{color:var(--good)}
 .cmot{margin:0 0 10px;font-size:clamp(1.9rem,9vw,2.4rem);font-weight:800;letter-spacing:-.01em}
+.ctete{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ctete .cmot{margin:0}
+.rplay{flex:none;width:40px;height:40px;border-radius:50%;border:none;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);display:grid;place-items:center;transition:width .45s var(--ease),height .45s var(--ease)}
+.rplay svg{width:18px;height:18px}
+.compact .ctete{flex:1 1 100%}
+.compact .rplay{width:30px;height:30px}
+.compact .rplay svg{width:14px;height:14px}
 .cex{padding:8px 0;border-top:1px solid var(--card-line)}
 .cex b{display:block;font-size:1.1rem}
 .cex span{display:block;color:var(--muted);font-size:.9rem}
@@ -395,6 +402,13 @@ button:not(:disabled):active{transform:scale(.94)}
   animation:entreG .32s var(--ease) both,shimmer 1.4s linear infinite;border-radius:12px;padding:2px 10px;min-width:70px;min-height:1.4em}
 /* l'IA parle : ondes autour du bouton */
 .play.parle{animation:vague 1.2s ease-out infinite}
+/* un bouton qui lit : anneau qui tourne tant que la voix se prepare, barre qui bat pendant la lecture */
+.charge{position:relative}
+.charge svg{opacity:0}
+.charge::after{content:"";position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-9px 0 0 -9px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:tourne .8s linear infinite}
+.play.charge::after{width:22px;height:22px;margin:-12px 0 0 -12px;border-width:2.5px}
+.lit svg{animation:barre .9s ease-in-out infinite;transform-origin:center}
+@keyframes tourne{to{transform:rotate(360deg)}}
 .play.parle svg{animation:barre .9s ease-in-out infinite;transform-origin:center}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.play.ready{animation:none}.dots i{animation:none;opacity:.7}.msg{transition:none}}
 </style>
@@ -437,7 +451,7 @@ button:not(:disabled):active{transform:scale(.94)}
     <p class="status" id="status"></p>
     <div class="row mainrow">
       <button class="round" id="mlBtn" aria-label="Mode mains libres" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="5" height="9" rx="2.5"/><path d="M2 10.5a4.5 4.5 0 0 0 9 0M6.5 15v3"/><rect x="15" y="4" width="5" height="9" rx="2.5"/><path d="M13 10.5a4.5 4.5 0 0 0 9 0M17.5 15v3"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9.5" y="4" width="5" height="9" rx="2.5"/><path d="M7.5 11a4.5 4.5 0 0 0 9 0M12 15.5V19"/><path d="M4 8.5a7.5 7.5 0 0 0 0 6M20 8.5a7.5 7.5 0 0 1 0 6"/></svg>
       </button>
       <button class="round" id="mic" aria-label="Parler" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
       <button class="round" id="askBtn" aria-label="Poser une question en français">
@@ -635,7 +649,10 @@ function playBuffer(a){
     suivreVox(analyseSortie, () => currentSrc === src);
   });
 }
-function setPlay(btn, on){ if (!btn) return; btn.classList.toggle("parle", on); btn.innerHTML = on ? PAUSE : PLAY; btn.setAttribute("aria-label", on ? "Pause" : "Écouter"); }
+function setPlay(btn, on){ if (!btn) return; btn.classList.toggle("parle", on); if (btn.matches(".play, .popplay")) { btn.innerHTML = on ? PAUSE : PLAY; btn.setAttribute("aria-label", on ? "Pause" : "Écouter"); } if (!on) etatLecture(btn, ""); }
+// l'icone a animer dans un bouton qui lit (le bouton lui-meme, ou sa petite icone)
+function iconeDe(btn){ if (!btn) return null; return btn.matches(".play, .popplay, .cplay, .explay, .rcplay, .rplay") ? btn : (btn.querySelector(".explay, .rcplay, .cplay, .rplay") || btn); }
+function etatLecture(btn, etat){ const i = iconeDe(btn); if (!i) return; i.classList.toggle("charge", etat === "charge"); i.classList.toggle("lit", etat === "lit"); }
 function stopSpeak(){
   playToken++;
   try { currentSrc?.stop(); } catch {}
@@ -758,7 +775,7 @@ async function genAudioGoogle(text){
 async function speak(text, btn, reveal, langue){   // langue "fr" : lu en francais (consignes en mains libres)
   stopSpeak(); unlockAudio();
   const token = ++playToken;
-  speakingBtn = btn; setPlay(btn, true); enLecture = true; document.body.classList.add("parle");
+  speakingBtn = btn; setPlay(btn, true); etatLecture(btn, "charge"); enLecture = true; document.body.classList.add("parle");
   const done = () => { enLecture = false; document.body.classList.remove("parle"); setVox(0); if (speakingBtn === btn && token === playToken) { setPlay(btn, false); speakingBtn = null; } };
   const parts = splitSentences(text);
   // 1) Voix Azure (rapide), si choisie et configuree.
@@ -766,7 +783,7 @@ async function speak(text, btn, reveal, langue){   // langue "fr" : lu en franca
     try {
       const a = await genAudioAzure(text, langue); if (token !== playToken) return;
       derniereVoix = "Azure · " + nomVoix(S.voice);
-      await playBuffer(a); if (token !== playToken) return;
+      etatLecture(btn, "lit"); await playBuffer(a); if (token !== playToken) return;
       return done();
     } catch (e) { console.warn("voix Azure indisponible, secours Google", e); }
   }
@@ -775,7 +792,7 @@ async function speak(text, btn, reveal, langue){   // langue "fr" : lu en franca
     try {
       const a = await genAudioGoogle(text); if (token !== playToken) return;
       derniereVoix = "Google · " + (S.voice.startsWith("g:") ? nomVoix(S.voice) : "Kore") + (S.voice.startsWith("az:") ? " (secours, Azure indisponible)" : "");
-      await playBuffer(a); if (token !== playToken) return;
+      etatLecture(btn, "lit"); await playBuffer(a); if (token !== playToken) return;
       return done();
     } catch (e) {
       console.warn("voix Google indisponible, secours", e);
@@ -789,7 +806,7 @@ async function speak(text, btn, reveal, langue){   // langue "fr" : lu en franca
       for (let i = 0; i < parts.length; i++) {
         const a = await next; if (token !== playToken) return;
         if (i + 1 < parts.length) next = genAudio(parts[i+1]);
-        await playBuffer(a); if (token !== playToken) return;
+        etatLecture(btn, "lit"); await playBuffer(a); if (token !== playToken) return;
       }
     } catch (e) { console.error(e); }
     return done();
@@ -799,6 +816,7 @@ async function speak(text, btn, reveal, langue){   // langue "fr" : lu en franca
   if (!("speechSynthesis" in window)) { reveal && reveal(); return done(); }
   const vs = speechSynthesis.getVoices().filter(v => (langue === "fr" ? /^fr/i : /^en/i).test(v.lang));
   const v = vs.find(v => (langue === "fr" ? /fr[-_]FR/i : /en[-_](US|GB)/i).test(v.lang)) || vs[0];
+  etatLecture(btn, "lit");
   return new Promise(res => {
     const fini = () => { done(); res(); };
     parts.forEach((p, i) => {
@@ -1103,7 +1121,7 @@ function carteVocab(v){
   const c = el("div", "vcard");
   const ligne = (en, fr, gros) => {
     const b = el("button", "ex" + (gros ? " vocmain" : "")); const t = el("span", "extxt"); t.append(el("span", "exen", en), el("span", "exfr", fr)); const ic = el("span", "explay"); ic.innerHTML = PLAY; b.append(t, ic);
-    b.onclick = () => { unlockAudio(); speak(en, null, null); }; return b;
+    b.onclick = () => { unlockAudio(); speak(en, b, null); }; return b;
   };
   c.append(el("div", "vfr", v.fr), ligne(v.en, v.fr, true), ...(v.lies || []).map(x => ligne(x.en, x.fr)));
   return c;
@@ -1145,7 +1163,7 @@ async function openMot(en, fr, phrase){
     if (d.base && d.base.toLowerCase() !== en.toLowerCase().replace(/[.,!?;:"]+$/,"")) head.append(el("small", null, "forme de base : " + d.base));
     const items = (d.exemples || []).map(x => {
       const b = el("button","ex"); const t = el("span","extxt"); t.append(el("span","exen",x.en), el("span","exfr",x.fr)); const ic = el("span","explay"); ic.innerHTML = PLAY; b.append(t, ic);
-      b.onclick = () => { unlockAudio(); speak(x.en, null, null); };
+      b.onclick = () => { unlockAudio(); speak(x.en, b, null); };
       return b;
     });
     box.replaceChildren(head, ...(d.note_fr ? [el("p","motnote",d.note_fr)] : []), ...items);
@@ -1239,7 +1257,7 @@ function rendreQa(x){
   String(x.r || "").split(/\n+/).filter(Boolean).forEach(t => box.append(el("p", null, t)));
   for (const ex of x.exemples || []) {
     const b = el("button", "ex"); const t = el("span", "extxt"); t.append(el("span", "exen", ex.en), el("span", "exfr", ex.fr)); const ic = el("span", "explay"); ic.innerHTML = PLAY; b.append(t, ic);
-    b.onclick = () => { unlockAudio(); speak(ex.en, null, null); };
+    b.onclick = () => { unlockAudio(); speak(ex.en, b, null); };
     box.append(b);
   }
   const vers = el("button", "versconv", "En parler en anglais");
@@ -1563,7 +1581,16 @@ const CIBLES = [
   {id:"phrasal-up-out", fr:"phrasal verbs avec up et out", en:"common phrasal verbs with UP and OUT (set up, give up, find out, work out, run out of)", min:4, re:/\b(set|sets|setting|give|gives|gave|giving|find|finds|found|finding|work|works|worked|working|run|runs|ran|running|pick|picked|picking|turn|turned|turning|end|ended|ending|show|showed|showing|catch|caught|catching|figure|figured|figuring) (up|out)\b/i}
 ];
 function cibleStructure(st){ return {id:"s:" + st, fr:"utiliser le " + (NOM_STRUCT[st] || st), en:"the " + st + " tense/structure", min:0, structure:st}; }
-function lecon(){ return (S.lecon && S.lecon.cible) ? S.lecon : null; }
+function lecon(){
+  if (!S.lecon || !S.lecon.cible) return null;
+  // une regex ne survit pas au stockage : on reprend la definition vivante de la cible par son id
+  const c = S.lecon.cible;
+  if (!(c.re instanceof RegExp) || !c.en) {
+    const id = String(c.id || "");
+    S.lecon.cible = id.startsWith("s:") ? cibleStructure(id.slice(2)) : (CIBLES.find(x => x.id === id) || c);
+  }
+  return S.lecon;
+}
 // Le prochain defi : alternance structure du parcours / mot ou expression, jamais un defi deja reussi.
 function prochaineCible(){
   const p = profil(); const faites = new Set([...(p.lecons || []), lecon()?.cible.id].filter(Boolean));
@@ -1597,9 +1624,9 @@ function suivreLecon(d, texte){
   const c = l.cible;
   if (d.ok && usage !== "ok") {
     if (c.structure && (d.obs?.structures || []).map(x => String(x).toLowerCase()).includes(c.structure)) usage = "ok";
-    else if (c.re && c.re.test(t)) usage = "ok";
+    else if (c.re instanceof RegExp && c.re.test(t)) usage = "ok";
   }
-  if (!d.ok && usage !== "ko" && c.re && (d.corrections || []).some(x => c.re.test(String(x.original || "")))) usage = "ko";
+  if (!d.ok && usage !== "ko" && c.re instanceof RegExp && (d.corrections || []).some(x => c.re.test(String(x.original || "")))) usage = "ko";
   if (usage === "ok") { l.points++; l.sansUsage = 0; if (seance && seance.phase !== "libre") l.points = Math.min(l.points, 2); if (l.points >= 3) { (profil().lecons = profil().lecons || []).push(l.cible.id); if (seance?.guide?.[0]?.en) ajouterRappel({type:"defi", en:seance.guide[0].en}); saveS(); choisirLecon(); return; } }
   else if (d.cible === "ko") { l.points = 0; l.sansUsage = 0; }
   else l.sansUsage++;
@@ -1751,7 +1778,8 @@ function voirEtape(){
 // la carte du mot : affichee en grand dans le repere, puis reduite sur place ; un toucher la relit
 function poserRepere(c){
   c.classList.add("compact");
-  c.onclick = () => { unlockAudio(); speak([...c.querySelectorAll(".cex b")].map(b => b.textContent).join(" "), null, null); };
+  const pl = c.querySelector(".rplay");
+  c.onclick = () => { unlockAudio(); speak([...c.querySelectorAll(".cex b")].map(b => b.textContent).join(" "), pl, null); };
 }
 // ou vont les bulles (ta phrase, l'attente) : dans l'exercice en cours, sinon dans le fil
 function zone(){ const r = scene?.isConnected ? scene.querySelector(".etape.on .reponses") : null; if (r) voirEtape(); return r || feed; }
@@ -1775,11 +1803,13 @@ function afficherEtape(){
 }
 async function afficherModele(){
   const m = seance.modele || {mot:(lecon() || choisirLecon()).cible.fr, exemples:[]};
-  const c = carte("modele", [el("p", "cmot", m.mot)]);
+  const tete = el("div", "ctete"); const pl = el("button", "rplay"); pl.innerHTML = PLAY; pl.setAttribute("aria-label", "Écouter les exemples");
+  tete.append(el("p", "cmot", m.mot), pl);
+  const c = carte("modele", [tete]);
   for (const ex of m.exemples || []) { const l = el("div", "cex"); l.append(el("b", null, ex.en), el("span", null, ex.fr)); c.append(l); }
   laScene().querySelector(".repere").replaceChildren(c); feed.scrollTop = 0;
   busy = true; mic.disabled = true;
-  try { await speak((m.exemples || []).map(x => x.en).join(" "), null, null); } catch {}
+  try { await speak((m.exemples || []).map(x => x.en).join(" "), pl, null); } catch {}
   await pause(900);
   busy = false;
   poserRepere(c);
@@ -1817,10 +1847,10 @@ function etapeRatee(){
   if (seance.phase === "rappel") noterRappel(e.item, false);
   // on montre la phrase attendue, on la dit, et on passe a la suite
   const c = carte("attendu", [el("p", "ctexte", e.en)]);
-  const b = el("button", "cplay"); b.innerHTML = PLAY; b.onclick = () => { unlockAudio(); speak(e.en, null, null); }; c.prepend(b);
+  const b = el("button", "cplay"); b.innerHTML = PLAY; b.onclick = () => { unlockAudio(); speak(e.en, b, null); }; c.prepend(b);
   zone().append(c);
   seance.etape++;
-  speak(e.en, null, null).then(() => pause(1400)).then(() => etapeSuivante());
+  speak(e.en, b, null).then(() => pause(1400)).then(() => etapeSuivante());
 }
 async function lancerSeance(){
   seance = {phase:"prep", etape:0, rappels:[], guide:[], modele:null, faits:[], rappelsOk:0, libreTours:0, essais:0};
@@ -2000,7 +2030,7 @@ function renderFix(d, youEl, onSkip){
   // la phrase entiere corrigee, a redire ; un toucher la fait entendre
   if (d.fixed_en && normPhrase(d.fixed_en) !== normPhrase(youEl.textContent)) {
     const rc = el("button", "recast"); rc.append(el("span", null, d.fixed_en)); const ic = el("span", "rcplay"); ic.innerHTML = PLAY; rc.append(ic);
-    rc.onclick = () => { unlockAudio(); speak(d.fixed_en, null, null); };
+    rc.onclick = () => { unlockAudio(); speak(d.fixed_en, rc, null); };
     youEl.after(rc);
   }
   return youEl;

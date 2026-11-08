@@ -140,6 +140,9 @@ svg{width:24px;height:24px;flex:none}
 .marque{display:none;width:30px;height:30px}
 body.home .marque{display:block}
 body.home #modeName{display:none}
+/* en conversation : pas de titre, le defi en cours tient la place */
+body:not(.home) .titleblock .title{display:none}
+body:not(.home) .leconchip{font-size:1rem;font-weight:600;color:var(--ink)}
 .iconbtn.back{margin-left:-10px;margin-right:-4px}
 .conv{display:flex;align-items:center;gap:8px}
 .passe{opacity:.75}

@@ -156,6 +156,7 @@ body.home #stage::after{content:"";position:absolute;left:0;right:0;bottom:0;hei
 .you.bas{display:inline-flex;align-items:center;gap:8px;color:var(--bad);font-weight:600;animation:entre .25s var(--ease) both}
 .you.bas .cico{width:20px;height:20px}
 .you.bas .cico svg{width:20px;height:20px}
+.basplay{width:34px;height:34px;margin-left:4px}
 .you.pending{opacity:.5;letter-spacing:.2em}
 .recdot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--live);margin-right:8px;vertical-align:1px;animation:b 1s infinite}
 .wrong{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--bad);text-decoration-thickness:2px}
@@ -247,6 +248,10 @@ footer{padding:10px 18px 16px}
 .round{width:48px;height:48px;flex:none;border-radius:50%;border:none;display:grid;place-items:center}
 #mic{width:72px;height:72px;background:var(--accent);color:var(--on-accent)}
 #mic.on{background:var(--live)}
+#mic.refuse{background:var(--soft);color:var(--bad)}
+#mic.refuse::before{content:"";position:absolute;left:50%;top:50%;width:3px;height:58%;background:var(--bad);border-radius:2px;transform:translate(-50%,-50%) rotate(45deg);z-index:1}
+.srcmic{display:inline-block;width:18px;height:18px;margin-right:8px;vertical-align:-4px;opacity:.75}
+.srcmic svg{width:18px;height:18px}
 .round:disabled{opacity:.4;cursor:default}
 .sheetwrap{position:fixed;inset:0;z-index:30;background:rgba(10,15,35,.45);display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:100%;max-width:620px;max-height:90%;overflow-y:auto;border-radius:24px 24px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px))}
@@ -308,6 +313,12 @@ footer{padding:10px 18px 16px}
 .blobs{position:absolute;inset:-10%;z-index:0;pointer-events:none;filter:blur(70px);opacity:.55;-webkit-mask-image:linear-gradient(to bottom,transparent 8%,#000 26%);mask-image:linear-gradient(to bottom,transparent 8%,#000 26%)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .blobs{opacity:.5}}
 .blob{position:absolute;width:62vw;height:62vw;max-width:460px;max-height:460px;border-radius:50%;animation:derive 26s ease-in-out infinite alternate}
+/* accueil : les halos derivent un peu plus vite, visiblement mais sans agiter */
+body.home .blob{animation-duration:13s}
+body.home .b2{animation-duration:17s}
+body.home .b3{animation-duration:11s}
+body.home .blobs{animation:respire 9s ease-in-out infinite alternate}
+@keyframes respire{from{opacity:.5}to{opacity:.7}}
 .blob i{display:block;width:100%;height:100%;border-radius:50%}
 .b1{left:-12%;top:8%;animation-delay:-4s}.b1 i{background:#2457C5}
 .b2{right:-14%;top:28%;animation-duration:32s;animation-delay:-12s}.b2 i{background:#6A5AE0}
@@ -318,11 +329,6 @@ body:not(.home) .blobs{opacity:.28}
 .voix{position:absolute;z-index:0;pointer-events:none;filter:blur(36px);left:50%;bottom:-8%;width:90vw;max-width:560px;height:46vw;max-height:300px;border-radius:50%;transform:translateX(-50%) scale(calc(.9 + var(--vox) * .5));
   background:radial-gradient(closest-side,#6A5AE0,transparent 72%);opacity:calc(var(--vox) * 1.1);transition:transform .1s linear,opacity .15s linear,background .4s;animation:none}
 body.home .voix{display:none}
-/* vagues qui s'etendent la ou l'on touche le fond de l'accueil */
-.vagues{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;filter:blur(36px);-webkit-mask-image:linear-gradient(to bottom,transparent 6%,#000 22%,#000 80%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 6%,#000 22%,#000 80%,transparent 100%)}
-.vague{position:absolute;width:36vw;height:36vw;max-width:260px;max-height:260px;border-radius:50%;transform:translate(-50%,-50%) scale(.7);opacity:0;
-  background:radial-gradient(circle,var(--c) 0%,transparent 70%);animation:tache 1.8s ease-out forwards}
-@keyframes tache{0%{transform:translate(-50%,-50%) scale(.7);opacity:0}25%{opacity:.28}100%{transform:translate(-50%,-50%) scale(1.5);opacity:0}}
 body.ecoute .voix{background:radial-gradient(closest-side,#2457C5,transparent 72%)}
 
 /* ---------- Mouvement (courbes "Material" : rapide au depart, douce a l'arrivee) ---------- */
@@ -377,7 +383,7 @@ button:not(:disabled):active{transform:scale(.94)}
 <body class="home">
 <div class="app">
   <section id="stage">
-    <div class="blobs" aria-hidden="true"><span class="blob b1"><i></i></span><span class="blob b2"><i></i></span><span class="blob b3"><i></i></span></div><span class="voix" aria-hidden="true"></span><div class="vagues" aria-hidden="true"></div>
+    <div class="blobs" aria-hidden="true"><span class="blob b1"><i></i></span><span class="blob b2"><i></i></span><span class="blob b3"><i></i></span></div><span class="voix" aria-hidden="true"></span>
     <div class="bar">
       <button class="iconbtn back" id="newTheme" aria-label="Retour à l’accueil" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="titleblock"><span class="title"><svg class="marque" viewBox="0 0 512 512" role="img" aria-label="Talk Practice"><defs><linearGradient id="mq" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2457C5"/><stop offset="1" stop-color="#5E4FDB"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="url(#mq)"/><path d="M152 136h208a56 56 0 0 1 56 56v112a56 56 0 0 1-56 56H236l-62 50a10 10 0 0 1-16-8v-42h-6a56 56 0 0 1-56-56V192a56 56 0 0 1 56-56z" fill="#fff"/><g fill="#2457C5"><rect x="186" y="232" width="20" height="36" rx="10"/><rect x="222" y="206" width="20" height="88" rx="10"/><rect x="258" y="186" width="20" height="128" rx="10"/><rect x="294" y="212" width="20" height="76" rx="10"/><rect x="330" y="236" width="20" height="28" rx="10"/></g></svg><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span><span class="theme leconchip" id="leconChip" hidden></span></div>
@@ -863,7 +869,8 @@ async function basculerEnreg(opts = {}){
   stopSpeak(); unlockAudio(); hidePop();
   let flux;
   try { flux = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, channelCount:1}}); }
-  catch (e) { setStatus(e.name === "NotAllowedError" ? MSG_MICRO["not-allowed"] : "Micro indisponible (" + e.name + ")."); return; }
+  catch (e) { mic.classList.toggle("refuse", e.name === "NotAllowedError"); setStatus(e.name === "NotAllowedError" ? MSG_MICRO["not-allowed"] : "Micro indisponible (" + e.name + ")."); return; }
+  mic.classList.remove("refuse");
   const mime = ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4"].find(m => MediaRecorder.isTypeSupported?.(m)) || "";
   const morceaux = [];
   enreg = new MediaRecorder(flux, mime ? {mimeType:mime, audioBitsPerSecond:32000} : undefined);
@@ -886,7 +893,7 @@ async function basculerEnreg(opts = {}){
     const q = enreg.qualite ? enreg.qualite() : {pic:99, voix:99};
     if (Date.now() - enregDebut < 700 || blob.size < 1200 || (analyse && (q.pic < 7 || q.voix < 5))) {
       // trop court ou trop bas : rien n'est envoye, la bulle le dit d'un coup d'oeil
-      if (you) { you.className = "you bas"; you.replaceChildren(); const ic = el("span", "cico"); ic.innerHTML = ICO_BAS; you.append(ic, el("span", null, q.pic < 7 || q.voix < 5 ? "Trop bas" : "Trop court")); setTimeout(() => you.remove(), 2200); }
+      if (you) montrerBas(you, q.pic < 7 || q.voix < 5 ? "Trop bas" : "Trop court", blob);
       if (auto && mainsLibres) setTimeout(ecouterAuto, 400);
       return;
     }
@@ -894,7 +901,7 @@ async function basculerEnreg(opts = {}){
     you.className = "you pending"; you.textContent = "";
     setStatus("");
     you._rec = blob; you.dataset.rec = "1";   // pour reecouter sa propre prononciation (le passage corrige)
-    ask(null, you, {audio:{data: await blobB64(blob), mime:type}});
+    ask(null, you, {audio:{data: await blobB64(blob), mime:type, faible: analyse ? (q.pic < 12 || q.voix < 12) : false}});
   };
   // Niveau de la voix en direct : le halo du micro et les barres de ta bulle bougent avec toi.
   let analyse = null, source = null, raf = 0;
@@ -939,12 +946,13 @@ async function basculerEnreg(opts = {}){
   enreg.forcer = () => { aParle = true; };
   enreg.qualite = () => ({pic, voix});
   if (auto && !analyse) aParle = true;   // sans analyse audio : pas de detection, envoi manuel ou a 20 s
-  reflouter();
+  reflouter(); feed.querySelectorAll(".you.bas").forEach(x => x.remove());
   enreg.start(); enregDebut = Date.now(); document.body.classList.add("ecoute");
   mic.classList.add("on"); mic.setAttribute("aria-label", auto ? "Envoyer maintenant" : "Arrêter et envoyer");
   enregLive = el("div", "you live"); const dot = el("span", "recdot"), tps = el("span", null, "0:00"), ondes = el("span", "ondes");
   for (let i = 0; i < 7; i++) ondes.append(el("i"));
-  enregLive.append(dot, tps, ondes); zone().append(enregLive); scrollDown();
+  const src = el("span", "srcmic"); src.innerHTML = sourceMicro(flux) === "casque" ? ICO_CASQUE : ICO_TEL;   // casque ou telephone
+  enregLive.append(src, dot, tps, ondes); zone().append(enregLive); scrollDown();
   raf = requestAnimationFrame(anime);
   setStatus(auto ? "Mains libres" : "");
   enregTimer = setInterval(() => {
@@ -1005,19 +1013,6 @@ document.addEventListener("visibilitychange", () => {
 });
 
 /* ---------- Onde au toucher du fond de l'accueil ---------- */
-const COULEURS_ONDE = ["#2457C5", "#6A5AE0", "#B9B2F2"];
-$("stage").addEventListener("pointerdown", e => {
-  if (!document.body.classList.contains("home") || e.target.closest("button, a, input, select")) return;
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const couche = document.querySelector(".vagues"), r = couche.getBoundingClientRect();
-  const c = COULEURS_ONDE[Math.floor(Math.random() * COULEURS_ONDE.length)];
-  // une tache de couleur qui s'etend a peine puis s'efface
-  const o = el("span", "vague");
-  o.style.left = (e.clientX - r.left) + "px"; o.style.top = (e.clientY - r.top) + "px"; o.style.setProperty("--c", c);
-  couche.append(o); o.addEventListener("animationend", () => o.remove());
-  if (couche.children.length > 6) couche.firstChild.remove();
-});
-
 /* ---------- Traduction au toucher ---------- */
 let selChunk = null;
 function hidePop(){ pop.hidden = true; selChunk?.classList.remove("sel"); selChunk = null; }
@@ -1124,6 +1119,35 @@ const SCHEMA_ROLE = {
   required:["fr","en","role"], propertyOrdering:["fr","en","role"]
 };
 const ICO_BAS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5"/></svg>';
+const ICO_CASQUE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="13" width="4.5" height="7" rx="2"/><rect x="16.5" y="13" width="4.5" height="7" rx="2"/></svg>';
+const ICO_TEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18h2"/></svg>';
+// d'ou vient le son : un casque / des ecouteurs, ou le telephone lui-meme
+function sourceMicro(flux){
+  const t = flux.getAudioTracks()[0]; const label = (t?.label || "").toLowerCase();
+  return /head|casque|écout|ecout|earph|airpod|bud|bluetooth|\bbt\b|wired|jack|usb/.test(label) ? "casque" : "tel";
+}
+// le droit sur le micro : si Chrome le refuse, le bouton le montre barre, avant meme d'appuyer
+async function majDroitMicro(){
+  try {
+    const st = await navigator.permissions.query({name:"microphone"});
+    const maj = () => { mic.classList.toggle("refuse", st.state === "denied"); if (st.state === "denied") setStatus(MSG_MICRO["not-allowed"]); };
+    maj(); st.onchange = maj;
+  } catch {}
+}
+// la bulle qui dit "ca n'est pas parti" : trop bas, trop court, pas compris
+const ICO_FLOU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7"/><path d="M12 17h.01"/></svg>';
+function montrerBas(you, txt, blob){
+  you.className = "you bas"; you.replaceChildren();
+  const ic = el("span", "cico"); ic.innerHTML = txt === "Pas compris" ? ICO_FLOU : ICO_BAS; you.append(ic, el("span", null, txt));
+  const b = blob || you._rec;
+  if (b) {
+    // reecouter ce que j'ai dit, pour entendre pourquoi
+    const moi = el("button", "popplay moi basplay"); moi.innerHTML = ICO_MIC; moi.setAttribute("aria-label", "Réécouter ce que j’ai dit");
+    moi.onclick = e => { e.stopPropagation(); stopSpeak(); jouerPassage(b, 0, 0).catch(() => {}); };
+    you.append(moi);
+  }
+  setStatus("");
+}
 const ICO_MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
 const GO = {btn: document.getElementById("go"), label: document.getElementById("goLabel"), pts: document.getElementById("goPts"), niv: document.getElementById("goNiv")};
 // Le bouton reste "Je commence" (sujet libre). Le ▾ ouvre la liste des sujets : un toucher lance l'IA dessus.
@@ -1425,11 +1449,12 @@ const SCHEMA = {
     fait:{type:"STRING"},
     command:{type:"STRING"},
     cible:{type:"STRING"},
+    clair:{type:"BOOLEAN"},
     fixed_en:{type:"STRING"},
     vocab:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}, lies:{type:"ARRAY", items:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}}, required:["fr","en"], propertyOrdering:["fr","en"]}}}, required:["fr","en","lies"], propertyOrdering:["fr","en","lies"]}
   },
-  required:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","fixed_en","vocab"],
-  propertyOrdering:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","fixed_en","vocab"]
+  required:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","clair","fixed_en","vocab"],
+  propertyOrdering:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","clair","fixed_en","vocab"]
 };
 
 /* Equilibre des roles : l'apprenant doit aussi POSER des questions (en Irlande, c'est lui qui ira chercher l'info).
@@ -1806,7 +1831,7 @@ NEVER invent facts about the learner and NEVER put him in a fictional situation 
 ${theme.libre ? "Today's topic: whatever he wants. Follow his topic, react to it and ask good follow-up questions." : `Today's topic: ${theme.en}. ${theme.role} Follow him if he goes elsewhere.`}
 
 STEP 1, CHECK the learner's message. ${seanceCtx?.cible ? "GUIDED EXERCISE: " + seanceCtx.cible + " Here, a word that does not say what the French instruction asks IS a mistake (example: the instruction says « le soir » and he says \"afternoon\": correction \"afternoon\" -> \"evening\", type \"vocabulaire\", vocab fr « le soir », en \"evening\", ok false).\n" : ""}${audio ? `His message is the attached AUDIO recording.
-- "heard": write exactly what he said, word for word, KEEPING his grammar mistakes (never fix them here). If the audio is silent, too quiet or not intelligible, write "" and set ok to true with empty fields: NEVER guess, and NEVER reuse a sentence from the conversation above.
+- "heard": write exactly what he said, word for word, KEEPING his grammar mistakes (never fix them here). If the audio is silent, too quiet or not intelligible, write "" and set ok to true with empty fields: NEVER guess, and NEVER reuse a sentence from the conversation above. "clair": true only if EVERY word was clearly intelligible; if you had to guess even one word, set "clair" to false and "heard" to "" (he will simply say it again).
 - For EACH correction, "debut" and "fin" = where the corrected words are spoken in the audio, in seconds from the start of the recording (decimals allowed, e.g. 1.4 and 2.1). Be as precise as you can.
 - You can HEAR his pronunciation: if a word is clearly mispronounced, so that a native speaker could misunderstand it, add a correction: "original" = the word, "corrected" = the same word, explanation in French starting with "Prononciation :" saying how to say it (e.g. "Prononciation : le « th » se fait langue entre les dents"). Never correct the French accent itself, only real mispronunciations. At most one pronunciation correction.` : `It is transcribed from SPEECH: ignore spelling, punctuation and capital letters. "heard": "".`} Look only for real mistakes a native speaker would notice: grammar, wrong word, missing word, wrong tense, word order, a French-style phrase that sounds wrong in English. If a word looks wrongly transcribed in a way that suggests a pronunciation problem, add a correction whose explanation starts with "Prononciation ?". Do not correct things that are merely less elegant.
 - Corrections are ONLY about his English (grammar, words, phrasing, pronunciation), never about the content. A question to you, even about something you cannot do or do not have as an AI, is never a mistake: answer it in STEP 2. Example: "what did you do last weekend" is PERFECT English, so ok = true and corrections = []; then in your reply, explain kindly that as an AI you do not have weekends. Never change his question into another question.
@@ -1985,7 +2010,7 @@ async function ask(learner, youEl, opts = {}){
         d = await llm(buildPrompt(learner, ctx, !!opts.audio), SCHEMA, opts.audio || null);
         if (opts.audio) {
           const h = String(d?.heard || "").trim();
-          if (!h || dejaDit(h)) throw {code:"inaudible"};
+          if (!h || d.clair === false || (opts.audio.faible && dejaDit(h))) throw {code:"inaudible"};
           learner = h; youEl.textContent = h; youEl.classList.remove("pending");
           history.push({role:"user", content:h});
         }
@@ -2085,7 +2110,7 @@ async function ask(learner, youEl, opts = {}){
     });
   } catch (e) {
     dots.remove(); console.error(e);
-    if (opts.audio) { if (learner) history.pop(); youEl?.remove(); }
+    if (opts.audio) { if (learner) history.pop(); if (e?.code === "inaudible" && youEl) { montrerBas(youEl, "Pas compris"); if (mainsLibres) setTimeout(ecouterAuto, 1500); return; } youEl?.remove(); }
     else if (learner && !opts.force) { history.pop(); youEl?.remove(); }
     setStatus({
       key:"Clé API refusée. Vérifie-la dans les réglages ⚙️.",
@@ -2179,7 +2204,7 @@ function majPlusHaut(){
 // Accueil <-> conversation
 const accueil = $("empty");
 function modeConversation(libre){
-  document.body.classList.remove("home");
+  document.body.classList.remove("home"); majDroitMicro();
   if (!lecon()) choisirLecon(); majLeconChip(); $("themeName").hidden = true;
   $("modeName").textContent = libre ? "Sujet libre" : "Conversation";
   $("newTheme").hidden = false; navDedans();

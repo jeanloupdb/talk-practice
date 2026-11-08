@@ -87,6 +87,7 @@ svg{width:24px;height:24px;flex:none}
 .cex b{display:block;font-size:1.1rem}
 .cex span{display:block;color:var(--muted);font-size:.9rem}
 .cfaits div{padding:6px 0;font-weight:600;color:var(--good)}
+.bilanchip{margin:2px 0 10px;font-weight:600}
 .cpart{display:flex;align-items:center;gap:10px;margin:12px 0 0}
 .cpart .cico{width:18px;height:18px;color:var(--accent)}
 .cpart .cico svg{width:18px;height:18px}
@@ -1599,7 +1600,7 @@ function lecon(){
 }
 // Le prochain defi : alternance structure du parcours / mot ou expression, jamais un defi deja reussi.
 function prochaineCible(){
-  const p = profil(); const faites = new Set([...(p.lecons || []), lecon()?.cible.id].filter(Boolean));
+  const p = profil(); const faites = new Set([...(p.lecons || []), ...(p.aRevoir || []).slice(-4), lecon()?.cible.id].filter(Boolean));
   const n = Math.min(10, Math.max(1, p.niveau || 4));
   const derniereStructure = !!(p.derniereLecon || "").startsWith("s:");
   const motsDispo = CIBLES.filter(c => c.min <= n + 1 && !faites.has(c.id));
@@ -1646,8 +1647,8 @@ function suivreLecon(d, texte){
     else if (c.re instanceof RegExp && c.re.test(t)) usage = "ok";
   }
   if (!d.ok && usage !== "ko" && c.re instanceof RegExp && (d.corrections || []).some(x => c.re.test(String(x.original || "")))) usage = "ko";
-  if (usage === "ok") { l.points++; l.sansUsage = 0; if (seance && seance.phase !== "libre") l.points = Math.min(l.points, 2); if (l.points >= 3) { feterDefi(); (profil().lecons = profil().lecons || []).push(l.cible.id); if (seance?.guide?.[0]?.en) ajouterRappel({type:"defi", en:seance.guide[0].en}); saveS(); choisirLecon(); return; } }
-  else if (d.cible === "ko") { l.points = 0; l.sansUsage = 0; }
+  if (usage === "ok") { l.points++; l.sansUsage = 0; if (seance && seance.phase !== "libre") l.points = Math.min(l.points, 2); if (l.points >= 3) { feterDefi(); if (seance) seance.defiFait = true; (profil().lecons = profil().lecons || []).push(l.cible.id); if (seance?.guide?.[0]?.en) ajouterRappel({type:"defi", en:seance.guide[0].en}); saveS(); choisirLecon(); return; } }
+  else if (usage === "ko") { l.points = seance ? Math.max(0, l.points - 1) : 0; l.sansUsage = 0; }
   else l.sansUsage++;
   saveS(); majLeconChip();
 }
@@ -1664,7 +1665,7 @@ function leconTexte(){
   const l = lecon() || choisirLecon();
   const reste = 3 - l.points;
   return acquisTexte() + `
-LESSON (today's challenge): "${l.cible.en}". He validates it with 3 correct uses (he has ${l.points}/3 so far${l.points ? "" : ""}); a wrong use resets the count. Steer the conversation so that using it is the natural thing to do; use it yourself now and then. If he uses it wrongly, correct it kindly and invite him to try again right away.${l.sansUsage >= 3 ? " He has not used it for a while: ask him explicitly to say something with it." : ""}${l.points === 2 ? " If he uses it correctly NOW, that completes the challenge: congratulate him in one sentence, then announce the next challenge: \"" + prochaineCibleTexte() + "\" with one short example, and ask a first question calling for it." : ""}`;
+LESSON (today's challenge): "${l.cible.en}". He validates it with 3 correct uses (he has ${l.points}/3 so far${l.points ? "" : ""}); a wrong use resets the count. Steer the conversation so that using it is the natural thing to do; use it yourself now and then. If he uses it wrongly, correct it kindly and invite him to try again right away.${l.sansUsage >= 3 ? " He has not used it for a while: ask him explicitly to say something with it." : ""}${l.points === 2 && !seance ? " If he uses it correctly NOW, that completes the challenge: congratulate him in one sentence, then announce the next challenge: \"" + prochaineCibleTexte() + "\" with one short example, and ask a first question calling for it." : ""}`;
 }
 function prochaineCibleTexte(){ return prochaineCible().en; }
 let focus = null;
@@ -1758,6 +1759,10 @@ function contexteSeance(learner){
       ouverture: ""
     };
   }
+  if (seance.phase === "libre" && learner) {
+    const cib = (lecon() || choisirLecon()).cible.en;
+    return {cible: "", ouverture: "", reponse: `FREE PART OF THE EXERCISE (target: ${cib}). If "cible" is "ok" (he used the target correctly), just congratulate him warmly in a few words, he has completed today's challenge: no question. Otherwise react in a few words, then ask ONE short question (12 words max) about his real life whose natural answer needs the target.`};
+  }
   if (seance.phase === "libre" && !learner) return {cible: "", reponse: "", ouverture: `OPENING OF THE FREE PART: set ok to true, corrections to []. Ask ONE short question (12 words max) about his real life that naturally calls for the target. No greeting, no announcement, nothing else. `};
   return null;
 }
@@ -1837,6 +1842,14 @@ async function afficherModele(){
 function afficherBilan(){
   seance.phase = "bilan"; majLeconChip(); enTransition = false;
   const c = carte("bilan", []); nouvelleEtape(c);
+  const ld = lecon();
+  const past = el("div", "leconchip bilanchip" + (seance.defiFait ? " fait" : "")); past.append(el("span", "lbl", seance.defiNom || ld?.cible.fr || ""));
+  past.style.setProperty("--p", seance.defiFait ? 1 : Math.min(3, ld?.points || 0) / 3); c.append(past);
+  if (!seance.defiFait && ld && (ld.seances || 0) >= 3) {
+    // trois seances sans y arriver : on n'insiste plus aujourd'hui, les phrases reviendront en rappel
+    for (const g of seance.guide || []) ajouterRappel({type:"defi", en:g.en});
+    (profil().aRevoir = profil().aRevoir || []).push(ld.cible.id); choisirLecon(); majLeconChip();
+  }
   const faits = seance.faits.slice(-3);
   if (faits.length) { const ul = el("div", "cfaits"); faits.forEach(f => ul.append(el("div", null, "✓ " + f))); c.append(ul); }
   const st = stats(); const part = st.moi + st.ia ? Math.round(100 * st.moi / (st.moi + st.ia)) : 0;
@@ -1872,7 +1885,9 @@ function etapeRatee(){
   speak(e.en, b, null).then(() => pause(1400)).then(() => etapeSuivante());
 }
 async function lancerSeance(){
-  seance = {phase:"prep", etape:0, rappels:[], guide:[], modele:null, faits:[], rappelsOk:0, libreTours:0, essais:0};
+  seance = {phase:"prep", etape:0, rappels:[], guide:[], modele:null, faits:[], rappelsOk:0, libreTours:0, essais:0, defiFait:false};
+  // chaque seance est une tentative complete du defi : on repart de zero (plus de 2/3 herite d'avant)
+  const ld = lecon() || choisirLecon(); ld.points = 0; ld.seances = (ld.seances || 0) + 1; seance.defiNom = ld.cible.fr; saveS(); majLeconChip();
   const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); zone().append(dots);
   busy = true; mic.disabled = true;
   try {
@@ -2201,6 +2216,8 @@ async function ask(learner, youEl, opts = {}){
       return;
     }
     if (seance && seance.phase === "libre" && learner) { seance.faits.push(learner); seance.libreTours++; }
+    // defi valide sur cette phrase : pas de question en l'air juste avant le bilan
+    if (seance?.phase === "libre" && seance.defiFait && /\?/.test(chunks.map(c => c.en).join(" "))) { chunks = [{en:"Great, you've nailed it!", fr:"Super, tu l'as !"}]; d.reply_fr = "Super, tu l'as !"; }
     const t = renderClaude(chunks, d.reply_fr);
     history.push({role:"assistant", content:t.text, chunks, fr:d.reply_fr || ""});
     journal.push({role:"assistant", content:t.text, chunks, fr:d.reply_fr || "", t:Date.now()});
@@ -2214,7 +2231,7 @@ async function ask(learner, youEl, opts = {}){
     t.play.classList.remove("ready");
     stats().ia += nbMots(t.text); saveS();
     (learner && !opts.force ? ding() : Promise.resolve()).then(() => speak(t.text, t.play, t.reveal)).then(() => {
-      if (seance && seance.phase === "libre" && seance.libreTours >= 2) { afficherBilan(); return; }
+      if (seance && seance.phase === "libre" && (seance.defiFait || seance.libreTours >= 4)) { afficherBilan(); return; }
       mlApres();
     });
   } catch (e) {

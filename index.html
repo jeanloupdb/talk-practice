@@ -248,7 +248,7 @@ footer{padding:10px 18px 16px}
 .round{width:48px;height:48px;flex:none;border-radius:50%;border:none;display:grid;place-items:center}
 #mic{width:72px;height:72px;background:var(--accent);color:var(--on-accent)}
 #mic.on{background:var(--live)}
-#mic.refuse{background:var(--soft);color:var(--bad)}
+#mic.refuse{position:relative;background:var(--soft);color:var(--bad)}
 #mic.refuse::before{content:"";position:absolute;left:50%;top:50%;width:3px;height:58%;background:var(--bad);border-radius:2px;transform:translate(-50%,-50%) rotate(45deg);z-index:1}
 .srcmic{display:inline-block;width:18px;height:18px;margin-right:8px;vertical-align:-4px;opacity:.75}
 .srcmic svg{width:18px;height:18px}
@@ -790,7 +790,7 @@ let rec = null, listening = false, liveEl = null, heard = "", micErr = null, mic
 let base = "", stopVoulu = false, debutSession = 0, relancesVides = 0;
 const MICRO_MAX_MS = 90000;
 const MSG_MICRO = {
-  "not-allowed": "Micro refusé. Appui long sur l’icône de l’appli → Infos → Autorisations → Micro (ou dans Chrome : ⋮ → Paramètres → Paramètres des sites → Micro).",
+  "not-allowed": "Micro refusé : autorise-le dans les infos de l’appli (appui long sur son icône).",
   "service-not-allowed": "La reconnaissance vocale est désactivée sur ce téléphone. Active « Saisie vocale Google » dans les paramètres Android.",
   "network": "La reconnaissance vocale n’a pas pu joindre Google (réseau). Réessaie.",
   "audio-capture": "Aucun micro disponible, ou il est utilisé par une autre appli.",

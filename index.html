@@ -15,14 +15,14 @@
 :root{
   --bg:#FFFFFF;--ink:#14213D;--muted:#5C6785;--accent:#2457C5;--on-accent:#FFFFFF;
   --stage1:#EAF0FD;--stage2:#E9E6FB;--glow:#B9B2F2;--soft:#F1F3F8;--line:#D8DEEC;
-  --card:rgba(255,255,255,.72);--card-line:rgba(20,33,61,.08);--bad:#B5392F;--good:#18784A;--pop:#14213D;--on-pop:#FFFFFF;--live:#EC4B3E;
+  --card:rgba(255,255,255,.72);--card-line:rgba(20,33,61,.08);--bad:#B5392F;--warn:#C2690F;--good:#18784A;--pop:#14213D;--on-pop:#FFFFFF;--live:#EC4B3E;
   color-scheme:light;box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#0D1222;--ink:#E5EAF6;--muted:#9AA6C4;--accent:#7FA4F5;--on-accent:#0D1222;
   --stage1:#141C33;--stage2:#1B1838;--glow:#3B3373;--soft:#18203A;--line:#26304D;
-  --card:rgba(255,255,255,.05);--card-line:rgba(229,234,246,.09);--bad:#F2877D;--good:#7DD6A7;--pop:#E5EAF6;--on-pop:#0D1222;--live:#F2877D;color-scheme:dark}}
+  --card:rgba(255,255,255,.05);--card-line:rgba(229,234,246,.09);--bad:#F2877D;--warn:#F2B35C;--good:#7DD6A7;--pop:#E5EAF6;--on-pop:#0D1222;--live:#F2877D;color-scheme:dark}}
 *,*::before,*::after{box-sizing:inherit}
 [hidden]{display:none!important}
 html,body{height:100%;margin:0}
@@ -40,9 +40,14 @@ svg{width:24px;height:24px;flex:none}
 /* la scene : un exercice par ecran, qui glisse */
 .scene{position:relative;flex:1;min-height:100%;display:flex;flex-direction:column;gap:14px}
 .scene .repere{flex:none}
-.scene .pile{position:relative;flex:1}
-.etape{position:absolute;inset:0;display:flex;flex-direction:column;gap:16px;padding-top:2vh;animation:glisse .42s var(--ease) both}
+.scene .pile{display:flex;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;gap:22px;margin:0 -22px;padding:0 22px;scrollbar-width:none}
+.scene .pile::-webkit-scrollbar{display:none}
+.etape{flex:0 0 100%;scroll-snap-align:start;display:flex;flex-direction:column;gap:16px;padding-top:2vh}
+.etape.faite{opacity:.55}
 .repere .carte{animation:entre .4s var(--ease) both}
+.carte.modele{transition:padding .45s var(--ease),border-radius .45s var(--ease)}
+.carte.modele .cmot{transition:font-size .45s var(--ease),margin .45s var(--ease)}
+.carte.modele .cex b,.carte.modele .cex span{transition:font-size .45s var(--ease)}
 .carte.modele.compact{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:12px 16px;border-radius:18px}
 .compact .cmot{margin:0;font-size:1.35rem}
 .compact .cex{flex:1 1 100%;padding:3px 0;border-top:none}
@@ -50,9 +55,6 @@ svg{width:24px;height:24px;flex:none}
 .compact .cex span{display:inline;margin-left:8px;font-size:.82rem}
 .etape .reponses{display:flex;flex-direction:column;gap:14px;align-items:flex-end}
 .etape .reponses .carte{align-self:stretch}
-.etape.sort{animation:sortie .34s var(--ease) both;pointer-events:none}
-@keyframes glisse{from{opacity:0;transform:translateX(70px)}to{opacity:1;transform:none}}
-@keyframes sortie{to{opacity:0;transform:translateX(-70px)}}
 .etape .carte{animation:none}
 /* cartes de seance : une consigne, rien d'autre */
 .carte{align-self:stretch;background:var(--card);border:1px solid var(--card-line);border-radius:22px;padding:16px 18px;backdrop-filter:blur(6px);animation:entre .38s var(--ease) both}
@@ -164,7 +166,12 @@ body.home #stage::after{content:"";position:absolute;left:0;right:0;bottom:0;hei
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z'/%3E%3C/svg%3E") center/contain no-repeat;
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z'/%3E%3C/svg%3E") center/contain no-repeat}
 .skip{display:block;margin:-8px 0 0 auto;background:none;border:none;color:var(--muted);font-size:.85rem;text-decoration:underline;padding:4px}
-.faute{color:var(--bad);text-decoration:underline wavy color-mix(in srgb,var(--bad) 70%,transparent);text-decoration-thickness:1.5px;text-underline-offset:4px;cursor:pointer;border-radius:4px}
+.faute{color:var(--warn);text-decoration:underline wavy color-mix(in srgb,var(--warn) 70%,transparent);text-decoration-thickness:1.5px;text-underline-offset:4px;cursor:pointer;border-radius:4px}
+.faute.cible{color:var(--bad);text-decoration-color:color-mix(in srgb,var(--bad) 70%,transparent)}
+.pron{text-decoration:underline dotted var(--warn);text-decoration-thickness:2px;text-underline-offset:4px;cursor:pointer;border-radius:4px}
+.recast{align-self:flex-end;display:inline-flex;align-items:center;gap:8px;max-width:88%;background:none;border:none;padding:0;color:var(--good);font-weight:600;font-size:1.02rem;text-align:right;line-height:1.35;animation:entre .3s var(--ease) both}
+.rcplay{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--good) 16%,transparent)}
+.rcplay svg{width:12px;height:12px}
 .faute.sel,.mieux.sel{background:color-mix(in srgb,var(--accent) 14%,transparent)}
 .mieux{text-decoration:underline dotted var(--good);text-decoration-thickness:2px;text-underline-offset:4px;cursor:pointer;border-radius:4px}
 .you.juste::after{content:"✓";color:var(--good);font-size:.85em;margin-left:8px;animation:popin .45s var(--rebond) both}
@@ -175,7 +182,8 @@ body.home #stage::after{content:"";position:absolute;left:0;right:0;bottom:0;hei
 .poptxt b{color:var(--good);font-weight:700}
 .poptxt small{display:block;color:var(--muted);font-size:.82rem;margin-top:2px}
 .you.tried{opacity:.45;font-size:1rem}
-.you.tried .faute{text-decoration:line-through;text-decoration-color:var(--bad)}
+.you.tried .faute{text-decoration:line-through;text-decoration-color:var(--warn)}
+.you.tried .faute.cible{text-decoration-color:var(--bad)}
 .play.ready{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 45%,transparent);animation:ring 1.8s infinite}
 @keyframes ring{70%{box-shadow:0 0 0 14px transparent}100%{box-shadow:0 0 0 0 transparent}}
 .cheer{margin:6px 0 0;color:var(--muted);font-size:.88rem}
@@ -210,6 +218,8 @@ body.home #stage::after{content:"";position:absolute;left:0;right:0;bottom:0;hei
 .popplay.inline{display:inline-grid;width:34px;height:34px;margin-left:10px;vertical-align:middle}
 .mothead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .motfr{margin:4px 0 10px;font-size:1.1rem}
+.ex.vocmain .exen{font-size:1.4rem;font-weight:700}
+.ex.vocmain{border-bottom-width:2px;margin-bottom:4px}
 .motfr small{display:block;color:var(--muted);font-size:.85rem;font-weight:400}
 .motnote{margin:0 0 6px;font-size:.92rem;color:var(--muted)}
 .ex{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);border-radius:0;padding:12px 2px}
@@ -1056,6 +1066,19 @@ const SCHEMA_MOT = {
 };
 const motCache = new Map();
 let motToken = 0;
+// Point vocabulaire : le mot qui manquait, et sa petite famille ; on ferme, on continue.
+function ouvrirVocab(v){
+  motToken++;
+  $("motTitle").replaceChildren(document.createTextNode(v.fr));
+  const box = $("motBody");
+  const ligne = (en, fr, gros) => {
+    const b = el("button", "ex" + (gros ? " vocmain" : "")); const t = el("span", "extxt"); t.append(el("span", "exen", en), el("span", "exfr", fr)); const ic = el("span", "explay"); ic.innerHTML = PLAY; b.append(t, ic);
+    b.onclick = () => { unlockAudio(); speak(en, null, null); }; return b;
+  };
+  box.replaceChildren(ligne(v.en, v.fr, true), ...(v.lies || []).slice(0, 4).filter(x => x.en && x.fr).map(x => ligne(x.en, x.fr)));
+  ouvrir("mot");
+  speak(v.en, null, null);
+}
 async function openMot(en, fr, phrase){
   const tok = ++motToken;
   const box = $("motBody");
@@ -1401,10 +1424,12 @@ const SCHEMA = {
     hint_fr:{type:"STRING"},
     fait:{type:"STRING"},
     command:{type:"STRING"},
-    cible:{type:"STRING"}
+    cible:{type:"STRING"},
+    fixed_en:{type:"STRING"},
+    vocab:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}, lies:{type:"ARRAY", items:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}}, required:["fr","en"], propertyOrdering:["fr","en"]}}}, required:["fr","en","lies"], propertyOrdering:["fr","en","lies"]}
   },
-  required:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible"],
-  propertyOrdering:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible"]
+  required:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","fixed_en","vocab"],
+  propertyOrdering:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","fixed_en","vocab"]
 };
 
 /* Equilibre des roles : l'apprenant doit aussi POSER des questions (en Irlande, c'est lui qui ira chercher l'info).
@@ -1600,7 +1625,7 @@ function contexteSeance(learner){
   if (seance.phase === "rappel" || seance.phase === "guide") {
     const e = etapeCourante(); if (!e) return null;
     return {
-      cible: `GUIDED STEP: the learner was asked in French: "${e.fr}". Expected English (any natural equivalent is fine): "${e.en}". "ok" if his sentence is correct English and uses the target, even if a detail differs from the expected sentence ("at seven" instead of "early" is fine); any sentence identical to the card's examples is ok. "ko" if he tried but the target is wrong, "non" if he said something unrelated. IMPORTANT: every correction must bring his sentence CLOSER TO THE EXPECTED SENTENCE (same tense, same meaning); never correct towards another tense or another sentence.`,
+      cible: `GUIDED STEP: the learner was asked in French: "${e.fr}". Expected English (any natural equivalent is fine): "${e.en}". "ok" if his sentence is correct English, uses the target, and says what the instruction asks: a compatible detail is fine ("at seven" for « tôt »), but a word that changes the meaning asked (« le soir » said as "afternoon") is a VOCABULARY mistake (type "vocabulaire", fill "vocab", ok = false). Any sentence identical to the card's examples is ok. "ko" if he tried but the target is wrong, "non" if he said something unrelated. IMPORTANT: every correction must bring his sentence CLOSER TO THE EXPECTED SENTENCE (same tense, same meaning); never correct towards another tense or another sentence.`,
       reponse: `GUIDED STEP: reply with ONLY a 2-5 word feedback ("Perfect.", "Yes, that's it.", "Nice one."), no question, nothing else.`,
       ouverture: ""
     };
@@ -1632,18 +1657,22 @@ function laScene(){
 function nouvelleEtape(carteEl){
   const sc = laScene(), pile = sc.querySelector(".pile");
   const prec = pile.querySelector(".etape.on");
-  if (prec) { prec.classList.remove("on"); prec.classList.add("sort"); setTimeout(() => prec.remove(), 380); }
+  if (prec) { prec.classList.remove("on"); prec.classList.add("faite"); }
   const e = el("div", "etape on"); e.append(carteEl, el("div", "reponses")); pile.append(e);
-  feed.scrollTop = 0; return e;
+  feed.scrollTop = 0; voirEtape(); return e;
 }
-// la carte du mot reste visible, en petit, au-dessus des exercices ; un toucher la relit
+// ramene l'exercice en cours a l'ecran (apres un retour au doigt sur les precedents)
+function voirEtape(){
+  const pile = scene?.querySelector(".pile"), e = pile?.querySelector(".etape.on"); if (!e) return;
+  requestAnimationFrame(() => pile.scrollTo({left:e.offsetLeft, behavior:"smooth"}));
+}
+// la carte du mot : affichee en grand dans le repere, puis reduite sur place ; un toucher la relit
 function poserRepere(c){
-  const r = c.cloneNode(true); r.classList.add("compact");
-  r.onclick = () => { unlockAudio(); speak([...r.querySelectorAll(".cex b")].map(b => b.textContent).join(" "), null, null); };
-  laScene().querySelector(".repere").replaceChildren(r);
+  c.classList.add("compact");
+  c.onclick = () => { unlockAudio(); speak([...c.querySelectorAll(".cex b")].map(b => b.textContent).join(" "), null, null); };
 }
 // ou vont les bulles (ta phrase, l'attente) : dans l'exercice en cours, sinon dans le fil
-function zone(){ const r = scene?.isConnected ? scene.querySelector(".etape.on .reponses") : null; return r || feed; }
+function zone(){ const r = scene?.isConnected ? scene.querySelector(".etape.on .reponses") : null; if (r) voirEtape(); return r || feed; }
 function quitterScene(){ scene = null; enTransition = false; feed.replaceChildren(); afficherEchanges(0); }
 const ICO_RAPPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
 // l'etape en cours : des points (un par consigne), pas de titre
@@ -1664,7 +1693,7 @@ async function afficherModele(){
   const m = seance.modele || {mot:(lecon() || choisirLecon()).cible.fr, exemples:[]};
   const c = carte("modele", [el("p", "cmot", m.mot)]);
   for (const ex of m.exemples || []) { const l = el("div", "cex"); l.append(el("b", null, ex.en), el("span", null, ex.fr)); c.append(l); }
-  nouvelleEtape(c);
+  laScene().querySelector(".repere").replaceChildren(c); feed.scrollTop = 0;
   busy = true; mic.disabled = true;
   try { await speak((m.exemples || []).map(x => x.en).join(" "), null, null); } catch {}
   await pause(900);
@@ -1776,7 +1805,7 @@ The learner chose to move on: set ok to true, corrections to [], and reply norma
 NEVER invent facts about the learner and NEVER put him in a fictional situation or give him a role: talk about his REAL life, and when you do not know something, ASK.
 ${theme.libre ? "Today's topic: whatever he wants. Follow his topic, react to it and ask good follow-up questions." : `Today's topic: ${theme.en}. ${theme.role} Follow him if he goes elsewhere.`}
 
-STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDIO recording.
+STEP 1, CHECK the learner's message. ${seanceCtx?.cible ? "GUIDED EXERCISE: " + seanceCtx.cible + " Here, a word that does not say what the French instruction asks IS a mistake (example: the instruction says « le soir » and he says \"afternoon\": correction \"afternoon\" -> \"evening\", type \"vocabulaire\", vocab fr « le soir », en \"evening\", ok false).\n" : ""}${audio ? `His message is the attached AUDIO recording.
 - "heard": write exactly what he said, word for word, KEEPING his grammar mistakes (never fix them here). If the audio is silent, too quiet or not intelligible, write "" and set ok to true with empty fields: NEVER guess, and NEVER reuse a sentence from the conversation above.
 - For EACH correction, "debut" and "fin" = where the corrected words are spoken in the audio, in seconds from the start of the recording (decimals allowed, e.g. 1.4 and 2.1). Be as precise as you can.
 - You can HEAR his pronunciation: if a word is clearly mispronounced, so that a native speaker could misunderstand it, add a correction: "original" = the word, "corrected" = the same word, explanation in French starting with "Prononciation :" saying how to say it (e.g. "Prononciation : le « th » se fait langue entre les dents"). Never correct the French accent itself, only real mispronunciations. At most one pronunciation correction.` : `It is transcribed from SPEECH: ignore spelling, punctuation and capital letters. "heard": "".`} Look only for real mistakes a native speaker would notice: grammar, wrong word, missing word, wrong tense, word order, a French-style phrase that sounds wrong in English. If a word looks wrongly transcribed in a way that suggests a pronunciation problem, add a correction whose explanation starts with "Prononciation ?". Do not correct things that are merely less elegant.
@@ -1785,7 +1814,9 @@ STEP 1, CHECK the learner's message. ${audio ? `His message is the attached AUDI
 - "learner_asked": true if his message contains a real question to you (even a short one), false otherwise.
 - "ok": true if there is no real mistake in his English, false otherwise.
 - "conseil": only when ok is true and EITHER a phrase sounds blunt or unnatural in Ireland, OR his sentence is correct but basic for his level (an overused verb, a very simple structure where the focus structure would fit): OR one of his ACQUIRED CHALLENGES would have been the natural way to say it: "original" = his exact words concerned, "better" = the same idea one notch above (more natural, richer verb, the focus structure, the acquired challenge), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".
-- "corrections": the mistakes (at most 3), each with the exact wrong words, the corrected words, a French explanation of 12 words max, addressing the learner with « tu » (never « vous »), "debut"/"fin" (0 and 0 when there is no audio), and "type" = the category in 2 or 3 French words, reused consistently (e.g. "prétérit oublié", "question sans do", "article", "préposition", "pluriel", "ordre des mots", "accord sujet-verbe", "vocabulaire", "prononciation"). Empty if ok.
+- "corrections": ALL his mistakes (up to 5), never just the first one: wrong word (vocabulary), missing word, wrong tense, preposition, word order, and the challenge target; each with the exact wrong words, the corrected words, a French explanation of 12 words max, addressing the learner with « tu » (never « vous »), "debut"/"fin" (0 and 0 when there is no audio), and "type" = the category in 2 or 3 French words, reused consistently (e.g. "prétérit oublié", "question sans do", "article", "préposition", "pluriel", "ordre des mots", "accord sujet-verbe", "vocabulaire", "prononciation"); use EXACTLY "cible" when the mistake is about today's challenge target (missing or wrong), and EXACTLY "prononciation" for pronunciation. Empty if ok.
+- "fixed_en": his WHOLE sentence corrected, natural, same meaning and same length (this is what he will say again). "" if ok.
+- "vocab": ONLY if one correction is a vocabulary gap (he used a wrong, French-sounding or missing word for a concept he meant, e.g. "afternoon" for « le soir »): "fr" = the French concept, "en" = the right English word, "lies" = 3 related words of the same family (e.g. morning / afternoon / night), each {fr, en}. Otherwise fr "", en "", lies [].
 - "obs" (about his message, even when ok): "structures" = the grammar structures he used CORRECTLY, only from this list: ${STRUCTURES.join(", ")} (empty if none); "verbs" = the main verbs he used, base form, 6 max; "level" = the level of this message from 1 (A1) to 10 (C2). For an empty or inaudible message: [], [], 0.
 ${retry}${force}
 
@@ -1826,7 +1857,7 @@ function marquer(youEl, items, cls){
     if (i >= 0) zones.push({deb:i, fin:i + o.length, items:[it]});
   }
   youEl.replaceChildren();
-  const span = (txt, its) => { const sp = el("span", cls, txt); sp.tabIndex = 0; sp.onclick = e => { e.stopPropagation(); showFixPop(sp, its); }; sp.onkeydown = e => { if (e.key === "Enter") showFixPop(sp, its); }; return sp; };
+  const span = (txt, its) => { const sp = el("span", cls + (its[0]?.type === "cible" ? " cible" : ""), txt); sp.tabIndex = 0; sp.onclick = e => { e.stopPropagation(); showFixPop(sp, its); }; sp.onkeydown = e => { if (e.key === "Enter") showFixPop(sp, its); }; return sp; };
   if (!zones.length) { youEl.append(span(texte, items)); return; }
   zones.sort((x, y) => x.deb - y.deb);
   let pos = 0;
@@ -1869,10 +1900,11 @@ function showFixPop(sp, items){
   pop.classList.add("fixpop"); pop.replaceChildren(box); placerPop(sp);
 }
 function renderFix(d, youEl, onSkip){
-  feed.querySelectorAll(".skip").forEach(b => b.remove());
+  feed.querySelectorAll(".skip, .recast").forEach(b => b.remove());
   const list = Array.isArray(d.corrections) ? d.corrections.filter(c => c && c.corrected) : [];
   if (d.ok) {
     youEl.classList.add("juste");
+    if (d.pron?.length) marquer(youEl, d.pron, "pron");
     const c = d.conseil;
     if (c && c.better && c.better.trim() && journal.length - dernierConseil >= 6) { dernierConseil = journal.length; marquer(youEl, [c], "mieux"); }
     return youEl;
@@ -1881,6 +1913,12 @@ function renderFix(d, youEl, onSkip){
   const skip = el("button", "skip", "Passer");
   skip.onclick = () => { skip.remove(); onSkip(); };
   youEl.after(skip);
+  // la phrase entiere corrigee, a redire ; un toucher la fait entendre
+  if (d.fixed_en && normPhrase(d.fixed_en) !== normPhrase(youEl.textContent)) {
+    const rc = el("button", "recast"); rc.append(el("span", null, d.fixed_en)); const ic = el("span", "rcplay"); ic.innerHTML = PLAY; rc.append(ic);
+    rc.onclick = () => { unlockAudio(); speak(d.fixed_en, null, null); };
+    youEl.after(rc);
+  }
   return youEl;
 }
 
@@ -1974,10 +2012,12 @@ async function ask(learner, youEl, opts = {}){
     if (learner) { const st = stats(); st.moi += nbMots(learner); st.tours++; if (!d.ok) st.fautes += (d.corrections || []).length; }
     const enCarte = seance && (seance.phase === "rappel" || seance.phase === "guide");
     if (enCarte && learner && !d.ok && phraseConnue(learner)) { d.ok = true; d.corrections = []; d.cible = "ok"; }
+    const pron = c => c.type === "prononciation" || /^prononciation/i.test(c.explanation_fr || "");
+    if (enCarte && learner && !d.ok && (d.corrections || []).length && d.corrections.every(pron)) { d.pron = d.corrections; d.corrections = []; d.ok = true; if (d.cible !== "non") d.cible = "ok"; }
     if (learner && !d.ok) {
       // Erreur : on montre ce qui ne va pas, on le dit a l'oral, et on attend un nouvel essai.
       history.pop();                                   // la tentative ratee ne fait pas partie de la conversation
-      if ((d.corrections || []).length) ajouterRappel({type:"faute", en:phraseCorrigee(learner, d.corrections)});
+      if ((d.corrections || []).length) ajouterRappel({type:"faute", en:d.fixed_en || phraseCorrigee(learner, d.corrections)});
       if (enCarte && ++seance.essais >= 2) {
         // deux essais rates sur une carte : on montre la reponse et on avance
         youEl.classList.add("attempt"); renderFix(d, youEl, () => {}); feed.querySelectorAll(".skip").forEach(x => x.remove()); essai = null;
@@ -2004,10 +2044,9 @@ async function ask(learner, youEl, opts = {}){
       });
       scrollDown();
       let dire = RETRY_LINES[Math.floor(Math.random() * RETRY_LINES.length)];
-      // mains libres : on dit aussi les corrections, puisqu'on ne lit pas l'ecran
-      if (mainsLibres) dire += " " + (d.corrections || []).slice(0, 2).filter(c => c.original && c.corrected && c.original !== c.corrected)
-        .map(c => `Instead of "${c.original.replace(/[.?!]+$/, "")}", say "${c.corrected.replace(/[.?!]+$/, "")}".`).join(" ");
-      speak(dire, null, null).then(() => mlApres());
+      // on dit la phrase corrigee en entier : il l'entend, puis la redit
+      if (d.fixed_en) dire += " " + d.fixed_en;
+      speak(dire, null, null).then(() => { if (d.vocab?.en && d.vocab?.fr) ouvrirVocab(d.vocab); mlApres(); });
       return;
     }
     mlEchecs = 0;

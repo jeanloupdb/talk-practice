@@ -316,6 +316,12 @@ body.home .micreg{display:none}
 .mainrow #askBtn{grid-column:3;justify-self:end;width:52px;height:52px;background:var(--soft);color:var(--accent)}
 .mainrow #redoBtn{grid-column:3;justify-self:end;width:52px;height:52px;background:var(--soft);color:var(--accent)}
 .mainrow #redoBtn svg{width:24px;height:24px}
+.mainrow #finBtn{grid-column:3;justify-self:end;width:52px;height:52px;background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
+.mainrow #finBtn svg{width:24px;height:24px}
+.iconbtn.brille{animation:brille .9s var(--ease);border-radius:50%}
+.cfait.ecoute{width:100%;background:none;border:none;color:var(--ink);text-align:left;font-size:1rem;align-items:center}
+.cfait.ecoute .rcplay{color:var(--good)}
+.bmots{margin-top:10px}
 .mainrow #mlBtn{grid-column:1;justify-self:start;width:52px;height:52px;background:var(--soft);color:var(--accent);transition:background .25s,color .25s,box-shadow .25s}
 .mainrow #mlBtn svg{width:24px;height:24px}
 .mainrow #mlBtn.actif{background:var(--accent);color:var(--on-accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 22%,transparent)}
@@ -516,6 +522,7 @@ button:not(:disabled):active{transform:scale(.94)}
       </button>
       <button class="micreg" id="micReg" aria-label="Choisir le micro et la sortie du son"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
       <button class="round" id="mic" aria-label="Parler" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
+      <button class="round" id="finBtn" aria-label="Terminer la conversation" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
       <button class="round" id="redoBtn" aria-label="Recommencer ce défi" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
       <button class="round" id="askBtn" aria-label="Poser une question en français">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><text x="12" y="14.6" text-anchor="middle" font-size="7.5" font-weight="800" font-family="Figtree,system-ui,sans-serif" fill="currentColor" stroke="none" letter-spacing=".3">FR</text></svg>
@@ -1452,7 +1459,9 @@ function afficherDefi(d){
 }
 // on met de cote le defi en cours ; il revient au retour a l'accueil
 function prendreDefi(d, points){ if (!S.leconSuspendue) S.leconSuspendue = S.lecon; S.lecon = {cible:cibleDe(d.id), points, tours:0, sansUsage:0, debut:Date.now()}; saveS(); }
-function boutonDefi(on){ $("redoBtn").hidden = !on; $("askBtn").hidden = !!on; }
+function boutonDefi(on){ $("redoBtn").hidden = !on; $("askBtn").hidden = !!on; $("finBtn").hidden = true; }
+function boutonFin(on){ $("finBtn").hidden = !on; if (on) { $("askBtn").hidden = true; $("redoBtn").hidden = true; } }
+$("finBtn").onclick = () => terminerLibre();
 $("redoBtn").onclick = () => {
   if (busy || enTransition) return;
   if (entrainement) { const d = entrainement; recommencerDefi(d); return; }
@@ -1760,10 +1769,11 @@ const SCHEMA = {
     cible:{type:"STRING"},
     clair:{type:"BOOLEAN"},
     fixed_en:{type:"STRING"},
+    suivi:{type:"STRING"},
     vocab:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}, lies:{type:"ARRAY", items:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}}, required:["fr","en"], propertyOrdering:["fr","en"]}}}, required:["fr","en","lies"], propertyOrdering:["fr","en","lies"]}
   },
-  required:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","clair","fixed_en","vocab"],
-  propertyOrdering:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","clair","fixed_en","vocab"]
+  required:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","clair","fixed_en","suivi","vocab"],
+  propertyOrdering:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","clair","fixed_en","suivi","vocab"]
 };
 
 /* Equilibre des roles : l'apprenant doit aussi POSER des questions (en Irlande, c'est lui qui ira chercher l'info).
@@ -1847,7 +1857,7 @@ let entrainement = null;   // defi deja valide sur lequel on discute ("En parler
 function briller(){ const c = $("leconChip"); c.classList.remove("brille"); void c.offsetWidth; c.classList.add("brille"); }
 function majLeconChip(){
   const chip = $("leconChip"), l = lecon();
-  if (!l || !started) { chip.hidden = true; return; }
+  if (!l || !started || modeLibre()) { chip.hidden = true; return; }
   if (Date.now() < feteDefi) return;
   // on garde le meme element pour que le remplissage glisse au lieu de sauter
   let lbl = chip.querySelector(".lbl"); if (!lbl) { chip.replaceChildren(); lbl = el("span", "lbl"); chip.append(lbl); }
@@ -1866,6 +1876,7 @@ function feterDefi(){
 // Apres chaque phrase jugee : la cible a-t-elle ete utilisee ?
 function suivreLecon(d, texte){
   let l = lecon(); if (!l) return;
+  if (modeLibre()) return;
   if (seance && seance.phase === "rappel") return;   // le rappel ne compte pas pour le defi du jour
   l.tours++;
   let usage = d.cible;
@@ -1896,6 +1907,7 @@ ACQUIRED CHALLENGES (he validated these, they are now part of how he must speak)
 - When he says something in a basic way where one of them would have been the natural choice, propose it through "conseil" ("better" = his sentence rewritten WITH that acquired challenge, "why_fr" starting with "Défi acquis :" and its French name). Only if "better" really uses it; otherwise do not label the conseil that way.`;
 }
 function leconTexte(){
+  if (modeLibre()) return acquisTexte();   // en mode libre, on ne pousse pas le defi du moment
   const l = lecon() || choisirLecon();
   const reste = 3 - l.points;
   return acquisTexte() + `
@@ -1984,7 +1996,30 @@ Keep every French instruction under 14 words.`, SCHEMA_SEANCE);
   const g = (d.guide || []).filter(x => x && x.fr && x.en);
   return {modele:d.modele, guide:g.slice(0, 3), secours:g[3] || g[2] || null, rappels:rap};
 }
+// Mode libre : la conversation ouverte (ni seance, ni discussion d'un defi)
+function modeLibre(){ return !!(started && theme?.libre && !seance && !entrainement); }
+let libre = null;   // {tours, justes, phrases:[], mots:[]} : ce que la conversation a apporte, pour le bilan
+function ouvertureLibre(){
+  const sv = S.suivi, age = sv ? Date.now() - sv.t : 0;
+  if (sv && age > 5 * 3600e3 && age < 6 * 864e5) { delete S.suivi; saveS(); return `He told you about this real moment earlier: "${sv.txt}". Ask him how it went, in ONE short warm question.`; }
+  if (sv && age >= 6 * 864e5) { delete S.suivi; saveS(); }
+  const h = new Date().getHours();
+  return h < 12 ? "It is the morning: ask him, in ONE short question, what he has planned for today."
+       : h >= 17 ? "It is the evening: ask him, in ONE short question, about his day (the best part, or what happened)."
+       : "Ask him, in ONE short question, what he is up to today or what is on his mind.";
+}
+function contexteLibre(learner){
+  if (!learner) return {libre:true, cible:"", reponse:"", ouverture:`FREE MODE OPENING: set ok to true, corrections to []. ${ouvertureLibre()} No greeting speech, no announcement, nothing else. `};
+  return {libre:true, cible:"", ouverture:"", limite:"usually 1 or 2 short sentences, 25 words; up to 45 words ONLY when you give him phrases to prepare a real moment",
+    reponse:`FREE MODE. Work out what he needs from what he says and adapt, without ever announcing a mode:
+  - PREPARING: he mentions a real moment coming up where he will need English (a call, an interview, a message to write, a meeting, ordering, asking for something). Help him get ready for what HE will say: give up to 3 short, natural phrases he can use, then ask him to say his own version; go one step at a time. You may tell him what the other person will probably ask ("They might ask: ..."), but never play a fictional character.
+  - TELLING: he is telling you about his day or something that happened. Listen and dig into HIS story: react in a few words, then ONE short question about what he just said (what happened next, why, how it felt). Never switch to another subject.
+  - CHATTING: otherwise, a natural conversation: react, add a thought of your own, ONE short question.
+  If he speaks FRENCH (fully or partly) to explain what he wants to say or to ask how to say something: that is help-seeking, never a mistake. Give him the natural English for it ("You can say: ...") and end by inviting him to say it now ("Your turn.").
+  Stay on HIS subject as long as he does. Never bring up grammar or a lesson by yourself.`};
+}
 function contexteSeance(learner){
+  if (modeLibre()) return contexteLibre(learner);
   if (!seance && entrainement) {
     const cib = (lecon() || choisirLecon()).cible.en;
     if (!learner) return {cible:"", reponse:"", ouverture:`PRACTICE ON A POINT HE ALREADY KNOWS (${cib}): set ok to true, corrections to []. Ask ONE short question (12 words max) about his real life whose natural answer needs the target. No greeting, no announcement. `};
@@ -2267,7 +2302,7 @@ STEP 1, CHECK the learner's message. ${seanceCtx?.cible ? "GUIDED EXERCISE: " + 
 - Corrections are ONLY about his English (grammar, words, phrasing, pronunciation), never about the content. A question to you, even about something you cannot do or do not have as an AI, is never a mistake: answer it in STEP 2. Example: "what did you do last weekend" is PERFECT English, so ok = true and corrections = []; then in your reply, explain kindly that as an AI you do not have weekends. Never change his question into another question.
 - QUESTIONS deserve special care, they are where French speakers slip: missing do/does/did ("Where you go?"), wrong word order ("Where you are going?"), indirect questions ("Can you tell me where is the station?" -> "where the station is"), missing auxiliary. These ARE mistakes.
 - "learner_asked": true if his message contains a real question to you (even a short one), false otherwise.
-- "ok": true if there is no real mistake in his English, false otherwise.
+- "ok": true if there is no real mistake in his English, false otherwise.${seanceCtx?.libre ? ` A message in FRENCH (asking for help, explaining what he wants to say) is never a mistake: "heard" = his French words as spoken, ok true, corrections [].` : ""}
 - "conseil": NEVER suggest a version that removes today's challenge target (if he used it, keep it). ${seanceCtx?.cible ? "This is a guided exercise: conseil must be all \"\". " : ""}Only when ok is true and EITHER a phrase sounds blunt or unnatural in Ireland, OR his sentence is correct but basic for his level (an overused verb, a very simple structure where the focus structure would fit): OR one of his ACQUIRED CHALLENGES would have been the natural way to say it: "original" = his exact words concerned, "better" = the same idea one notch above (more natural, richer verb, the focus structure, the acquired challenge), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".
 - "corrections": ALL his mistakes (up to 5), never just the first one: wrong word (vocabulary), missing word, wrong tense, preposition, word order, and the challenge target; each with the exact wrong words, the corrected words, a French explanation of 12 words max, addressing the learner with « tu » (never « vous »), "debut"/"fin" (0 and 0 when there is no audio), and "type" = the category in 2 or 3 French words, reused consistently (e.g. "prétérit oublié", "question sans do", "article", "préposition", "pluriel", "ordre des mots", "accord sujet-verbe", "vocabulaire", "prononciation"); use EXACTLY "cible" when the mistake is about today's challenge target (missing or wrong), INCLUDING when he uses a target word where it does not fit (e.g. challenge make/do and he says "doing code": the right verb is "write"): then explanation_fr must say why the target does not fit here and which verb English uses (e.g. « Pour du code, on dit write, ni make ni do. »), and EXACTLY "prononciation" for pronunciation. Empty if ok.
 - "fixed_en": his WHOLE sentence corrected, natural, same meaning and same length (this is what he will say again). "" if ok.
@@ -2275,15 +2310,16 @@ STEP 1, CHECK the learner's message. ${seanceCtx?.cible ? "GUIDED EXERCISE: " + 
 - "obs" (about his message, even when ok): "structures" = the grammar structures he used CORRECTLY, only from this list: ${STRUCTURES.join(", ")} (empty if none); "verbs" = the main verbs he used, base form, 6 max; "level" = the level of this message from 1 (A1) to 10 (C2). For an empty or inaudible message: [], [], 0.
 ${retry}${force}
 
-STEP 2, only if ok is true, REPLY. If ok is false, leave reply_en, reply_fr, hint_en and hint_fr empty and chunks [].
-- "reply_en": your whole reply, READ ALOUD. HARD LIMIT: 1 or 2 short sentences, 25 words in total, never more (he learns by speaking, not by listening to you). ${seanceCtx ? seanceCtx.reponse : `React in a few words to what he said (show you listened), answer if he asked something, then make this move in ONE short sentence: ${FINS[fin]}
+${seanceCtx?.libre ? "STEP 2, ALWAYS REPLY, even when ok is false: the conversation never stops for a mistake (the app shows him the corrections on the side; do not repeat them in your reply)." : "STEP 2, only if ok is true, REPLY. If ok is false, leave reply_en, reply_fr, hint_en and hint_fr empty and chunks []."}
+- "reply_en": your whole reply, READ ALOUD. HARD LIMIT: ${seanceCtx?.limite || "1 or 2 short sentences, 25 words in total, never more"} (he learns by speaking, not by listening to you). ${seanceCtx ? seanceCtx.reponse : `React in a few words to what he said (show you listened), answer if he asked something, then make this move in ONE short sentence: ${FINS[fin]}
   COACH RULES: never a yes/no question; never a detail about a detail; never repeat a question already asked; vary the angles. Ask for ONE thing at a time, never "tell me everything".`}
 - "chunks": reply_en cut into consecutive pieces of 1 to 4 words, in order; joined with spaces they must give reply_en exactly. Keep idioms, phrasal verbs and set expressions in one piece. Punctuation stays attached to its piece.
   "fr" = the French meaning of THAT piece only (never of the next or previous piece). Example: {"en":"Are you looking","fr":"Tu cherches"},{"en":"for a pub?","fr":"un pub ?"}
 - "reply_fr": French translation of reply_en.
 - "hint_en": ${OUVERTS.includes(fin) || fin === "switch" ? "the first sentence of a developed answer he could give" : "a natural QUESTION the learner could ask you now (well formed, polite)"}; "hint_fr": its French translation.
 - "fait": if the learner's message reveals a NEW lasting fact about his REAL life (studies, work, family, hobbies, tastes, projects, places he knows, opinions...) that is not already known above, write it as one short French sentence of 15 words max, about him ("Il ..."). Otherwise "".
-- "cible": ${seanceCtx ? seanceCtx.cible : `today's challenge target is ${JSON.stringify((lecon() || choisirLecon()).cible.en)}. "ok" if this message contains a correct use of it (any form), "ko" if he tried to use it but got it wrong (then it is also a correction), "non" if he did not use it.`}
+- "suivi": if he mentions a REAL moment coming up in the next few days where he will use English (a call, an interview, a meeting, a trip, a message to send), one short French sentence about it with when ("Il a un appel avec son tuteur demain."). Otherwise "".
+- "cible": ${seanceCtx?.libre ? `always "non".` : seanceCtx ? seanceCtx.cible : `today's challenge target is ${JSON.stringify((lecon() || choisirLecon()).cible.en)}. "ok" if this message contains a correct use of it (any form), "ko" if he tried to use it but got it wrong (then it is also a correction), "non" if he did not use it.`}
 - "command": "pause" ONLY if his whole message is a request to pause or stop the conversation (in English or French: "pause", "stop", "on arrête", "let's stop here", "I need a break"); then also set ok to true and corrections to []. Otherwise "".
 
 ${profilTexte()}
@@ -2354,8 +2390,10 @@ function showFixPop(sp, items){
   }
   pop.classList.add("fixpop"); pop.replaceChildren(box); placerPop(sp);
 }
+function briller2(b){ if (!b || b.hidden) return; b.classList.remove("brille"); void b.offsetWidth; b.classList.add("brille"); }
 function renderFix(d, youEl, onSkip){
-  feed.querySelectorAll(".skip, .recast").forEach(b => b.remove());
+  feed.querySelectorAll(".skip").forEach(b => b.remove());
+  if (!modeLibre()) feed.querySelectorAll(".recast").forEach(b => b.remove());   // en mode libre, les phrases corrigees restent dans le fil
   const list = Array.isArray(d.corrections) ? d.corrections.filter(c => c && c.corrected) : [];
   if (d.ok) {
     youEl.classList.add("juste");
@@ -2368,9 +2406,11 @@ function renderFix(d, youEl, onSkip){
     return youEl;
   }
   marquer(youEl, list, "faute");
-  const skip = el("button", "skip", "Passer");
-  skip.onclick = () => { skip.remove(); onSkip(); };
-  youEl.after(skip);
+  if (onSkip) {
+    const skip = el("button", "skip", "Passer");
+    skip.onclick = () => { skip.remove(); onSkip(); };
+    youEl.after(skip);
+  }
   // la phrase entiere corrigee, a redire ; un toucher la fait entendre
   if (d.fixed_en && normPhrase(d.fixed_en) !== normPhrase(youEl.textContent)) {
     const rc = el("button", "recast"); rc.append(el("span", null, d.fixed_en)); const ic = el("span", "rcplay"); ic.innerHTML = PLAY; rc.append(ic);
@@ -2450,7 +2490,7 @@ async function ask(learner, youEl, opts = {}){
         }
         if (opts.force) d.ok = true;
         chunks = Array.isArray(d?.chunks) ? d.chunks.filter(c => c && typeof c.en === "string" && c.en.trim()) : [];
-        if (d.ok && !chunks.length && !(seance && (seance.phase === "rappel" || seance.phase === "guide"))) throw {code:"shape", detail:JSON.stringify(d)};
+        if ((d.ok || modeLibre()) && !chunks.length && !(seance && (seance.phase === "rappel" || seance.phase === "guide"))) throw {code:"shape", detail:JSON.stringify(d)};
         if (!d.ok && !(d.corrections || []).length) throw {code:"shape", detail:JSON.stringify(d)};
         break;
       } catch (e) {
@@ -2475,7 +2515,14 @@ async function ask(learner, youEl, opts = {}){
     if (enCarte && learner && !d.ok && (d.corrections || []).length && d.corrections.every(pron)) { d.pron = d.corrections; d.corrections = []; d.ok = true; if (d.cible !== "non") d.cible = "ok"; }
     const reCible = lecon()?.cible?.re;
     if (reCible instanceof RegExp) for (const c of d.corrections || []) if (c.type !== "prononciation" && reCible.test(String(c.original || ""))) c.type = "cible";
-    if (learner && !d.ok) {
+    // mode libre : la faute est montree dans la phrase, gardee pour plus tard, et la conversation continue
+    const sansBlocage = modeLibre() && learner && !d.ok;
+    if (sansBlocage) {
+      if (d.fixed_en) { ajouterRappel({type:"faute", en:d.fixed_en}); libre?.phrases.push(d.fixed_en); }
+      if (d.vocab?.en && d.vocab?.fr) { ajouterVocab(d.vocab); libre?.mots.push(d.vocab); briller2($("vocBtn")); }
+    }
+    if (modeLibre() && learner && libre) { libre.tours++; if (d.ok) libre.justes++; if (d.suivi) { S.suivi = {txt:d.suivi, t:Date.now()}; saveS(); } }
+    if (learner && !d.ok && !sansBlocage) {
       // Erreur : on montre ce qui ne va pas, on le dit a l'oral, et on attend un nouvel essai.
       history.pop();                                   // la tentative ratee ne fait pas partie de la conversation
       if ((d.corrections || []).length) ajouterRappel({type:"faute", en:d.fixed_en || phraseCorrigee(learner, d.corrections)});
@@ -2513,9 +2560,9 @@ async function ask(learner, youEl, opts = {}){
     mlEchecs = 0; mlErreurs = 0;
 
     if (learner) {
-      if (!opts.force) renderFix(d, youEl);
-      journal.push({role:"user", content:learner, ok:true, forced:!!opts.force, conseil:(!opts.force && d.conseil?.better) ? d.conseil : null, t:Date.now()});
-      if (!essai && !opts.force) setSerie(serie + 1);
+      if (sansBlocage) renderFix(d, youEl, null); else if (!opts.force) renderFix(d, youEl);
+      journal.push({role:"user", content:learner, ok:!sansBlocage, forced:!!opts.force, conseil:(!opts.force && d.conseil?.better) ? d.conseil : null, t:Date.now()});
+      if (!essai && !opts.force && !sansBlocage) setSerie(serie + 1);
       const moi = [...history].reverse().find(h => h.role === "user");
       if (d.learner_asked && moi) { moi.asked = true; compterQuestion(); }
       observer(d); if (!opts.force) suivreLecon(d, learner);
@@ -2542,7 +2589,7 @@ async function ask(learner, youEl, opts = {}){
     prechargerVoix(t.text);
     t.play.classList.remove("ready");
     stats().ia += nbMots(t.text); saveS();
-    (learner && !opts.force ? ding() : Promise.resolve()).then(() => speak(t.text, t.play, t.reveal)).then(() => {
+    (learner && !opts.force && !sansBlocage ? ding() : Promise.resolve()).then(() => speak(t.text, t.play, t.reveal)).then(() => {
       if (seance && seance.phase === "libre" && seance.defiFait) { afficherBilan(); return; }
       if (seance && seance.phase === "libre" && seance.libreTours >= 3) { lancerSecours(); return; }
       mlApres();
@@ -2621,7 +2668,7 @@ function allerAccueil(){
   $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("themeName").hidden = false; $("newTheme").hidden = true; $("leconChip").hidden = true;
   mic.disabled = true;
   if (S.leconSuspendue) { S.lecon = S.leconSuspendue; delete S.leconSuspendue; saveS(); }
-  entrainement = null; boutonDefi(false);
+  entrainement = null; libre = null; boutonDefi(false);
   feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home"); majDepart();
   if (validationAccueil) { const v = validationAccueil; validationAccueil = null; animerValidation(v); }
   if (window.history.state?.tp === "in") window.history.replaceState(null, "");
@@ -2642,8 +2689,29 @@ function begin(){
 function commencerLibre(){
   if (!S.key) { openSettings(); return; }
   setTheme(LIBRE);
-  ouvrirFil(true); mic.disabled = false;   // le fil s'ouvre, a toi de toucher le micro quand tu veux
-  if (mainsLibres) ecouterAuto();         // sauf en mains libres, ou l'ecoute demarre seule
+  ouvrirFil(true); history = [];
+  libre = {tours:0, justes:0, phrases:[], mots:[]}; boutonFin(true); majLeconChip();
+  ask(null);   // l'IA ouvre toujours, avec une seule question (selon le moment, ou le suivi d'un vrai moment)
+}
+// Terminer le mode libre : ce que la conversation a apporte, puis l'accueil
+function terminerLibre(){
+  if (busy) return;
+  if (!libre || !libre.tours) { allerAccueil(); return; }
+  stopSpeak(); mlStop(); mic.disabled = true; boutonFin(false); $("askBtn").hidden = true;
+  noterJour();
+  const c = carte("bilan", []);
+  const n = serieJours();
+  const tuile = (ico, cls, val, lib) => { const t = el("div", "btuile " + cls); const i = el("span", "bico"); i.innerHTML = ico; t.append(i, el("b", null, String(val)), el("span", null, lib)); return t; };
+  const tuiles = el("div", "btuiles");
+  tuiles.append(tuile(ICO_FLAMME, "flamme", n, n > 1 ? "jours d'affilée" : "jour"), tuile(ICO_OK, "juste", libre.justes, libre.justes > 1 ? "phrases justes" : "phrase juste"));
+  c.append(tuiles);
+  // les phrases a garder (corrigees) : touchables pour les reentendre ; elles reviendront en rappel
+  const phrases = [...new Set(libre.phrases)].slice(-3);
+  if (phrases.length) { const ul = el("div", "cfaits"); for (const f of phrases) { const l = el("button", "cfait ecoute"); const i = el("span", "rcplay"); i.innerHTML = PLAY; l.append(i, el("span", null, f)); l.onclick = () => { unlockAudio(); speak(f, l, null); }; ul.append(l); } c.append(ul); }
+  if (libre.mots.length) { const w = el("div", "pills bmots"); for (const m of libre.mots.slice(-4)) w.append(el("span", "pill", m.en)); w.onclick = () => ouvrirFiches(); c.append(w); }
+  const fin = el("button", "gros cfin", "Terminer"); fin.onclick = () => { if (fin.disabled) return; fin.disabled = true; confettis(fin); ding(); setTimeout(allerAccueil, 650); };
+  c.append(fin);
+  nouvelleEtape(c); ding();
 }
 
 /* ---------- Réglages : une liste, des sous-pages, enregistrement immédiat (pas de bouton Enregistrer) ---------- */

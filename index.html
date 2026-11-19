@@ -308,7 +308,10 @@ body.home #stage::after{content:"";position:absolute;left:0;right:0;bottom:0;hei
 footer{padding:10px 18px 16px}
 .status{font-size:.88rem;color:var(--muted);min-height:1.2em;margin:0 0 10px;text-align:center}
 .row{display:flex;gap:10px;align-items:flex-end}
-.mainrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+.mainrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;position:relative}
+.micreg{position:absolute;z-index:2;left:calc(50% + 20px);top:-6px;width:30px;height:30px;border-radius:50%;border:2px solid var(--bg);background:var(--soft);color:var(--accent);display:grid;place-items:center;padding:0}
+.micreg svg{width:15px;height:15px}
+body.home .micreg{display:none}
 .mainrow #mic{grid-column:2}
 .mainrow #askBtn{grid-column:3;justify-self:end;width:52px;height:52px;background:var(--soft);color:var(--accent)}
 .mainrow #redoBtn{grid-column:3;justify-self:end;width:52px;height:52px;background:var(--soft);color:var(--accent)}
@@ -373,7 +376,8 @@ footer{padding:10px 18px 16px}
 .reglabel small{display:block;color:var(--muted);font-size:.82rem;font-weight:400}
 .regval{color:var(--muted);font-size:.92rem;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .regrow .fl{color:var(--muted);font-size:1.3rem;line-height:1}
-.regrow .check{width:22px;text-align:right;color:var(--accent);font-weight:700}
+.regrow .check{width:22px;flex:none}
+.regrow .check.okico{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}
 .regrow.cur{background:color-mix(in srgb,var(--accent) 14%,transparent)}
 .regrow.cur .reglabel{color:var(--accent);font-weight:600}
 .regrow.alerte .reglabel{color:var(--bad)}
@@ -510,6 +514,7 @@ button:not(:disabled):active{transform:scale(.94)}
       <button class="round" id="mlBtn" aria-label="Mode mains libres" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9.5" y="4" width="5" height="9" rx="2.5"/><path d="M7.5 11a4.5 4.5 0 0 0 9 0M12 15.5V19"/><path d="M4 8.5a7.5 7.5 0 0 0 0 6M20 8.5a7.5 7.5 0 0 1 0 6"/></svg>
       </button>
+      <button class="micreg" id="micReg" aria-label="Choisir le micro et la sortie du son"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
       <button class="round" id="mic" aria-label="Parler" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
       <button class="round" id="redoBtn" aria-label="Recommencer ce défi" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
       <button class="round" id="askBtn" aria-label="Poser une question en français">
@@ -530,6 +535,12 @@ button:not(:disabled):active{transform:scale(.94)}
   <div class="sheet" role="dialog" aria-labelledby="rolesTitle">
     <div class="mothead"><h2 id="rolesTitle">Ou plutôt…</h2><button class="iconbtn" id="rolesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="rolesList"></div>
+  </div>
+</div>
+<div class="sheetwrap" id="micro" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="microTitle">
+    <div class="mothead"><h2 id="microTitle">Micro et son</h2><button class="iconbtn" id="microClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div id="microBody"></div>
   </div>
 </div>
 <div class="sheetwrap" id="vocab" hidden>
@@ -605,7 +616,7 @@ function setStatus(t){ statusEl.textContent = t || ""; homeNote.textContent = t 
 /* Bouton retour du telephone (historique du navigateur) : une seule entree "dedans" posee des qu'on entre
    dans une conversation ou qu'on ouvre une fenetre. Retour = fermer la fenetre ouverte, sinon revenir a
    l'accueil ; on ne quitte l'appli qu'en faisant retour depuis l'accueil. */
-const FENETRES = ["settings", "mot", "roles", "qa", "vocab"];
+const FENETRES = ["settings", "mot", "roles", "qa", "vocab", "micro"];
 function navDedans(){ if (window.history.state?.tp !== "in") window.history.pushState({tp:"in"}, ""); }
 function ouvrir(id){ navDedans(); $(id).hidden = false; }
 window.addEventListener("popstate", () => {
@@ -657,7 +668,7 @@ majVocBtn();
 let tts = null, ttsState = "idle", actx = null, currentSrc = null, playToken = 0, speakingBtn = null, enLecture = false;
 const audioCache = new Map();
 function unlockAudio(){
-  try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch {}
+  try { if (!actx) { actx = new (window.AudioContext || window.webkitAudioContext)(); if (S.sortieId) appliquerSortie(); } if (actx.state === "suspended") actx.resume(); } catch {}
 }
 function voixKokoro(){ return !/^(g:|az:|sys$)/.test(S.voice); }  // plus proposee, gardee pour d'anciens reglages
 async function loadTTS(){
@@ -1009,9 +1020,51 @@ let fluxGarde = null, fluxTimer = 0;
 async function obtenirFlux(){
   clearTimeout(fluxTimer);
   if (fluxGarde && fluxGarde.getAudioTracks().some(t => t.readyState === "live")) return fluxGarde;
-  fluxGarde = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, channelCount:1}});
+  const audio = {echoCancellation:true, noiseSuppression:true, channelCount:1};
+  if (S.micId) audio.deviceId = {exact:S.micId};
+  try { fluxGarde = await navigator.mediaDevices.getUserMedia({audio}); }
+  catch (e) {
+    // l'entree choisie n'est plus la (casque debranche) : on revient au micro par defaut
+    if (!S.micId || e.name === "NotAllowedError") throw e;
+    delete audio.deviceId; fluxGarde = await navigator.mediaDevices.getUserMedia({audio});
+  }
   return fluxGarde;
 }
+// la sortie du son (voix de l'IA, sons) : seulement si le navigateur sait la choisir
+async function appliquerSortie(){
+  try { if (actx?.setSinkId) await actx.setSinkId(S.sortieId || ""); } catch {}
+}
+const nomEntree = l => /bluetooth|bt\b|airpod|buds/i.test(l) ? "Écouteurs Bluetooth" : /head|casque|wired|filaire|usb/i.test(l) ? "Casque ou écouteurs" : /default|défaut|^$/i.test(l) ? "Par défaut" : l;
+async function ouvrirMicro(){
+  unlockAudio();
+  const body = $("microBody"); body.replaceChildren(el("div", "dots")); body.firstChild.append(el("i"), el("i"), el("i"));
+  ouvrir("micro");
+  let devs = [];
+  try {
+    // il faut le droit sur le micro pour voir le nom des appareils
+    if (!fluxGarde) { const f = await obtenirFlux(); garderFlux(); }
+    devs = await navigator.mediaDevices.enumerateDevices();
+  } catch {}
+  const entrees = devs.filter(d => d.kind === "audioinput" && d.deviceId !== "communications");
+  const sorties = devs.filter(d => d.kind === "audiooutput" && d.deviceId !== "communications");
+  const liste = (titre, items, actuel, choisir) => {
+    const bloc = [el("div", "profsec", titre)];
+    const vus = new Set();
+    for (const d of items) {
+      const nom = nomEntree(d.label || ""); const id = d.deviceId === "default" ? "" : d.deviceId;
+      if (vus.has(nom + id)) continue; vus.add(nom + id);
+      bloc.push(ligneRadio(nom, null, (actuel || "") === id, () => { choisir(id); ouvrirMicro(); }));
+    }
+    if (items.length <= 1) bloc.push(el("p", "tip", "Ton téléphone ne propose que celui-ci."));
+    return bloc;
+  };
+  const blocs = [...liste("Micro", entrees, S.micId, id => { S.micId = id; saveS(); libererFlux(); })];
+  if (actx?.setSinkId && sorties.length) blocs.push(...liste("Son", sorties, S.sortieId, id => { S.sortieId = id; saveS(); appliquerSortie(); }));
+  else blocs.push(el("div", "profsec", "Son"), el("p", "tip", "Le son sort là où ton téléphone l'envoie (casque branché ou haut-parleur)."));
+  body.replaceChildren(...blocs);
+}
+$("micReg").onclick = () => { stopSpeak(); ouvrirMicro(); };
+$("micro").onclick = e => { if (e.target.id === "micro" || e.target.closest("#microClose")) fermer("micro"); };
 function garderFlux(){ clearTimeout(fluxTimer); fluxTimer = setTimeout(libererFlux, 20000); }
 function libererFlux(){ clearTimeout(fluxTimer); fluxGarde?.getTracks().forEach(t => t.stop()); fluxGarde = null; }
 document.addEventListener("visibilitychange", () => { if (document.hidden && !(enreg && enreg.state === "recording")) libererFlux(); });
@@ -2618,7 +2671,8 @@ function ligneReg(label, valeur, onclick, cls){
 function ligneRadio(label, sub, actif, onclick){
   const b = el("button", "regrow" + (actif ? " cur" : ""));
   const t = el("span", "reglabel", label); if (sub) t.append(el("small", null, sub));
-  b.append(t, el("span", "check", actif ? "✓" : "")); b.onclick = onclick; return b;
+  const ck = el("span", "check" + (actif ? " okico" : "")); if (actif) ck.innerHTML = ICO_OK;   // la meme coche ronde que partout
+  b.append(t, ck); b.onclick = onclick; return b;
 }
 function champReg(label, id, valeur, type, placeholder, onInput){
   const w = el("div", "regfield"), l = el("label", null, label), i = el("input");

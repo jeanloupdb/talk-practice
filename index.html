@@ -191,7 +191,7 @@ svg{width:24px;height:24px;flex:none}
 .sujetligne .fl{color:var(--muted);font-size:1.3rem;line-height:1}
 .sujetligne:active{background:color-mix(in srgb,var(--accent) 8%,transparent)}
 .titleblock{min-width:0;flex:1}
-.marque{display:none;width:38px;height:33px;overflow:visible}
+.marque{display:none;width:40px;height:27px;overflow:visible}
 .aghome{display:block;width:min(46vw,190px);height:auto;margin:0 auto 22px;overflow:visible;cursor:pointer}
 .agconv{display:block;width:62px;height:48px;margin:0 auto 2px;overflow:visible;pointer-events:none}
 body.home .marque{display:block}
@@ -508,7 +508,7 @@ button:not(:disabled):active{transform:scale(.94)}
     <div class="blobs" aria-hidden="true"><span class="blob b1"><i></i></span><span class="blob b2"><i></i></span><span class="blob b3"><i></i></span></div><span class="voix" aria-hidden="true"></span>
     <div class="bar">
       <button class="iconbtn back" id="newTheme" aria-label="Retour à l’accueil" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <div class="titleblock"><span class="title"><svg class="marque" id="agLogo" viewBox="22 28 56 48" role="img" aria-label="Talk Practice"></svg><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span><span class="theme leconchip" id="leconChip" hidden></span></div>
+      <div class="titleblock"><span class="title"><svg class="marque" id="agLogo" viewBox="26 34 48 32" role="img" aria-label="Talk Practice"></svg><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span><span class="theme leconchip" id="leconChip" hidden></span></div>
       <div class="barbtns">
         <button class="iconbtn" id="vocBtn" aria-label="Mes fiches de vocabulaire" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M7 10h7M7 14h4"/></svg>
@@ -521,7 +521,7 @@ button:not(:disabled):active{transform:scale(.94)}
     <p id="voiceStatus"></p>
     <div id="feed" aria-live="polite">
       <div class="empty" id="empty">
-        <svg id="agHome" class="aghome" viewBox="14 20 72 64" aria-hidden="true"></svg>
+        <svg id="agHome" class="aghome" viewBox="14 24 72 52" aria-hidden="true"></svg>
         <div class="choix">
           <div class="split">
             <button class="defi" id="go">
@@ -542,7 +542,7 @@ button:not(:disabled):active{transform:scale(.94)}
   </section>
 
   <footer>
-    <svg id="agConv" class="agconv" viewBox="14 24 72 56" aria-hidden="true"></svg>
+    <svg id="agConv" class="agconv" viewBox="14 26 72 48" aria-hidden="true"></svg>
     <p class="status" id="status"></p>
     <div class="row mainrow">
       <button class="round" id="mlBtn" aria-label="Mode mains libres" hidden>
@@ -712,33 +712,28 @@ function agPoly(pts){
 }
 // une agCourbe y = f(u), u de -1 a 1, sur une largeur donnee
 const agCourbe = (larg, f) => Array.from({length:AG_NP}, (_, k) => { const u = -1 + 2 * k / (AG_NP - 1); return [50 + u * larg / 2, f(u)]; });
-const AG_YEUX = 43, AG_BOUCHE = 63;
+const AG_YEUX = 50, AG_BOUCHE = 50, AG_EX = 13;   // yeux et ligne au meme centre : jamais ensemble
 
 // --- les etats : la ligne, les yeux, l'allure ---
 // yeux : h hauteur ; e = 0 capsule, 1 arc ; s = +1 arc rieur, -1 arc doux ; op opacite ; clin = clin d'oeil droit
+const AG_SANS = t => agCourbe(20, u => AG_BOUCHE);   // la ligne au repos, invisible, prete a s'ouvrir
 const AG_ETATS = {
-  repos:    {nom:"Au repos", quand:"Il respire, cligne des yeux et te suit du regard.", regard:true, cligne:true,
-             ligne:t => agCourbe(26, u => AG_BOUCHE + 4.5 * (1 - u * u)), yeux:{h:15}},
-  salut:    {nom:"Il te salue", quand:"À l'ouverture : un clin d'œil et un grand sourire.",
-             ligne:t => agCourbe(32, u => AG_BOUCHE - 1 + 7.5 * (1 - u * u)), yeux:{h:15, clin:1}, tilt:5, saut:true},
-  ecoute:   {nom:"Il t'écoute", quand:"Yeux grands ouverts ; sa ligne frémit au rythme de ta voix.", vif:true,
-             ligne:t => { const v = agNiv(.25 + .75 * Math.abs(Math.sin(t / 160) * Math.sin(t / 370 + 1))); return agCourbe(34, u => AG_BOUCHE + 1 + (1 - u * u) * v * 3.2 * Math.sin(u * 7 - t / 90)); }, yeux:{h:19}, tilt:-3},
-  reflechit:{nom:"Il réfléchit", quand:"Regard en l'air, trois points qui ondulent.", points:true,
-             ligne:t => agCourbe(18, u => AG_BOUCHE + 1), ligneOp:0, yeux:{h:13, dx:3.2, dy:-3.5}, tilt:4},
-  parle:    {nom:"Il parle", quand:"Sa ligne devient l'onde de sa voix.", vif:true,
-             ligne:t => { const v = agNiv(.35 + .65 * Math.abs(Math.sin(t / 105) * Math.sin(t / 251 + 1))); return agCourbe(50, u => AG_BOUCHE - 1 + Math.pow(1 - u * u, 1.4) * v * 11 * (Math.sin(u * 6.5 - t / 70) * .65 + Math.sin(u * 11 + t / 55) * .35)); }, yeux:{h:12}},
-  coche:    {nom:"Phrase juste", quand:"La ligne se redessine en coche, en vert, avec le ding.", vert:1, saut:true, larg:7.5,
-             ligne:t => agPoly([[31, 51], [44, 64], [69, 36]]), yeux:{h:15, op:0}},
-  content:  {nom:"Content", quand:"Puis il revient : yeux rieurs, large sourire.",
-             ligne:t => agCourbe(34, u => AG_BOUCHE - 2 + 9 * (1 - u * u)), yeux:{e:1, s:1}, rebonds:true},
-  doux:     {nom:"Une faute", quand:"Regard doux, tête penchée, petit sourire en coin.",
-             ligne:t => agCourbe(20, u => AG_BOUCHE + 2 + 2.2 * (1 - u * u) - u * 1.6), yeux:{e:1, s:-1}, tilt:-9},
-  reessaie: {nom:"Réessaie", quand:"La ligne s'enroule en flèche qui tourne : à toi.", fleche:true, larg:6.5,
-             ligne:t => { const a0 = t / 420; return Array.from({length:AG_NP}, (_, k) => { const a = a0 + k / (AG_NP - 1) * 4.9; return [50 + Math.cos(a) * 15, 50 + Math.sin(a) * 15]; }); }, yeux:{h:15, op:0}},
-  fete:     {nom:"Défi validé", quand:"Il saute, des étincelles jaillissent, les confettis partent.", etincelles:true,
-             ligne:t => agCourbe(36, u => AG_BOUCHE - 3 + 10.5 * (1 - u * u)), yeux:{e:1, s:1}, danse:true},
-  dort:     {nom:"Il somnole", quand:"Yeux fermés, souffle lent. Touche-le pour le réveiller.", zzz:true,
-             ligne:t => agCourbe(14, u => AG_BOUCHE + 2 + 1.2 * (1 - u * u) * (1 + .4 * Math.sin(t / 1100))), yeux:{h:0, e:1, s:-1, plat:1}, tilt:-7}
+  repos:    {nom:"Au repos", quand:"Deux yeux qui clignent, respirent et te suivent du regard.", regard:true, cligne:true, ligne:AG_SANS, ligneOp:0, yeux:{h:13}},
+  salut:    {nom:"Il te salue", quand:"À l'ouverture : un clin d'œil et un petit saut.", ligne:AG_SANS, ligneOp:0, yeux:{h:13, clin:1}, tilt:7, saut:true},
+  ecoute:   {nom:"Il t'écoute", quand:"Ses yeux s'ouvrent grand et battent avec ta voix.", vifYeux:true, ligne:AG_SANS, ligneOp:0,
+             yeux:{h:t => 15 + 13 * agNiv(Math.abs(Math.sin(t / 160) * Math.sin(t / 370 + 1)))}, tilt:-3},
+  curieux:  {nom:"Curieux", quand:"Quand il te pose une question : un œil plus grand, la tête penchée.", ligne:AG_SANS, ligneOp:0, yeux:{h:11, hd:8, dx:1.5}, tilt:9},
+  reflechit:{nom:"Il réfléchit", quand:"Les yeux fondent en trois points qui ondulent.", points:true, ligne:AG_SANS, ligneOp:0, yeux:{h:4, op:0, dy:-2}, tilt:4},
+  parle:    {nom:"Il parle", quand:"Les yeux s'étirent en une onde : sa voix.", vif:true,
+             ligne:t => { const v = agNiv(.35 + .65 * Math.abs(Math.sin(t / 105) * Math.sin(t / 251 + 1))); return agCourbe(54, u => AG_BOUCHE + Math.pow(1 - u * u, 1.4) * v * 13 * (Math.sin(u * 6.5 - t / 70) * .65 + Math.sin(u * 11 + t / 55) * .35)); }, yeux:{h:3, op:0}},
+  coche:    {nom:"Phrase juste", quand:"Une coche verte, qui claque avec le ding.", vert:1, saut:true, larg:8,
+             ligne:t => agPoly([[31, 51], [44, 64], [69, 36]]), yeux:{h:3, op:0}},
+  content:  {nom:"Content", quand:"Puis les yeux reviennent, rieurs, et sautillent.", ligne:AG_SANS, ligneOp:0, yeux:{e:1, s:1}, rebonds:true},
+  doux:     {nom:"Une faute", quand:"Regard doux et penché : on réessaie, sans drame.", ligne:AG_SANS, ligneOp:0, yeux:{e:1, s:-1, hd:-2}, tilt:-11},
+  reessaie: {nom:"Réessaie", quand:"Une flèche qui tourne : à toi.", fleche:true, larg:7,
+             ligne:t => { const a0 = t / 420; return Array.from({length:AG_NP}, (_, k) => { const a = a0 + k / (AG_NP - 1) * 4.9; return [50 + Math.cos(a) * 15, 50 + Math.sin(a) * 15]; }); }, yeux:{h:3, op:0}},
+  fete:     {nom:"Défi validé", quand:"Yeux rieurs, il danse, des étincelles jaillissent.", etincelles:true, ligne:AG_SANS, ligneOp:0, yeux:{e:1, s:1}, danse:true},
+  dort:     {nom:"Il somnole", quand:"Yeux fermés, souffle lent. Touche-le pour le réveiller.", zzz:true, ligne:AG_SANS, ligneOp:0, yeux:{h:0, e:1, s:-1, plat:1}, tilt:-7}
 };
 
 function creerAgent(svg, id, opts = {}){
@@ -746,9 +741,9 @@ function creerAgent(svg, id, opts = {}){
   svg.innerHTML = `<defs><linearGradient id="g${id}" gradientUnits="userSpaceOnUse" x1="22" y1="28" x2="78" y2="76"><stop class="c1" offset="0" stop-color="#2F6BF2"/><stop class="c2" offset="1" stop-color="#7B5CF0"/></linearGradient></defs>
   <g class="t" fill="none" stroke="${blanc ? "#fff" : `url(#g${id})`}" stroke-linecap="round" stroke-linejoin="round">
     <g class="ray">${`<path/>`.repeat(6)}</g>
-    <path class="og" stroke-width="7.5"/><path class="od" stroke-width="7.5"/>
+    <path class="og"/><path class="od"/>
     <path class="li"/><path class="fl" stroke-width="6.5"/>
-    <g class="pt" stroke-width="7.5"><path/><path/><path/></g>
+    <g class="pt" stroke-width="9"><path/><path/><path/></g>
     <g class="zz" stroke-width="2.6"><path/><path/></g>
   </g>`;
   const q = s => svg.querySelector(s), qa = s => [...svg.querySelectorAll(s)];
@@ -759,7 +754,7 @@ function creerAgent(svg, id, opts = {}){
   const now = performance.now();
   const pts = AG_ETATS.repos.ligne(now).map(p => [R(p[0]), R(p[1])]);
   const s = {h:R(15), e:R(0, .14, .62), sg:R(1), op:R(1, .2, .5), clin:R(0, .2, .6), dx:R(0, .1, .75), dy:R(0, .1, .75), cl:R(1, .5, .3),
-             tilt:R(0, .07, .8), sc:R(1, .16, .72), y:R(0, .14, .7), vert:R(0, .12, .6), lop:R(1, .2, .5), larg:R(6, .15, .65), pop:R(0, .2, .5), fop:R(0, .2, .5), zop:R(0, .05, .8), rop:R(0, .2, .5), plat:R(0)};
+             tilt:R(0, .07, .8), sc:R(1, .16, .72), y:R(0, .14, .7), vert:R(0, .12, .6), lop:R(1, .2, .5), larg:R(6, .15, .65), pop:R(0, .2, .5), fop:R(0, .2, .5), zop:R(0, .05, .8), rop:R(0, .2, .5), plat:R(0), hd:R(0, .14, .62)};
   const api = {etat:"repos", cx:0, cy:0, next:now + 1800, coup(){ s.sc.vel -= .09; s.y.vel -= 2.4; }};
   function maj(t){
     const E = AG_ETATS[api.etat], Y = E.yeux;
@@ -776,30 +771,30 @@ function creerAgent(svg, id, opts = {}){
     el.fl.setAttribute("opacity", fo.toFixed(2));
     // les trois points de reflexion
     s.pop.c = E.points ? 1 : 0; const po = Math.max(0, Math.min(1, pas(s.pop)));
-    el.pt.forEach((p, i) => { const x = 50 + (i - 1) * 11 * po, y = AG_BOUCHE + 1 - 4.5 * Math.max(0, Math.sin(t / 190 - i * .9)) * po; p.setAttribute("d", `M${x.toFixed(2)} ${y.toFixed(2)}h.01`); p.setAttribute("opacity", po.toFixed(2)); });
+    el.pt.forEach((p, i) => { const x = 50 + (i - 1) * 13 * po, y = AG_BOUCHE - 5.5 * Math.max(0, Math.sin(t / 190 - i * .9)) * po; p.setAttribute("d", `M${x.toFixed(2)} ${y.toFixed(2)}h.01`); p.setAttribute("opacity", po.toFixed(2)); });
     // les yeux
     if (!fixe && E.cligne && t > api.next) { s.cl.c = .08; setTimeout(() => s.cl.c = 1, 110); api.next = t + 2200 + Math.random() * 2600; }
-    s.h.c = Y.h ?? 15; s.e.c = Y.e || 0; s.sg.c = Y.s || 1; s.op.c = Y.op ?? 1; s.clin.c = Y.clin || 0; s.plat.c = Y.plat || 0;
+    s.h.c = typeof Y.h === "function" ? Y.h(t) : (Y.h ?? 13); s.h.k = E.vifYeux ? .4 : .12; s.h.d = E.vifYeux ? .45 : .7; s.hd.c = Y.hd || 0; s.e.c = Y.e || 0; s.sg.c = Y.s || 1; s.op.c = Y.op ?? 1; s.clin.c = Y.clin || 0; s.plat.c = Y.plat || 0;
     s.dx.c = Y.dx ?? (E.regard ? api.cx * 3.2 : 0); s.dy.c = Y.dy ?? (E.regard ? api.cy * 2.6 : 0);
-    const h = pas(s.h), e = Math.max(0, Math.min(1, pas(s.e))), sg = pas(s.sg), op = Math.max(0, Math.min(1, pas(s.op))), cl = Math.max(.05, pas(s.cl)), clin = Math.max(0, Math.min(1, pas(s.clin))), dx = pas(s.dx), dy = pas(s.dy), plat = pas(s.plat);
-    const oeil = (p, x, ee) => {
+    const h = pas(s.h), e = Math.max(0, Math.min(1, pas(s.e))), sg = pas(s.sg), op = Math.max(0, Math.min(1, pas(s.op))), cl = Math.max(.05, pas(s.cl)), clin = Math.max(0, Math.min(1, pas(s.clin))), dx = pas(s.dx), dy = pas(s.dy), plat = pas(s.plat), hd = pas(s.hd);
+    const oeil = (p, x, ee, plus = 0) => {
       // capsule -> point -> arc : la hauteur se tasse, puis la largeur s'ouvre
-      const hh = h * cl * Math.max(0, 1 - 2 * ee), ww = 11 * Math.max(0, 2 * ee - 1), cour = ww * .5 * sg * (1 - plat * .85);
+      const hh = Math.max(0, h + plus) * cl * Math.max(0, 1 - 2 * ee), ww = 15 * Math.max(0, 2 * ee - 1), cour = ww * .55 * sg * (1 - plat * .85);
       x += dx; const y = AG_YEUX + dy;
       p.setAttribute("d", `M${(x - ww / 2).toFixed(2)} ${(y - hh / 2 + cour * .3).toFixed(2)}Q${x.toFixed(2)} ${(y - cour).toFixed(2)} ${(x + ww / 2).toFixed(2)} ${(y + hh / 2 + cour * .3).toFixed(2)}`);
-      p.setAttribute("opacity", op.toFixed(2)); p.setAttribute("stroke-width", agMix(7.5, 5.6, Math.max(0, 2 * ee - 1)).toFixed(2));
+      p.setAttribute("opacity", op.toFixed(2)); p.setAttribute("stroke-width", agMix(10.5, 7, Math.max(0, 2 * ee - 1)).toFixed(2));
     };
-    oeil(el.og, 39, e); oeil(el.od, 61, Math.max(e, clin));
+    oeil(el.og, 50 - AG_EX, e); oeil(el.od, 50 + AG_EX, Math.max(e, clin), hd);
     // les z du sommeil, les etincelles de la fete
     s.zop.c = E.zzz ? 1 : 0; const zo = pas(s.zop);
-    el.zz.forEach((z, i) => { const ph = ((t / 2400) + i * .5) % 1, x = 66 + ph * 7 + i * 3, y = 34 - ph * 13, g = 5 - i; z.setAttribute("d", `M${x} ${y}h${g}l${-g} ${g}h${g}`); z.setAttribute("opacity", Math.max(0, zo * Math.sin(ph * Math.PI) * .8).toFixed(2)); });
+    el.zz.forEach((z, i) => { const ph = ((t / 2400) + i * .5) % 1, x = 68 + ph * 7 + i * 3, y = 40 - ph * 13, g = 5 - i; z.setAttribute("d", `M${x} ${y}h${g}l${-g} ${g}h${g}`); z.setAttribute("opacity", Math.max(0, zo * Math.sin(ph * Math.PI) * .8).toFixed(2)); });
     s.rop.c = E.etincelles ? 1 : 0; const ro = Math.max(0, pas(s.rop));
-    el.ray.forEach((r, i) => { const an = i * 1.047 + .5, ph = (t / 700 + i * .37) % 1, r1 = 30 + ph * 8, r2 = r1 + 5 * Math.sin(ph * Math.PI); r.setAttribute("d", `M${(50 + Math.cos(an) * r1).toFixed(2)} ${(52 + Math.sin(an) * r1).toFixed(2)}L${(50 + Math.cos(an) * r2).toFixed(2)} ${(52 + Math.sin(an) * r2).toFixed(2)}`); r.setAttribute("stroke-width", 3.4); r.setAttribute("opacity", (ro * Math.sin(ph * Math.PI)).toFixed(2)); });
+    el.ray.forEach((r, i) => { const an = i * 1.047 + .5, ph = (t / 700 + i * .37) % 1, r1 = 27 + ph * 8, r2 = r1 + 5 * Math.sin(ph * Math.PI); r.setAttribute("d", `M${(50 + Math.cos(an) * r1).toFixed(2)} ${(50 + Math.sin(an) * r1).toFixed(2)}L${(50 + Math.cos(an) * r2).toFixed(2)} ${(50 + Math.sin(an) * r2).toFixed(2)}`); r.setAttribute("stroke-width", 3.4); r.setAttribute("opacity", (ro * Math.sin(ph * Math.PI)).toFixed(2)); });
     // l'allure : souffle, penche, sauts
     s.tilt.c = (E.tilt || 0) + (E.danse ? Math.sin(t / 230) * 6 : 0);
     s.sc.c = 1 + (fixe ? 0 : Math.sin(t / 950) * .018);
     s.y.c = E.danse ? -Math.abs(Math.sin(t / 230)) * 9 : E.rebonds ? -Math.max(0, Math.sin(t / 200)) * 3.5 : 0;
-    el.t.setAttribute("transform", `translate(0 ${pas(s.y).toFixed(2)}) translate(50 52) rotate(${pas(s.tilt).toFixed(2)}) scale(${pas(s.sc).toFixed(4)}) translate(-50 -52)`);
+    el.t.setAttribute("transform", `translate(0 ${pas(s.y).toFixed(2)}) translate(50 50) rotate(${pas(s.tilt).toFixed(2)}) scale(${pas(s.sc).toFixed(4)}) translate(-50 -50)`);
     // la couleur glisse vers le vert pour la coche
     if (!blanc) { const v = Math.max(0, Math.min(1, pas(s.vert))); const c = (a, b) => "rgb(" + a.map((x, i) => Math.round(agMix(x, b[i], v))).join(",") + ")"; el.c1.setAttribute("stop-color", c([47, 107, 242], [24, 160, 88])); el.c2.setAttribute("stop-color", c([123, 92, 240], [43, 182, 115])); }
   }

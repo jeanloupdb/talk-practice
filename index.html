@@ -140,6 +140,10 @@ svg{width:24px;height:24px;flex:none}
 .split{display:flex;gap:4px}
 .defi{background:linear-gradient(135deg,#2457C5,#5E4FDB);color:#fff;border:none;box-shadow:0 12px 34px color-mix(in srgb,#2457C5 28%,transparent)}
 .split #go{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:20px 20px 18px;border-radius:26px 12px 12px 26px;text-align:left}
+.defisur{display:inline-flex;align-items:center;gap:6px;margin-bottom:-4px;font-size:.8rem;font-weight:700;letter-spacing:.02em;opacity:.82}
+.defisur svg{width:13px;height:13px}
+.portes{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.portes .gros{padding:16px 14px;white-space:nowrap}
 .defititre{font-size:clamp(1.25rem,5.6vw,1.55rem);font-weight:700;line-height:1.15;letter-spacing:-.01em}
 .defibas{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px}
 .defiseg{position:relative;display:block;width:88px;height:6px;border-radius:3px;background:rgba(255,255,255,.28);overflow:hidden;--p:0}
@@ -196,6 +200,11 @@ body:not(.home) .leconchip{font-size:1rem;font-weight:600;color:var(--ink)}
 .iconbtn.back{margin-left:-10px;margin-right:-4px}
 .conv{display:flex;align-items:center;gap:8px}
 .passe{opacity:.75}
+.notionbtn{align-self:flex-end;display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border:none;border-radius:999px;padding:9px 16px;font-weight:600;font-size:.92rem;text-align:left;line-height:1.3;animation:entre .3s var(--ease) both}
+.notionbtn svg{width:18px;height:18px;flex:none}
+.qaact{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.qaact .versconv{margin:0}
+.qaact .notionbtn{align-self:auto;margin:0;background:none;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 40%,transparent);padding:8px 14px}
 .versconv{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border:none;border-radius:999px;padding:8px 16px;font-weight:600;font-size:.92rem}
 body.home footer{display:none}
 body.home #stage{border-radius:0}
@@ -229,6 +238,17 @@ body.home #stage::after{content:"";position:absolute;left:0;right:0;bottom:0;hei
 .recast{align-self:flex-end;display:inline-flex;align-items:center;gap:8px;max-width:88%;background:none;border:none;padding:0;color:var(--good);font-weight:600;font-size:1.02rem;text-align:right;line-height:1.35;animation:entre .3s var(--ease) both}
 .rcplay{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--good) 16%,transparent)}
 .rcplay svg{width:12px;height:12px}
+.recast.conseil{font-weight:500}
+.recast.conseil>span:first-child{text-wrap:pretty}
+.recast.conseil b{font-weight:700;text-decoration:underline dotted var(--good);text-decoration-thickness:2px;text-underline-offset:5px}
+.claude .exs{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:12px;transition:filter .25s}
+.claude .exs .ex{width:auto;max-width:100%;border:none;border-radius:16px;padding:7px 7px 7px 14px;background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.claude .exs .explay{width:28px;height:28px}
+.claude:has(.msg.hide) .exs{filter:blur(9px);user-select:none;pointer-events:none}
+.claude.old .exs{gap:2px;margin-top:8px}
+.claude.old .exs .ex{background:none;padding:2px 0}
+.claude.old .exs .exen{font-weight:500;font-size:.95rem;color:var(--muted)}
+.claude.old .exs .explay{display:none}
 .faute.sel,.mieux.sel{background:color-mix(in srgb,var(--accent) 14%,transparent)}
 .mieux{text-decoration:underline dotted var(--good);text-decoration-thickness:2px;text-underline-offset:4px;cursor:pointer;border-radius:4px}
 .you.juste::after{content:"";display:inline-block;width:16px;height:16px;vertical-align:-2px;border-radius:50%;margin-left:8px;background:var(--good) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/11px no-repeat;animation:popin .45s var(--rebond) both}
@@ -502,12 +522,16 @@ button:not(:disabled):active{transform:scale(.94)}
         <div class="choix">
           <div class="split">
             <button class="defi" id="go">
+              <span class="defisur"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.6-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>Continue the lesson</span>
               <span class="defititre" id="goLabel">Practice</span>
               <span class="defibas"><span class="defiseg" id="goPts"></span><span class="definiv" id="goNiv"></span></span>
             </button>
             <button class="defi splitchev" id="topicBtn" aria-label="Parler en premier, historique"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           </div>
-          <button class="gros second" id="askHome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><text x="12" y="14.6" text-anchor="middle" font-size="7.5" font-weight="800" font-family="Figtree,system-ui,sans-serif" fill="currentColor" stroke="none" letter-spacing=".3">FR</text></svg>Une question en français</button>
+          <div class="portes">
+          <button class="gros second" id="freeHome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>Free talk</button>
+          <button class="gros second" id="askHome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><text x="12" y="14.6" text-anchor="middle" font-size="7.5" font-weight="800" font-family="Figtree,system-ui,sans-serif" fill="currentColor" stroke="none" letter-spacing=".3">FR</text></svg>Ask in French</button>
+          </div>
           <p class="status" id="homeNote"></p>
         </div>
       </div>
@@ -1423,9 +1447,6 @@ function tempsCourt(t){
 }
 function afficherRoles(){
   $("rolesTitle").textContent = "";
-  const libre = el("button", "gros second parler");
-  libre.innerHTML = ICO_MIC; libre.append("Mode libre");
-  libre.onclick = () => { fermer("roles"); commencerLibre(); };
   const ligne = (titre, droite, onclick) => { const b = el("button", "drow"); b.append(el("span", "dtitre", titre), droite); b.onclick = onclick; return b; };
   const liste = el("div", "dliste");
   // le defi en cours d'abord, avec sa petite barre
@@ -1439,7 +1460,7 @@ function afficherRoles(){
     const dr = el("span", "ddroite"); const ok = el("span", "okico"); ok.innerHTML = ICO_OK; dr.append(el("span", "dtemps", tempsCourt(d.t)), ok);
     liste.append(ligne(d.fr, dr, () => afficherDefi(d)));
   }
-  $("rolesList").replaceChildren(libre, el("div", "profsec", "Défis"), liste);
+  $("rolesList").replaceChildren(el("div", "profsec", "Défis"), liste);
 }
 // la page d'un defi : la meme forme que l'accueil ; la carte = en parler, en dessous = recommencer
 function afficherDefi(d){
@@ -1474,11 +1495,58 @@ function enParler(d){
   ask(null);
 }
 function recommencerDefi(d){ if (!S.key) { openSettings(); return; } prendreDefi(d, 0); entrainement = null; begin(); }
+// Une notion mal maitrisee reperee par l'IA (mode libre ou question en francais) : un bouton pour en faire le cours
+const ICO_COURS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5C4.5 4.2 8.5 4 12 6c3.5-2 7.5-1.8 10-.5v13c-2.5-1.3-6.5-1.5-10 .5-3.5-2-7.5-1.8-10-.5z"/><path d="M12 6v13"/></svg>';
+let notionsVues = new Set();   // une notion n'est proposee qu'une fois par conversation
+const slugNotion = t => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/^(les?|la|des|une?)\s+|^l'/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+function boutonNotion(n){
+  const fr = String(n?.fr || "").trim().replace(/[.!]+$/, ""), en = String(n?.en || "").trim();
+  const slug = slugNotion(fr);
+  if (!fr || !en || !slug || notionsVues.has(slug)) return null;
+  notionsVues.add(slug);
+  const b = el("button", "notionbtn"); b.innerHTML = ICO_COURS; b.append(el("span", null, fr)); b.setAttribute("aria-label", "Faire le cours : " + fr);
+  b.onclick = () => lancerNotion({id:"n:" + slug, fr, en});
+  return b;
+}
+// on quitte le panneau FR pour une autre activite : dictee, son, micro et enregistrement en cours coupes
+function quitterPanneau(){
+  qaDictee?.arreter(); fermer("qa"); stopSpeak(); hidePop();
+  if (started) {
+    libererFlux(); mlStop();
+    if (enreg && enreg.state === "recording") { jeterEnreg = "quitte"; enreg.stop(); }
+    if (listening) { stopVoulu = true; rec.stop(); }
+  }
+}
+// mode libre : sur une faute, le cours n'est propose que pour un point vraiment mal maitrise, c'est-a-dire
+// la 2e fois que l'IA repere la meme notion, ou la 2e faute du meme type (meme dans une seule phrase) ; et une seule fois par conversation.
+// Quand il demande lui-meme une explication, la notion est proposee tout de suite.
+function notionLibre(d, demande){
+  if (!libre || !d.notion?.fr || !d.notion?.en) return null;
+  const slug = slugNotion(d.notion.fr);
+  if (!slug) return null;
+  if (!demande) {
+    const types = (d.corrections || []).map(c => normPhrase(c.type || "")).filter(t => t && !/vocabulaire|prononciation/.test(t));
+    const repete = (libre.notions?.[slug] || 0) >= 2 || types.some(t => (libre.types?.[t] || 0) >= 2);
+    if (libre.notionMontree || !repete) return null;
+  }
+  const b = boutonNotion(d.notion);
+  if (b && !demande) libre.notionMontree = true;
+  return b;
+}
+function lancerNotion(c){
+  if (busy || enTransition || qaBusy) return;
+  if (!S.key) { openSettings(); return; }
+  if (!S.notions || typeof S.notions !== "object") S.notions = {};
+  S.notions[c.id] = {fr:c.fr, en:c.en};
+  quitterPanneau();
+  libre = null; prendreDefi(c, 0); entrainement = null; begin();   // le defi en cours est mis de cote, il revient a l'accueil
+}
 // "Je commence" : l'IA ouvre tout de suite sur un sujet (different du dernier) ; "Parler en premier" est dans le deroule.
 GO.btn.onclick = () => {
   const pool = THEMES.filter(t => !t.mission && !t.inverse && t.fr !== S.theme?.fr);
   setTheme(pool[Math.floor(Math.random() * pool.length)]); begin();
 };
+$("freeHome").onclick = () => { if (busy || enTransition) return; hidePop(); commencerLibre(); };
 $("topicBtn").onclick = () => { if (busy) return; hidePop(); afficherRoles(); ouvrir("roles"); };
 $("roles").onclick = e => { if (e.target.id === "roles" || e.target.closest("#rolesClose")) fermer("roles"); };
 
@@ -1487,9 +1555,10 @@ const SCHEMA_QA = {
   type:"OBJECT",
   properties:{
     reponse_fr:{type:"STRING"},
-    exemples:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}
+    exemples:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}},
+    notion:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}}, required:["fr","en"], propertyOrdering:["fr","en"]}
   },
-  required:["reponse_fr","exemples"], propertyOrdering:["reponse_fr","exemples"]
+  required:["reponse_fr","exemples","notion"], propertyOrdering:["reponse_fr","exemples","notion"]
 };
 let qaBusy = false;
 // Les questions en francais sont gardees 30 jours (40 max) et reviennent quand on rouvre le panneau.
@@ -1509,9 +1578,18 @@ function rendreQa(x){
   return [q, box];
 }
 const jourCourt = t => { const d = new Date(t), now = new Date(); const diff = Math.floor((now.setHours(0,0,0,0) - new Date(d).setHours(0,0,0,0)) / 864e5); return diff === 0 ? "" : diff === 1 ? "Hier" : d.toLocaleDateString("fr-FR", {day:"numeric", month:"short"}); };
+// Accroche a l'ouverture du panneau : tiree au hasard, sans appel a l'IA, jamais enregistree
+const ACCROCHES_QA = ["Que veux-tu me demander ?", "Une question sur l'anglais ? Je t'écoute.", "Vas-y, je t'écoute.", "Qu'est-ce qui te bloque ?", "Un mot, une tournure, une règle ? Demande-moi.", "Dis-moi ce que tu veux savoir."];
+let derniereAccroche = "";
+let qaVisite = [];   // questions posees pendant cette ouverture du panneau (contexte de "En parler en anglais")
 function afficherQa(){
-  const f = $("qaFeed"); f.replaceChildren(); let dernier = null;
+  const f = $("qaFeed"); f.replaceChildren(); let dernier = null; qaVisite = [];
+  if (!started) notionsVues = new Set();   // hors conversation : une nouvelle ouverture = une nouvelle discussion
   for (const x of qaListe()) { const j = jourCourt(x.t); if (j !== dernier && j) f.append(el("div", "qajour", j)); dernier = j; f.append(...rendreQa(x)); }
+  const choix = ACCROCHES_QA.filter(t => t !== derniereAccroche);
+  derniereAccroche = choix[Math.floor(Math.random() * choix.length)];
+  const acc = el("div", "qar qaacc"); acc.append(el("p", null, derniereAccroche)); f.append(acc);
+  qaStatus("");   // l'accroche tient lieu d'invitation
   requestAnimationFrame(() => { f.scrollTop = f.scrollHeight; });
 }
 function qaStatus(t){ $("qaStatus").textContent = t; }
@@ -1536,11 +1614,14 @@ ${avant}
 His question: """${q}"""
 
 Answer IN FRENCH, addressing him with « tu » (never « vous »), simply and concretely, like a good teacher talking: 2 to 5 short sentences, no jargon, no lists, no markdown. If he asks how to say something, give the natural English wording. Quote English words inside « ».
-"exemples": 0 to 3 short natural English sentences that illustrate the answer, each with its French translation. Empty if not useful.`, SCHEMA_QA);
+"exemples": 0 to 3 short natural English sentences that illustrate the answer, each with its French translation. Empty if not useful.
+"notion": ONLY if his question is about a grammar or usage point that deserves a full lesson with practice (a tense or tenses, question forms, conditionals, modals, prepositions of time or place, articles, comparatives, reported speech, phrasal verbs...): "fr" = its short French name, 2 to 6 words, starting with an article (e.g. "les temps du passé", "les questions avec do"), "en" = what the lesson must teach, in English, 4 to 15 words (e.g. "past simple vs present perfect: when to use each"). Otherwise (one word, a translation, a pronunciation, an expression) both "".`, SCHEMA_QA);
     dots.remove();
     const item = {q, r:d.reponse_fr, exemples:(d.exemples || []).slice(0, 3), t:Date.now()};
-    qaListe().push(item); saveS();
+    qaListe().push(item); qaVisite.push(item); saveS();
     const [, box] = rendreQa(item);
+    const bn = boutonNotion(d.notion);
+    if (bn) { const v = box.querySelector(".versconv"), rang = el("div", "qaact"); v.replaceWith(rang); rang.append(v, bn); }   // les deux suites cote a cote
     f.append(box);
     box.scrollIntoView({block:"start", behavior:"smooth"});
   } catch (e) {
@@ -1549,23 +1630,15 @@ Answer IN FRENCH, addressing him with « tu » (never « vous »), simply and co
   } finally { qaBusy = false; if (!qaDictee?.ecoute) qaStatus("Une autre question ?"); }
 }
 
-// "En parler en anglais" : la question devient le sujet d'une nouvelle conversation.
-async function conversationDepuisQuestion(q, r, btn){
-  if (qaBusy) return;
-  qaBusy = true; btn.disabled = true; btn.textContent = "…";
-  try {
-    const t = await llm(`A French-speaking engineering student learning English asked this side question, in French: """${q}"""
-The answer he got: """${r}"""
-Create a topic for a REAL conversation with you, his AI English conversation partner, where he will naturally need to use what this question was about (never a fictional scene, never a role for him).
-- "fr": a short French title, 2 to 5 words.
-- "en": the topic in English, a few words.
-- "role": how you should approach it, in English, 1 to 2 sentences: questions about his real life or opinions that make him use the words or grammar of his question.`, SCHEMA_ROLE);
-    if (!t?.fr || !t?.en || !t?.role) throw {code:"shape"};
-    fermer("qa"); setTheme(t); begin();
-  } catch (e) {
-    console.error(e); btn.disabled = false; btn.textContent = "En parler en anglais";
-    qaStatus(e?.code === "rate" ? "Limite gratuite atteinte, réessaie plus tard" : "Pas pu préparer la conversation, réessaie");
-  } finally { qaBusy = false; }
+// "En parler en anglais" : on passe en mode libre, l'IA ouvre en anglais sur ce dont il a parle en francais.
+function conversationDepuisQuestion(q, r, btn){
+  if (qaBusy || busy || enTransition) return;
+  const echanges = qaVisite.slice(-4);
+  if (!echanges.some(x => x.q === q && x.r === r)) echanges.push({q, r});   // la question choisie (meme ancienne) est toujours la derniere
+  else { const k = echanges.findIndex(x => x.q === q && x.r === r); echanges.push(echanges.splice(k, 1)[0]); }
+  const sujet = echanges.map(x => "Q (fr): " + x.q + "\nA (fr): " + x.r).join("\n");
+  quitterPanneau();
+  commencerLibre(sujet);
 }
 
 // Dictee reutilisable (fenetres question et jeu de role), meme principe que le micro principal :
@@ -1770,10 +1843,12 @@ const SCHEMA = {
     clair:{type:"BOOLEAN"},
     fixed_en:{type:"STRING"},
     suivi:{type:"STRING"},
-    vocab:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}, lies:{type:"ARRAY", items:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}}, required:["fr","en"], propertyOrdering:["fr","en"]}}}, required:["fr","en","lies"], propertyOrdering:["fr","en","lies"]}
+    vocab:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}, lies:{type:"ARRAY", items:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}}, required:["fr","en"], propertyOrdering:["fr","en"]}}}, required:["fr","en","lies"], propertyOrdering:["fr","en","lies"]},
+    exemples:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}}, required:["en"], propertyOrdering:["en"]}},
+    notion:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}}, required:["fr","en"], propertyOrdering:["fr","en"]}
   },
-  required:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","clair","fixed_en","suivi","vocab"],
-  propertyOrdering:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","clair","fixed_en","suivi","vocab"]
+  required:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","clair","fixed_en","suivi","vocab","exemples","notion"],
+  propertyOrdering:["heard","ok","learner_asked","corrections","obs","conseil","reply_en","chunks","reply_fr","hint_en","hint_fr","fait","command","cible","clair","fixed_en","suivi","vocab","exemples","notion"]
 };
 
 /* Equilibre des roles : l'apprenant doit aussi POSER des questions (en Irlande, c'est lui qui ira chercher l'info).
@@ -1899,12 +1974,13 @@ function suivreLecon(d, texte){
 }
 function acquisTexte(){
   const ids = profil().lecons || [];
-  const libelles = ids.map(id => id.startsWith("s:") ? "the " + id.slice(2) : (CIBLES.find(c => c.id === id)?.en || id));
+  const libelles = ids.map(id => id.startsWith("s:") ? "the " + id.slice(2) : id.startsWith("n:") ? cibleDe(id).en : (CIBLES.find(c => c.id === id)?.en || id));
   if (!libelles.length) return "";
   return `
 ACQUIRED CHALLENGES (he validated these, they are now part of how he must speak): ${libelles.join(" ; ")}.
 - A mistake on one of them is a REAL mistake: put it in "corrections" with "type" = "défi acquis".
-- When he says something in a basic way where one of them would have been the natural choice, propose it through "conseil" ("better" = his sentence rewritten WITH that acquired challenge, "why_fr" starting with "Défi acquis :" and its French name). Only if "better" really uses it; otherwise do not label the conseil that way.`;
+${modeLibre() ? "" : `
+- When he says something in a basic way where one of them would have been the natural choice, propose it through "conseil" ("better" = his sentence rewritten WITH that acquired challenge, "why_fr" starting with "Défi acquis :" and its French name). Only if "better" really uses it; otherwise do not label the conseil that way.`}`;
 }
 function leconTexte(){
   if (modeLibre()) return acquisTexte();   // en mode libre, on ne pousse pas le defi du moment
@@ -1927,7 +2003,7 @@ function profilTexte(){
   const p = profil(); if (!focus) choisirFocus();
   const n = Math.min(10, Math.max(1, p.niveau || 4));
   return `LEARNER PROFILE (never mention it): spoken level ${n}/10. Speak ONE notch above him: ${NIVEAUX[Math.min(10, n + 1)]}.
-${leconTexte()}${focus.faute ? ` Watch for his recurring mistake "${focus.faute}": be strict on it.` : ""}${focus.verbes.length >= 3 ? ` He overuses the verbs ${focus.verbes.join(", ")}: when a richer verb would fit, suggest it through "conseil".` : ""}${p.acquis.length ? ` He already masters: ${p.acquis.join(", ")}.` : ""} Introduce in your own replies one useful expression slightly above his level, naturally.`;
+${leconTexte()}${focus.faute ? ` Watch for his recurring mistake "${focus.faute}": be strict on it.` : ""}${focus.verbes.length >= 3 && !modeLibre() ? ` He overuses the verbs ${focus.verbes.join(", ")}: when a richer verb would fit, suggest it through "conseil".` : ""}${p.acquis.length ? ` He already masters: ${p.acquis.join(", ")}.` : ""} Introduce in your own replies one useful expression slightly above his level, naturally.`;
 }
 async function bilanProfil(){
   const p = profil(); p.depuisBilan = 0; saveS();
@@ -2000,6 +2076,9 @@ Keep every French instruction under 14 words.`, SCHEMA_SEANCE);
 function modeLibre(){ return !!(started && theme?.libre && !seance && !entrainement); }
 let libre = null;   // {tours, justes, phrases:[], mots:[]} : ce que la conversation a apporte, pour le bilan
 function ouvertureLibre(){
+  if (libre?.sujet) return `Just before, he asked you side questions IN FRENCH about English, and got these answers:
+${libre.sujet}
+Open the conversation IN ENGLISH on the real situation behind his LAST question. First read what he ALREADY told you in his questions (what he is doing, where, when, with whom, what went wrong): NEVER ask back a fact he already gave, and never ask whether he is doing what he just said he is doing. Ask ONE short, curious question (18 words max) that moves that situation forward (what comes next, what he will actually say or do, how he feels about it), so that his natural answer makes him use what he just learned. Example: he asked how to say he has an internship interview with a company in Cork on Friday -> "What do you want them to remember about you after Friday?" Never quiz him, never recap the answer, no French.`;
   const sv = S.suivi, age = sv ? Date.now() - sv.t : 0;
   if (sv && age > 5 * 3600e3 && age < 6 * 864e5) { delete S.suivi; saveS(); return `He told you about this real moment earlier: "${sv.txt}". Ask him how it went, in ONE short warm question.`; }
   if (sv && age >= 6 * 864e5) { delete S.suivi; saveS(); }
@@ -2010,10 +2089,11 @@ function ouvertureLibre(){
 }
 function contexteLibre(learner){
   if (!learner) return {libre:true, cible:"", reponse:"", ouverture:`FREE MODE OPENING: set ok to true, corrections to []. ${ouvertureLibre()} No greeting speech, no announcement, nothing else. `};
-  return {libre:true, cible:"", ouverture:"", limite:"usually 1 or 2 short sentences, 25 words; up to 45 words ONLY when you give him phrases to prepare a real moment",
+  return {libre:true, cible:"", ouverture:"", limite:"usually 1 or 2 short sentences, 25 words; up to 45 words ONLY when you give him phrases to prepare a real moment; up to 60 words ONLY when you answer a question he asked you (an explanation)",
     reponse:`FREE MODE. Work out what he needs from what he says and adapt, without ever announcing a mode:
   - PREPARING: he mentions a real moment coming up where he will need English (a call, an interview, a message to write, a meeting, ordering, asking for something). Help him get ready for what HE will say: give up to 3 short, natural phrases he can use, then ask him to say his own version; go one step at a time. You may tell him what the other person will probably ask ("They might ask: ..."), but never play a fictional character.
   - TELLING: he is telling you about his day or something that happened. Listen and dig into HIS story: react in a few words, then ONE short question about what he just said (what happened next, why, how it felt). Never switch to another subject.
+  - ASKING: he asks you a real question (about English: a word, a difference between expressions, a rule, how to say something; or about anything else). ANSWER IT FIRST, for real, clearly and correctly, in simple English, before anything else: never dodge it, never just carry on the chat. Then at most ONE short follow-up (a question, or "Try it in a sentence of your own."). If the answer is an explanation about English that is clearer with examples, put 2 to 4 short example sentences in "exemples" (English only) and do not read them out in reply_en.
   - CHATTING: otherwise, a natural conversation: react, add a thought of your own, ONE short question.
   If he speaks FRENCH (fully or partly) to explain what he wants to say or to ask how to say something: that is help-seeking, never a mistake. Give him the natural English for it ("You can say: ...") and end by inviting him to say it now ("Your turn.").
   Stay on HIS subject as long as he does. Never bring up grammar or a lesson by yourself.`};
@@ -2036,7 +2116,8 @@ function contexteSeance(learner){
   }
   if (seance.phase === "libre" && learner) {
     const cib = (lecon() || choisirLecon()).cible.en;
-    return {cible: "", ouverture: "", reponse: `FREE PART OF THE EXERCISE (target: ${cib}). If "cible" is "ok" (he used the target correctly), just congratulate him warmly in a few words, he has completed today's challenge: no question. Otherwise react in a few words, then ask ONE short question (12 words max) about his real life whose natural answer needs the target.`};
+    const notion = String(lecon()?.cible?.id || "").startsWith("n:");
+    return {cible: notion ? `today's target is a grammar or usage point: ${JSON.stringify(cib)}. "ok" if this message contains at least one correct use of a form this point covers (one is enough, e.g. one correct past simple for a point about past tenses), "ko" if he tried to use it but got it wrong (then it is also a correction), "non" if he did not use it.` : "", ouverture: "", reponse: `FREE PART OF THE EXERCISE (target: ${cib}). If "cible" is "ok" (he used the target correctly), just congratulate him warmly in a few words, he has completed today's challenge: no question. Otherwise react in a few words, then ask ONE short question (12 words max) about his real life whose natural answer needs the target.`};
   }
   if (seance.phase === "libre" && !learner) return {cible: "", reponse: "", ouverture: `OPENING OF THE FREE PART: set ok to true, corrections to []. Ask ONE short question (12 words max) about his real life that naturally calls for the target. No greeting, no announcement, nothing else. `};
   return null;
@@ -2133,7 +2214,14 @@ function confettis(depuis){
   }
 }
 // --- les defis faits : gardes 120 jours, pour en reparler ou les refaire ---
-function cibleDe(id){ return String(id).startsWith("s:") ? cibleStructure(String(id).slice(2)) : (CIBLES.find(c => c.id === id) || {id, fr:id, en:id}); }
+function cibleDe(id){
+  id = String(id);
+  if (id.startsWith("n:")) {   // une notion proposee par l'IA : relue depuis S.notions, ou depuis les defis faits
+    const n = (S.notions || {})[id] || (Array.isArray(S.defis) ? S.defis.find(x => x.id === id) : null) || {};
+    return {id, fr:n.fr || id.slice(2).replace(/-/g, " "), en:n.en || n.fr || id.slice(2).replace(/-/g, " "), min:0, notion:true};
+  }
+  return id.startsWith("s:") ? cibleStructure(id.slice(2)) : (CIBLES.find(c => c.id === id) || {id, fr:id, en:id});
+}
 function defis(){
   if (!Array.isArray(S.defis)) S.defis = [];
   for (const id of profil().lecons || []) if (!S.defis.some(x => x.id === id)) S.defis.push({id, fr:cibleDe(id).fr, t:0, n:1});
@@ -2142,6 +2230,7 @@ function defis(){
 }
 function enregistrerDefi(cible, modele, guide){
   const l = defis(); let d = l.find(x => x.id === cible.id); if (!d) { d = {id:cible.id, n:0}; l.push(d); }
+  if (cible.notion || String(cible.id).startsWith("n:")) d.en = cible.en;
   Object.assign(d, {fr:cible.fr, mot:modele?.mot || d.mot || "", exemples:(modele?.exemples || d.exemples || []).slice(0, 2), t:Date.now()}); d.n = (d.n || 0) + 1; saveS();
 }
 let validationAccueil = null;   // le defi qu'on vient de valider : l'accueil le fete
@@ -2303,14 +2392,15 @@ STEP 1, CHECK the learner's message. ${seanceCtx?.cible ? "GUIDED EXERCISE: " + 
 - QUESTIONS deserve special care, they are where French speakers slip: missing do/does/did ("Where you go?"), wrong word order ("Where you are going?"), indirect questions ("Can you tell me where is the station?" -> "where the station is"), missing auxiliary. These ARE mistakes.
 - "learner_asked": true if his message contains a real question to you (even a short one), false otherwise.
 - "ok": true if there is no real mistake in his English, false otherwise.${seanceCtx?.libre ? ` A message in FRENCH (asking for help, explaining what he wants to say) is never a mistake: "heard" = his French words as spoken, ok true, corrections [].` : ""}
-- "conseil": NEVER suggest a version that removes today's challenge target (if he used it, keep it). ${seanceCtx?.cible ? "This is a guided exercise: conseil must be all \"\". " : ""}Only when ok is true and EITHER a phrase sounds blunt or unnatural in Ireland, OR his sentence is correct but basic for his level (an overused verb, a very simple structure where the focus structure would fit): OR one of his ACQUIRED CHALLENGES would have been the natural way to say it: "original" = his exact words concerned, "better" = the same idea one notch above (more natural, richer verb, the focus structure, the acquired challenge), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".
+- "conseil": ${seanceCtx?.libre ? `FREE MODE: almost always all three "". Give one ONLY when ok is true AND a phrase is clearly NOT what a native speaker would say although it has no mistake: a French-sounding calque, an awkward or unnatural phrase (e.g. "I will see it another time" -> "again"). Plain, simple or common English is NOT a reason: "very good", "great", "nice", "interesting", "the movie was great" are perfectly natural, keep them. NEVER replace a word by a fancier synonym, never make his sentence more sophisticated. Never for a message in French. "original" = his exact words concerned, "better" = the natural way to say just those words, "why_fr" = why, in French, 10 words max, with « tu ».` : `NEVER suggest a version that removes today's challenge target (if he used it, keep it). ${seanceCtx?.cible ? "This is a guided exercise: conseil must be all \"\". " : ""}Only when ok is true and EITHER a phrase sounds blunt or unnatural in Ireland, OR his sentence is correct but basic for his level (an overused verb, a very simple structure where the focus structure would fit): OR one of his ACQUIRED CHALLENGES would have been the natural way to say it: "original" = his exact words concerned, "better" = the same idea one notch above (more natural, richer verb, the focus structure, the acquired challenge), "why_fr" = why, in French, 10 words max, with « tu ». Otherwise all three "".`}
 - "corrections": ALL his mistakes (up to 5), never just the first one: wrong word (vocabulary), missing word, wrong tense, preposition, word order, and the challenge target; each with the exact wrong words, the corrected words, a French explanation of 12 words max, addressing the learner with « tu » (never « vous »), "debut"/"fin" (0 and 0 when there is no audio), and "type" = the category in 2 or 3 French words, reused consistently (e.g. "prétérit oublié", "question sans do", "article", "préposition", "pluriel", "ordre des mots", "accord sujet-verbe", "vocabulaire", "prononciation"); use EXACTLY "cible" when the mistake is about today's challenge target (missing or wrong), INCLUDING when he uses a target word where it does not fit (e.g. challenge make/do and he says "doing code": the right verb is "write"): then explanation_fr must say why the target does not fit here and which verb English uses (e.g. « Pour du code, on dit write, ni make ni do. »), and EXACTLY "prononciation" for pronunciation. Empty if ok.
 - "fixed_en": his WHOLE sentence corrected, natural, same meaning and same length (this is what he will say again). "" if ok.
 - "vocab": ONLY if one correction is a vocabulary gap (he used a wrong, French-sounding or missing word for a concept he meant, e.g. "afternoon" for « le soir »): "fr" = the French concept, "en" = the right English word, "lies" = 3 related words of the same family (e.g. morning / afternoon / night), each {fr, en}. Otherwise fr "", en "", lies [].
+- "notion": ${seanceCtx?.libre ? `ONLY when ok is false AND his mistakes show a grammar or usage point he does not master (a basic rule he gets wrong, or the same kind of mistake again in the conversation above), worth a full lesson: tenses, question forms, word order, prepositions, articles, conditionals, modals, comparatives... OR when he asks you to explain such a point. "fr" = its short French name, 2 to 6 words, starting with an article (e.g. "les temps du passé", "les questions avec do"), "en" = what the lesson must teach, in English, 4 to 15 words (e.g. "past simple vs present perfect: when to use each"). Never for a vocabulary word, a collocation or a fixed expression (make/take a decision, spend an evening, have the habit of...), a single misplaced word, one preposition, a pronunciation or a one-off slip: those are just corrections. Otherwise both "".` : `always both "".`}
 - "obs" (about his message, even when ok): "structures" = the grammar structures he used CORRECTLY, only from this list: ${STRUCTURES.join(", ")} (empty if none); "verbs" = the main verbs he used, base form, 6 max; "level" = the level of this message from 1 (A1) to 10 (C2). For an empty or inaudible message: [], [], 0.
 ${retry}${force}
 
-${seanceCtx?.libre ? "STEP 2, ALWAYS REPLY, even when ok is false: the conversation never stops for a mistake (the app shows him the corrections on the side; do not repeat them in your reply)." : "STEP 2, only if ok is true, REPLY. If ok is false, leave reply_en, reply_fr, hint_en and hint_fr empty and chunks []."}
+STEP 2, only if ok is true, REPLY. If ok is false, leave reply_en, reply_fr, hint_en and hint_fr empty and chunks [].
 - "reply_en": your whole reply, READ ALOUD. HARD LIMIT: ${seanceCtx?.limite || "1 or 2 short sentences, 25 words in total, never more"} (he learns by speaking, not by listening to you). ${seanceCtx ? seanceCtx.reponse : `React in a few words to what he said (show you listened), answer if he asked something, then make this move in ONE short sentence: ${FINS[fin]}
   COACH RULES: never a yes/no question; never a detail about a detail; never repeat a question already asked; vary the angles. Ask for ONE thing at a time, never "tell me everything".`}
 - "chunks": reply_en cut into consecutive pieces of 1 to 4 words, in order; joined with spaces they must give reply_en exactly. Keep idioms, phrasal verbs and set expressions in one piece. Punctuation stays attached to its piece.
@@ -2320,6 +2410,7 @@ ${seanceCtx?.libre ? "STEP 2, ALWAYS REPLY, even when ok is false: the conversat
 - "fait": if the learner's message reveals a NEW lasting fact about his REAL life (studies, work, family, hobbies, tastes, projects, places he knows, opinions...) that is not already known above, write it as one short French sentence of 15 words max, about him ("Il ..."). Otherwise "".
 - "suivi": if he mentions a REAL moment coming up in the next few days where he will use English (a call, an interview, a meeting, a trip, a message to send), one short French sentence about it with when ("Il a un appel avec son tuteur demain."). Otherwise "".
 - "cible": ${seanceCtx?.libre ? `always "non".` : seanceCtx ? seanceCtx.cible : `today's challenge target is ${JSON.stringify((lecon() || choisirLecon()).cible.en)}. "ok" if this message contains a correct use of it (any form), "ko" if he tried to use it but got it wrong (then it is also a correction), "non" if he did not use it.`}
+- "exemples": ${seanceCtx?.libre ? `ONLY when reply_en explains something about English (an answer to his question) that is clearer with examples: 2 to 4 short, natural example sentences, each {"en"}. Otherwise [] (a normal conversation turn has NO examples).` : "always []."}
 - "command": "pause" ONLY if his whole message is a request to pause or stop the conversation (in English or French: "pause", "stop", "on arrête", "let's stop here", "I need a break"); then also set ok to true and corrections to []. Otherwise "".
 
 ${profilTexte()}
@@ -2393,7 +2484,9 @@ function showFixPop(sp, items){
 function briller2(b){ if (!b || b.hidden) return; b.classList.remove("brille"); void b.offsetWidth; b.classList.add("brille"); }
 function renderFix(d, youEl, onSkip){
   feed.querySelectorAll(".skip").forEach(b => b.remove());
-  if (!modeLibre()) feed.querySelectorAll(".recast").forEach(b => b.remove());   // en mode libre, les phrases corrigees restent dans le fil
+  // en mode libre, les phrases corrigees restent dans le fil (seule celle de l'essai en cours est remplacee)
+  if (!modeLibre()) feed.querySelectorAll(".recast").forEach(b => b.remove());
+  else if (!d.ok) feed.querySelectorAll(".recast.encours").forEach(b => b.remove());
   const list = Array.isArray(d.corrections) ? d.corrections.filter(c => c && c.corrected) : [];
   if (d.ok) {
     youEl.classList.add("juste");
@@ -2402,7 +2495,20 @@ function renderFix(d, youEl, onSkip){
     const enExo = seance && (seance.phase === "rappel" || seance.phase === "guide");
     const re = lecon()?.cible?.re;
     const retireCible = re instanceof RegExp && re.test(String(c?.original || "")) && !re.test(String(c?.better || ""));
-    if (!enExo && !retireCible && c && c.better && c.better.trim() && journal.length - dernierConseil >= 6) { dernierConseil = journal.length; marquer(youEl, [c], "mieux"); }
+    const libreMode = modeLibre();
+    if (!enExo && !retireCible && c && c.better && c.better.trim() && !(libreMode && conseilBanal(c)) && (libreMode || journal.length - dernierConseil >= 6)) {
+      dernierConseil = journal.length; marquer(youEl, [c], "mieux");
+      // mode libre : la meilleure tournure s'affiche en entier, ecrite (pas lue) ; un toucher la fait entendre
+      // la phrase entiere avec la meilleure tournure a la place des mots concernes
+      const txt = youEl.textContent, o = String(c.original || "").trim().replace(/[.?!,]+$/, ""), i = o ? txt.toLowerCase().indexOf(o.toLowerCase()) : -1;
+      const entiere = normPhrase(c.better).split(" ").length >= normPhrase(txt).split(" ").length * 0.7;   // l'IA a deja reecrit toute la phrase
+      const mieuxEn = i >= 0 && !entiere ? txt.slice(0, i) + c.better.trim().replace(/[.?!,]+$/, "") + txt.slice(i + o.length) : c.better.trim();
+      if (libreMode && normPhrase(c.better) !== normPhrase(c.original) && normPhrase(mieuxEn) !== normPhrase(txt)) {
+        const rc = el("button", "recast conseil"); rc.append(phraseMarquee(mieuxEn, txt)); const ic = el("span", "rcplay"); ic.innerHTML = PLAY; rc.append(ic);
+        rc.onclick = () => { unlockAudio(); speak(mieuxEn, rc, null); };
+        youEl.after(rc); youEl._conseil = true;
+      }
+    }
     return youEl;
   }
   marquer(youEl, list, "faute");
@@ -2413,13 +2519,27 @@ function renderFix(d, youEl, onSkip){
   }
   // la phrase entiere corrigee, a redire ; un toucher la fait entendre
   if (d.fixed_en && normPhrase(d.fixed_en) !== normPhrase(youEl.textContent)) {
-    const rc = el("button", "recast"); rc.append(el("span", null, d.fixed_en)); const ic = el("span", "rcplay"); ic.innerHTML = PLAY; rc.append(ic);
+    const rc = el("button", "recast encours"); rc.append(el("span", null, d.fixed_en)); const ic = el("span", "rcplay"); ic.innerHTML = PLAY; rc.append(ic);
     rc.onclick = () => { unlockAudio(); speak(d.fixed_en, rc, null); };
     youEl.after(rc);
   }
   return youEl;
 }
 
+// Mode libre : un conseil qui ne fait que remplacer des mots simples et naturels par un synonyme plus recherche
+// ("very good" -> "absolutely gripping", "movie" -> "film") n'en est pas un : on l'ignore.
+const MOTS_SIMPLES = new Set("very really so quite pretty a bit good great nice fine cool fun funny bad big small little interesting boring beautiful happy sad tired busy hard easy difficult important amazing awesome movie movies film films thing things stuff lot lots".split(" "));
+function conseilBanal(c){
+  const avant = normPhrase(c.original).split(" ").filter(Boolean), apres = new Set(normPhrase(c.better).split(" "));
+  const retires = avant.filter(m => !apres.has(m));
+  return !retires.length || retires.every(m => MOTS_SIMPLES.has(m));
+}
+// la phrase conseillee, avec en gras seulement les mots qui changent par rapport a ce qu'il a dit
+function phraseMarquee(phrase, dite){
+  const deja = new Set(normPhrase(dite).split(" ")), sp = el("span");
+  phrase.split(/(\s+)/).forEach(m => sp.append(m.trim() && !deja.has(normPhrase(m)) ? el("b", null, m) : m));
+  return sp;
+}
 // Remet le flou (et cache la traduction) sur toutes les repliques affichees : on ecoute, on ne lit pas.
 function reflouter(){
   feed.querySelectorAll(".claude").forEach(c => {
@@ -2460,6 +2580,10 @@ function renderClaude(chunks, replyFr, passe){
 
 // Phrases dites a voix haute quand il faut recommencer (courtes, en cache apres le 1er usage).
 const RETRY_LINES = ["Not quite. Have another go!", "Almost! Try that again.", "Close! Fix those bits and say it again.", "Nearly there. One more time!"];
+// mode libre : on dit juste qu'il y a des fautes, la phrase corrigee est ecrite
+const RETRY_LIBRE = ["Try again, you made a few mistakes.", "A few mistakes there. Have another go.", "Not quite right. Try that again.", "Almost! Fix the mistakes and say it again."];
+const CONSEIL_LIBRE = ["No mistakes, but here's a more natural way to say it.", "That's correct! Here's a more natural way to put it.", "No mistakes. A native speaker would rather say this."];
+const auHasard = t => t[Math.floor(Math.random() * t.length)];
 let essai = null;         // tentative en cours de correction : {prev, corrections, youEl, first}
 let serie = 0;            // reponses justes du premier coup, d'affilee
 let nbQuestions = 0;
@@ -2490,7 +2614,7 @@ async function ask(learner, youEl, opts = {}){
         }
         if (opts.force) d.ok = true;
         chunks = Array.isArray(d?.chunks) ? d.chunks.filter(c => c && typeof c.en === "string" && c.en.trim()) : [];
-        if ((d.ok || modeLibre()) && !chunks.length && !(seance && (seance.phase === "rappel" || seance.phase === "guide"))) throw {code:"shape", detail:JSON.stringify(d)};
+        if (d.ok && !chunks.length && !(seance && (seance.phase === "rappel" || seance.phase === "guide"))) throw {code:"shape", detail:JSON.stringify(d)};
         if (!d.ok && !(d.corrections || []).length) throw {code:"shape", detail:JSON.stringify(d)};
         break;
       } catch (e) {
@@ -2515,13 +2639,19 @@ async function ask(learner, youEl, opts = {}){
     if (enCarte && learner && !d.ok && (d.corrections || []).length && d.corrections.every(pron)) { d.pron = d.corrections; d.corrections = []; d.ok = true; if (d.cible !== "non") d.cible = "ok"; }
     const reCible = lecon()?.cible?.re;
     if (reCible instanceof RegExp) for (const c of d.corrections || []) if (c.type !== "prononciation" && reCible.test(String(c.original || ""))) c.type = "cible";
-    // mode libre : la faute est montree dans la phrase, gardee pour plus tard, et la conversation continue
-    const sansBlocage = modeLibre() && learner && !d.ok;
-    if (sansBlocage) {
-      if (d.fixed_en) { ajouterRappel({type:"faute", en:d.fixed_en}); libre?.phrases.push(d.fixed_en); }
-      if (d.vocab?.en && d.vocab?.fr) { ajouterVocab(d.vocab); libre?.mots.push(d.vocab); briller2($("vocBtn")); }
+    // mode libre : une faute bloque aussi (il redit), la phrase corrigee et les mots sont gardes pour le bilan
+    const sansBlocage = false;
+    if (modeLibre() && learner && libre) {
+      if (!essai && !opts.force) { libre.tours++; if (d.ok) libre.justes++; }
+      if (d.suivi) { S.suivi = {txt:d.suivi, t:Date.now()}; saveS(); }
+      if (!essai && !opts.force && !d.ok && d.fixed_en) libre.phrases.push(d.fixed_en);
+      if (!essai && !opts.force && !d.ok && d.vocab?.en && d.vocab?.fr) libre.mots.push(d.vocab);
+      if (!essai && !opts.force && !d.ok) {   // ce qui revient d'une faute a l'autre (premiers essais seulement)
+        libre.notions = libre.notions || {}; libre.types = libre.types || {};
+        const sn = slugNotion(d.notion?.fr); if (sn) libre.notions[sn] = (libre.notions[sn] || 0) + 1;
+        for (const t of (d.corrections || []).map(c => normPhrase(c.type || "")).filter(Boolean)) libre.types[t] = (libre.types[t] || 0) + 1;   // 2 fautes du meme type, meme dans une seule phrase
+      }
     }
-    if (modeLibre() && learner && libre) { libre.tours++; if (d.ok) libre.justes++; if (d.suivi) { S.suivi = {txt:d.suivi, t:Date.now()}; saveS(); } }
     if (learner && !d.ok && !sansBlocage) {
       // Erreur : on montre ce qui ne va pas, on le dit a l'oral, et on attend un nouvel essai.
       history.pop();                                   // la tentative ratee ne fait pas partie de la conversation
@@ -2550,11 +2680,13 @@ async function ask(learner, youEl, opts = {}){
         history.push({role:"user", content:learner});
         ask(learner, youEl, {force:true});
       });
+      if (modeLibre()) { const bn = notionLibre(d, false); if (bn) { let a = youEl; while (a.nextElementSibling?.matches(".recast, .skip")) a = a.nextElementSibling; a.after(bn); } }
       scrollDown();
-      let dire = RETRY_LINES[Math.floor(Math.random() * RETRY_LINES.length)];
-      // on dit la phrase corrigee en entier : il l'entend, puis la redit
-      if (d.fixed_en) dire += " " + d.fixed_en;
-      speak(dire, null, null).then(() => { if (d.vocab?.en && d.vocab?.fr) ouvrirVocab(d.vocab); mlApres(); });
+      let dire = modeLibre() ? auHasard(RETRY_LIBRE) : auHasard(RETRY_LINES);
+      // mode libre : la phrase corrigee est seulement ecrite (dite quand meme en mains libres) ; ailleurs on l'entend puis on la redit
+      if (d.fixed_en && (!modeLibre() || mainsLibres)) dire += " " + d.fixed_en;
+      // mode libre : le mot rejoint les fiches sans ouvrir le panneau (la conversation reste a l'ecran)
+      speak(dire, null, null).then(() => { if (d.vocab?.en && d.vocab?.fr) { if (modeLibre()) { ajouterVocab(d.vocab); briller2($("vocBtn")); } else ouvrirVocab(d.vocab); } mlApres(); });
       return;
     }
     mlEchecs = 0; mlErreurs = 0;
@@ -2577,9 +2709,24 @@ async function ask(learner, youEl, opts = {}){
     if (seance && seance.phase === "libre" && learner) { seance.faits.push(learner); seance.libreTours++; }
     // defi valide sur cette phrase : pas de question en l'air juste avant le bilan
     if (seance?.phase === "libre" && seance.defiFait && /\?/.test(chunks.map(c => c.en).join(" "))) { chunks = [{en:"Great, you've nailed it!", fr:"Super, tu l'as !"}]; d.reply_fr = "Super, tu l'as !"; }
+    feed.querySelectorAll(".recast.encours").forEach(b => b.classList.remove("encours"));
     const t = renderClaude(chunks, d.reply_fr);
+    // mode libre : une explication peut venir avec des exemples (anglais seulement), touchables pour les entendre
+    const exemples = modeLibre() && learner ? (Array.isArray(d.exemples) ? d.exemples : []).map(x => String(x?.en || "").trim()).filter(Boolean).slice(0, 4) : [];
+    if (exemples.length) {
+      const box = el("div", "exs");
+      for (const en of exemples) {
+        const b = el("button", "ex"); const tx = el("span", "extxt"); tx.append(el("span", "exen", en)); const ic = el("span", "explay"); ic.innerHTML = PLAY; b.append(tx, ic);
+        b.onclick = () => { unlockAudio(); speak(en, b, null); };
+        box.append(b);
+      }
+      t.wrap.insertBefore(box, t.wrap.querySelector(".ctrl"));   // dans la bulle, sous le texte : floutes et estompes avec lui
+    }
+    if (modeLibre() && learner && d.learner_asked) { const bn = notionLibre(d, true); if (bn) t.wrap.after(bn); }
+    // en mains libres l'ecran n'est pas regarde : la tournure est dite aussi
+    const conseilDit = modeLibre() && learner && youEl?._conseil ? auHasard(CONSEIL_LIBRE) + (mainsLibres ? " " + (youEl.nextElementSibling?.matches(".recast.conseil") ? youEl.nextElementSibling.textContent : d.conseil.better) : "") : "";
     history.push({role:"assistant", content:t.text, chunks, fr:d.reply_fr || ""});
-    journal.push({role:"assistant", content:t.text, chunks, fr:d.reply_fr || "", t:Date.now()});
+    journal.push({role:"assistant", content:t.text, chunks, fr:d.reply_fr || "", exemples, t:Date.now()});
     sauverConv();
     if (history.length > 20) history = history.slice(-20);
     lastHint = d.hint_en ? {en:d.hint_en, fr:d.hint_fr || ""} : null;
@@ -2589,7 +2736,7 @@ async function ask(learner, youEl, opts = {}){
     prechargerVoix(t.text);
     t.play.classList.remove("ready");
     stats().ia += nbMots(t.text); saveS();
-    (learner && !opts.force && !sansBlocage ? ding() : Promise.resolve()).then(() => speak(t.text, t.play, t.reveal)).then(() => {
+    (learner && !opts.force && !sansBlocage ? ding() : Promise.resolve()).then(() => conseilDit ? speak(conseilDit, null, null) : null).then(() => speak(t.text, t.play, t.reveal)).then(() => {
       if (seance && seance.phase === "libre" && seance.defiFait) { afficherBilan(); return; }
       if (seance && seance.phase === "libre" && seance.libreTours >= 3) { lancerSecours(); return; }
       mlApres();
@@ -2676,7 +2823,7 @@ function allerAccueil(){
 // Entree dans le fil : les derniers echanges s'affichent en leger, puis on continue.
 function ouvrirFil(libre){
   unlockAudio(); stopSpeak(); if (voixKokoro()) loadTTS();
-  started = true; chargerFil(); lastHint = null; essai = null; nbQuestions = 0; setSerie(0); seance = null; scene = null; boutonDefi(false);
+  started = true; notionsVues = new Set(); chargerFil(); lastHint = null; essai = null; nbQuestions = 0; setSerie(0); seance = null; scene = null; boutonDefi(false);
   modeConversation(libre);
   feed.replaceChildren(); afficherEchanges();
 }
@@ -2686,11 +2833,12 @@ function begin(){
   ouvrirFil(false); $("themeName").textContent = theme.fr;
   lancerSeance();
 }
-function commencerLibre(){
+// sujet (facultatif) : les questions posees en francais juste avant, pour que l'IA ouvre dessus
+function commencerLibre(sujet){
   if (!S.key) { openSettings(); return; }
   setTheme(LIBRE);
   ouvrirFil(true); history = [];
-  libre = {tours:0, justes:0, phrases:[], mots:[]}; boutonFin(true); majLeconChip();
+  libre = {tours:0, justes:0, phrases:[], mots:[], sujet:sujet || ""}; boutonFin(true); majLeconChip();
   ask(null);   // l'IA ouvre toujours, avec une seule question (selon le moment, ou le suivi d'un vrai moment)
 }
 // Terminer le mode libre : ce que la conversation a apporte, puis l'accueil
@@ -2708,7 +2856,7 @@ function terminerLibre(){
   // les phrases a garder (corrigees) : touchables pour les reentendre ; elles reviendront en rappel
   const phrases = [...new Set(libre.phrases)].slice(-3);
   if (phrases.length) { const ul = el("div", "cfaits"); for (const f of phrases) { const l = el("button", "cfait ecoute"); const i = el("span", "rcplay"); i.innerHTML = PLAY; l.append(i, el("span", null, f)); l.onclick = () => { unlockAudio(); speak(f, l, null); }; ul.append(l); } c.append(ul); }
-  if (libre.mots.length) { const w = el("div", "pills bmots"); for (const m of libre.mots.slice(-4)) w.append(el("span", "pill", m.en)); w.onclick = () => ouvrirFiches(); c.append(w); }
+  if (libre.mots.length) { const w = el("div", "pills bmots"); const vus = new Set(); for (const m of libre.mots.filter(m => { const k = normPhrase(m.en); return !vus.has(k) && vus.add(k); }).slice(-4)) w.append(el("span", "pill", m.en)); w.onclick = () => ouvrirFiches(); c.append(w); }
   const fin = el("button", "gros cfin", "Terminer"); fin.onclick = () => { if (fin.disabled) return; fin.disabled = true; confettis(fin); ding(); setTimeout(allerAccueil, 650); };
   c.append(fin);
   nouvelleEtape(c); ding();

@@ -1018,7 +1018,7 @@ function commandesVideo(v){
     if (seek.classList.contains("annule") || (e && loin(e))) { seek.classList.remove("annule"); v.seekP = null; seek.style.setProperty("--p", actuelle()); cache = setTimeout(() => seek.classList.remove("actif"), 600); return; }
     const t = v.seekP * duree(); v.seekP = null;
     try { v.player.seekTo(t, true); } catch {}
-    hidePop(); v.ouverte = null; finParcours(v); v.cur = -2;
+    hidePop(); v.ouverte = null; v.fige = null; finParcours(v); v.cur = -2;
     cache = setTimeout(() => seek.classList.remove("actif"), 1400);
   };
   seek.addEventListener("pointerup", fin); seek.addEventListener("pointercancel", fin);
@@ -1081,8 +1081,10 @@ function toucherLigne(v, i){
   if (v.ouverte == null && i === v.cur && !joue) { ouvrirLigne(v, i); return; }
   stopSpeak(); hidePop(); finParcours(v);
   v.ouverte = null; v.lent = false; v.cur = -2; v.attSous = false;
-  viserLigne(v, i);
-  try { v.player.setPlaybackRate(1); v.player.seekTo(Math.max(0, v.subs[i].t - .15), true); v.player.pauseVideo(); } catch {}
+  // la video ne bouge pas tout de suite : on met en pause et on affiche la phrase touchee ; le recalage (un peu
+  // avant son debut) se fait a la reprise, et la phrase reste affichee tant que la lecture ne l'a pas atteinte
+  v.fige = {t:v.subs[i].t, jusqu:0}; viserLigne(v, i); v.cible = null;
+  try { v.player.setPlaybackRate(1); v.player.pauseVideo(); } catch {}
   suivreSous(v);
 }
 // la phrase en cours s'ouvre : la video se met en pause, la phrase vient au point fixe et montre sa traduction
@@ -1099,7 +1101,7 @@ function fermerLigne(v){
 // la liste va droit a la phrase visee, vite, sans repasser par l'ancienne position
 function viserLigne(v, i){ v.cible = {i, t:v.subs[i]?.t, jusqu:Date.now() + 1500}; v.vue.classList.add("vite"); clearTimeout(v.viteT); v.viteT = setTimeout(() => v.vue.classList.remove("vite"), 450); }
 function jouerLigne(v, i, vitesse){
-  hidePop(); viserLigne(v, i);
+  hidePop(); v.fige = null; viserLigne(v, i);
   v.ouverte = null; v.lent = vitesse < 1; v.cur = -2;
   try { v.player.setPlaybackRate(vitesse); v.player.seekTo(Math.max(0, v.subs[i].t - .4), true); v.player.playVideo(); } catch {}
 }
@@ -1193,6 +1195,10 @@ function suivreSous(v){
   document.body.classList.toggle("vdet", v.ouverte != null && !v.disc);
   if (v.ouverte != null) v.vue.style.setProperty("--vh", v.vue.clientHeight + "px");   // la phrase ouverte prend toute la hauteur dispo   // la lecture a repris : la traduction se referme
   let i = -1; for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .05) i = j; else break; }
+  if (v.fige) {   // une phrase touchee : elle reste affichee en pause, puis tant que la reprise ne l'a pas atteinte
+    const fi = v.subs.findIndex(x => x.t === v.fige.t);
+    if (fi < 0 || (v.fige.jusqu && (t >= v.fige.t - .05 || Date.now() > v.fige.jusqu))) v.fige = null; else i = fi;
+  }
   if (v.cible) {   // juste apres un saut : on garde la phrase visee tant que YouTube n'a pas rattrape
     const ci = v.subs.findIndex(x => x.t === v.cible.t);
     if (ci < 0 || i === ci || Date.now() > v.cible.jusqu) v.cible = null; else i = ci;
@@ -1466,6 +1472,11 @@ $("playBtn").onclick = () => {
   let joue = false; try { joue = v.player.getPlayerState() === 1; } catch {}
   if (joue) { v.attSous = false; v.player.pauseVideo(); return; }
   if (v.disc) fermerDiscussion(v);
+  if (v.fige && v.ouverte == null && !v.fige.jusqu) {   // reprise apres une phrase touchee : un peu avant son debut
+    finParcours(v); v.fige.jusqu = Date.now() + 2500; v.veutJouer = true; pb_charge(true);
+    try { v.player.seekTo(Math.max(0, v.fige.t - .3), true); v.player.playVideo(); } catch {}
+    return;
+  }
   let ici = -1, t = 0; try { t = v.player.getCurrentTime() || 0; } catch {}
   for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .05) ici = j; else break; }
   if (v.ouverte != null && v.ouverte !== ici) { jouerLigne(v, v.ouverte, 1); return; }   // on a navigue vers une autre phrase : on repart de la

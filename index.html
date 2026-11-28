@@ -1528,21 +1528,27 @@ function vocAffiche(id){
   return [...perso.map(x => ({...x, perso:true})), ...(g.v === VOC_V ? g.items || [] : []).filter(x => !k.has(x.en.toLowerCase()))];
 }
 function vocsVideos(){ if (!S.vidVoc || typeof S.vidVoc !== "object") S.vidVoc = {}; return S.vidVoc; }
-const VOC_V = 3;   // v3 : listes plus fournies (environ 3 mots par minute)
+const VOC_V = 4;   // v4 : tous les mots qui valent le coup, sans plafond
 const vocEnCours = new Map();   // id -> promesse (une seule generation a la fois par video)
 function vocVideo(v){
   const deja = vocsVideos()[v.id]; if (deja?.items?.length && deja.v === VOC_V) return Promise.resolve(deja.items);   // (version de la consigne : une liste d'une version plus ancienne est refaite)
   if (vocEnCours.has(v.id)) return vocEnCours.get(v.id);
   let duree = 0; try { duree = v.player.getDuration() || 0; } catch {}
-  const fin = duree > 2700 ? 2700 : null;   // au-dela de 45 min, on s'en tient au debut
-  const demande = modele => llm(`Watch this YouTube video${v.titre ? ` ("${v.titre}")` : ""}. A French-speaking learner of English (level A2/B1) is watching it and wants to understand it better.
+  // la video est lue par morceaux de 5 min (en parallele) : sur la video entiere, Gemini survole et saute des passages
+  const fin = Math.min(duree || 300, 2700), MORCEAU = 300, morceaux = [];   // (au-dela de 45 min, on s'en tient au debut)
+  for (let a = 0; a < fin; a += MORCEAU) morceaux.push([a, Math.min(fin, a + MORCEAU)]);
+  const demande = (modele, a, b) => llm(`Watch this part of a YouTube video${v.titre ? ` ("${v.titre}")` : ""}, from ${mmss(a)} to ${mmss(b)}. A French-speaking learner of English (level A2/B1) is watching it and wants to understand it better.
 ${motsConnus().length ? `He has told us he already knows these, never list them: ${motsConnus().slice(-120).join(", ")}.
 ` : ""}He already knows everyday English up to B1 (building, car, company, to grow, to build, important...) and every word that looks like French (laser, technology, rocket, economy, idea...): NEVER list those, nor numbers, names or brands.
-- "items": the vocabulary that would really stop him, in the order it appears: less common words (milestone, leverage, bottleneck...), idioms, phrasal verbs (figure out, ramp up...), collocations and sentence patterns that a French speaker would not guess, as they are used in the video. Give 30 to 60 items spread over the WHOLE video from start to end (about 3 per minute), still never the easy words above. For each: "en" = the word or expression (short, as said in the video), "fr" = its French translation in this context (short, natural, correct French spelling with all accents: é, è, à, ç...), "t" = the time in seconds when it is first said, "dit" = the exact words as they are SPOKEN at that moment, inflected as in the video (e.g. "figured it out" for "figure out", "milestones" for "milestone").`, SCHEMA_VOCV, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, ...(fin ? {debut:0, fin} : {}), basse:true}, modele});
-  // Flash traduit bien mieux que Lite (Lite invente des sens et perd les accents) ; Lite seulement si Flash ne repond pas
-  const p = demande("gemini-flash-latest").catch(e => { if (e?.code === "key") throw e; return demande(MODELE_SECOURS); })
+- "items": the vocabulary that would really stop him, in the order it appears: less common words (milestone, leverage, bottleneck...), idioms, phrasal verbs (figure out, ramp up...), collocations and sentence patterns that a French speaker would not guess, as they are used in the video. List EVERY item worth learning in this part, from its start to its very end: no maximum, as many as it really contains; just never the easy words above. For each: "en" = the word or expression (short, as said in the video), "fr" = its French translation in this context (short, natural, correct French spelling with all accents: é, è, à, ç...), "t" = the time in seconds when it is first said (counted from the start of this part), "dit" = the exact words as they are SPOKEN at that moment, inflected as in the video (e.g. "figured it out" for "figure out", "milestones" for "milestone").`, SCHEMA_VOCV, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, debut:a, fin:b, basse:true}, modele});
+  // Flash traduit bien mieux que Lite (Lite invente des sens et perd les accents) ; Lite seulement si Flash ne repond pas.
+  // Un morceau qui echoue n'empeche pas les autres ; si tous echouent, l'erreur remonte.
+  const unMorceau = ([a, b]) => demande("gemini-flash-latest", a, b).catch(e => { if (e?.code === "key") throw e; return demande(MODELE_SECOURS, a, b); })
+    .then(d => (d.items || []).map(x => ({...x, t:isFinite(x.t) ? (x.t <= b - a + 5 ? x.t + a : x.t) : a})));
+  const p = Promise.allSettled(morceaux.map(unMorceau))
+    .then(r => { if (r.every(x => x.status === "rejected")) throw r[0].reason; return {items:r.flatMap(x => x.status === "fulfilled" ? x.value : [])}; })
     .then(d => {
-      const vus = new Set(), items = (d.items || []).filter(x => x && x.en && x.fr && !vus.has(x.en.toLowerCase()) && vus.add(x.en.toLowerCase())).map(x => ({en:x.en.trim(), fr:x.fr.trim(), t:isFinite(x.t) ? Math.round(x.t) : 0, ...(x.dit && x.dit.trim().toLowerCase() !== x.en.trim().toLowerCase() ? {dit:x.dit.trim()} : {})}));
+      const vus = new Set(), items = (d.items || []).filter(x => x && x.en && x.fr && !vus.has(x.en.toLowerCase()) && vus.add(x.en.toLowerCase())).map(x => ({en:x.en.trim(), fr:x.fr.trim(), t:Math.round(x.t), ...(x.dit && x.dit.trim().toLowerCase() !== x.en.trim().toLowerCase() ? {dit:x.dit.trim()} : {})})).sort((x, y) => x.t - y.t);
       if (items.length) {
         const m = vocsVideos(); m[v.id] = {...(m[v.id] || {}), items, d:Date.now(), v:VOC_V};   // (les mots demandes restent)
         const garder = new Set(videosVues().map(x => x.id)); garder.add(v.id);   // on ne garde que les videos de la liste

@@ -217,12 +217,12 @@ body.vdisc #feed{padding-bottom:10px}
 .dhaut2 .vfermer{position:static;flex:none}
 .dfil{position:relative;flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding:14px 0 10px;scrollbar-width:none}
 .dfil::-webkit-scrollbar{display:none}
-.dia{display:flex;flex-direction:column;gap:6px;max-width:94%}
-.dia p{margin:0}
-.dia .dreac{font-size:1.05rem;line-height:1.4}
-.dia .dq{font-size:1.25rem;font-weight:700;line-height:1.3;margin-top:4px}
-.dia .dfr{font-size:.92rem;color:var(--muted);line-height:1.35}
-.dsrc{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:4px}
+/* la discussion reprend les bulles du mode libre (flou, lecture, afficher, traduire), un peu plus petites sous la video */
+body.video .claude .msg,body.video .claude .fr{font-size:clamp(1.3rem,5.6vw,1.6rem)}
+body.video .claude.old .msg,body.video .claude.old .fr{font-size:1.05rem}
+body.video .claude .ctrl{margin-top:10px}
+.dsrc{margin-top:12px}
+.dsrc{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .dsrc span{font-size:.82rem;font-weight:700;color:var(--muted)}
 .dsrc button{height:32px;padding:0 12px;border-radius:999px;border:none;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:.85rem;font-weight:800}
 .dsrc button svg{width:13px;height:13px}
@@ -1026,9 +1026,9 @@ function fermerDiscussion(v){
   document.body.classList.remove("vdisc"); v.cur = -2;
 }
 const SCHEMA_DISC = {type:"OBJECT", properties:{
-  heard:{type:"STRING"}, cas:{type:"STRING"}, reaction:{type:"STRING"}, reaction_fr:{type:"STRING"},
-  sources:{type:"ARRAY", items:{type:"NUMBER"}}, question:{type:"STRING"}, question_fr:{type:"STRING"}
-}, required:["heard","cas","reaction","reaction_fr","sources","question","question_fr"], propertyOrdering:["heard","cas","reaction","reaction_fr","sources","question","question_fr"]};
+  heard:{type:"STRING"}, cas:{type:"STRING"}, reaction:{type:"STRING"}, sources:{type:"ARRAY", items:{type:"NUMBER"}}, question:{type:"STRING"},
+  reply_en:{type:"STRING"}, chunks:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}, reply_fr:{type:"STRING"}
+}, required:["heard","cas","reaction","sources","question","reply_en","chunks","reply_fr"], propertyOrdering:["heard","cas","reaction","sources","question","reply_en","chunks","reply_fr"]};
 // un tour : you = null pour la premiere question de l'IA, sinon la reponse enregistree de l'apprenant
 async function tourDiscussion(you, aud){
   const v = video, D = v?.disc; if (!D || busy) return;
@@ -1046,10 +1046,11 @@ ${you ? `The attached AUDIO is his spoken answer to your last question, in Engli
 - "heard": ${you ? `his words, word for word. If the audio is silent or not intelligible, write "" and leave everything else empty: never guess.` : `""`}
 - "cas": ${you ? `"juste" (right answer), "partiel" (partly right), "faux" (wrong), "sais_pas" (he does not know, cannot find the words, or only manages a few words in French), or "autre" (he talks about something else or asks his own question).` : `"debut"`}
 - "reaction": ${you ? `in simple spoken English, 1 to 3 short sentences. "juste"/"partiel": confirm warmly and complete what is missing. "faux"/"sais_pas": give the right answer clearly, with the key English words he was missing. "autre": answer what he said naturally (if he asks about the video, answer only from the transcript, and say so if it is not in it). No markdown, do not write any time in it.` : `""`}
-- "reaction_fr": its French translation ("" if none).
 - "sources": the times (taken from the line times of the transcript) where the answer to your LAST question can be heard: 1 to 3 times for "faux", "sais_pas" and "partiel", otherwise []. ${you ? "" : "Here: []."}
 - "question": ONE new precise question in simple English about what he has watched, like "What is his plan for ...?", "When did he go to China?", "Why does she say ...?": facts, plans, reasons, numbers, places, opinions. It must be answerable from the transcript, never a yes/no question, never one you already asked. Favour the most recent part, but you may go back to earlier parts. If he talked about something else, link your question to it when you can.
-- "question_fr": its French translation.`, SCHEMA_DISC, aud);
+- "reply_en": "reaction" then "question", joined with a space: exactly what you will say.
+- "chunks": reply_en cut into consecutive pieces of 1 to 4 words, in order; joined with spaces they must give reply_en exactly. Keep idioms, phrasal verbs and set expressions in one piece. Punctuation stays attached to its piece. Each with "fr" = the French meaning of THAT piece in this sentence.
+- "reply_fr": a natural French translation of reply_en (with « tu »).`, SCHEMA_DISC, aud);
     dots.remove(); if (video !== v || v.disc !== D) return;
     if (you) {
       const h = String(d.heard || "").trim();
@@ -1057,22 +1058,22 @@ ${you ? `The attached AUDIO is his spoken answer to your last question, in Engli
       you.className = "you"; you.textContent = h; D.tours.push({r:"moi", t:h});
       v.questions++; gagner(d.cas === "juste" ? 10 : 5, you); noterJour();
     }
-    const box = el("div", "dia");
-    if (d.reaction) {
-      box.append(el("p", "dreac", d.reaction));
-      if (d.reaction_fr) box.append(el("p", "dfr", d.reaction_fr));
-      // les moments de la video ou se trouve la reponse : un toucher y ramene la video
-      const tps = [...new Set((d.sources || []).filter(n => isFinite(n) && n >= 0).map(n => Math.round(n)))].slice(0, 3);
-      if (tps.length) {
-        const src = el("div", "dsrc"); src.append(el("span", null, "La réponse est à"));
-        tps.forEach(n => { const b = el("button"); b.innerHTML = PLAY; b.append(mmss(n)); b.setAttribute("aria-label", "Revoir à " + mmss(n)); b.onclick = () => rejouerVideo(n); src.append(b); });
-        box.append(src);
-      }
+    // la reponse de l'IA : la meme bulle que le mode libre (floue tant qu'on ecoute, Afficher, Traduire, mots touchables)
+    const texte = String(d.reply_en || [d.reaction, d.question].filter(Boolean).join(" ")).trim();
+    let chunks = (Array.isArray(d.chunks) ? d.chunks : []).filter(c => c && c.en);
+    if (chunks.map(c => c.en).join(" ").replace(/\s+/g, " ") !== texte.replace(/\s+/g, " ")) chunks = texte.split(/\s+/).map(m => ({en:m, fr:""}));
+    const t = renderClaude(chunks, d.reply_fr || "", false, D.fil);
+    // les moments de la video ou se trouve la reponse : un toucher y ramene la video
+    const tps = [...new Set((d.sources || []).filter(n => isFinite(n) && n >= 0).map(n => Math.round(n)))].slice(0, 3);
+    if (d.reaction && tps.length) {
+      const src = el("div", "dsrc"); src.append(el("span", null, "La réponse est à"));
+      tps.forEach(n => { const b = el("button"); b.innerHTML = PLAY; b.append(mmss(n)); b.setAttribute("aria-label", "Revoir à " + mmss(n)); b.onclick = () => rejouerVideo(n); src.append(b); });
+      t.wrap.insertBefore(src, t.wrap.querySelector(".ctrl"));
     }
-    if (d.question) { box.append(el("p", "dq", d.question)); if (d.question_fr) box.append(el("p", "dfr", d.question_fr)); }
-    D.fil.append(box); D.fil.scrollTop = Math.max(0, (you || box).offsetTop - 8);   // le tour se lit depuis son debut
-    D.tours.push({r:"ia", t:[d.reaction, d.question].filter(Boolean).join(" ")});
-    await speak([d.reaction, d.question].filter(Boolean).join(" "));
+    D.fil.scrollTop = Math.max(0, (you || t.wrap).offsetTop - 8);   // le tour se lit depuis son debut
+    D.tours.push({r:"ia", t:t.text});
+    prechargerVoix(t.text); t.play.classList.remove("ready");
+    await speak(t.text, t.play, t.reveal);
   } catch (e) {
     dots.remove(); console.error(e); you?.remove();
     setStatus(e?.code === "rate" ? "Limite gratuite atteinte, réessaie plus tard." : e?.code === "net" ? "Pas de réseau." : "Pas de réponse, réessaie.");
@@ -2995,7 +2996,7 @@ function reflouter(){
   });
   hidePop();
 }
-function renderClaude(chunks, replyFr, passe){
+function renderClaude(chunks, replyFr, passe, dans){
   if (!passe) {
     reflouter();
     feed.querySelectorAll(".claude").forEach(c => c.classList.add("old"));
@@ -3021,7 +3022,7 @@ function renderClaude(chunks, replyFr, passe){
   eye.onclick = () => { hidePop(); reveal(msg.classList.contains("hide")); };
   tr.onclick = () => { hidePop(); const on = !wrap.classList.contains("trad"); wrap.classList.toggle("trad", on); trL.textContent = on ? "Anglais" : "Traduire"; if (on) reveal(true); };
   ctrl.append(play, eye); if (replyFr) ctrl.append(tr);
-  wrap.append(msg, fr, ctrl); if (!passe) feed.append(wrap);
+  wrap.append(msg, fr, ctrl); if (!passe) (dans || feed).append(wrap);
   return {text, play, reveal, wrap};
 }
 

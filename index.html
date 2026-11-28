@@ -201,9 +201,15 @@ body.video #feed.defile{overflow-y:auto}
 .sousvue.glisse .sous{transition:none}
 .sousvue.vite .sous{transition-duration:.32s}
 .sousvue.vite .sl{transition-duration:.25s}
-.suivre{position:absolute;z-index:2;left:50%;bottom:10px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;height:36px;padding:0 14px;border-radius:999px;border:none;background:var(--accent);color:var(--on-accent);display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 35%,transparent);transition:opacity .3s,transform .4s var(--ease)}
-.suivre svg{width:16px;height:16px}
-.sousvue.parcours .suivre{opacity:1;pointer-events:auto;transform:translateX(-50%)}
+/* le repere de la marge gauche : invisible tant qu'on suit la lecture */
+body.video .sousvue{margin:0 -20px;padding:0 20px}
+.vrail{position:absolute;z-index:2;left:0;top:47%;width:20px;height:0;--o:0px;opacity:0;pointer-events:none;transition:opacity .3s}
+.vrail.on{opacity:1;pointer-events:auto}
+.vtrait{position:absolute;left:9px;width:2px;border-radius:1px;background:color-mix(in srgb,var(--accent) 30%,transparent);top:min(0px,var(--o));height:calc(max(var(--o),0px) - min(var(--o),0px))}
+.vpt2{position:absolute;left:7px;top:calc(var(--o) - 3px);width:6px;height:6px;border-radius:50%;background:var(--ink);opacity:.7;transition:top .12s linear}
+.vpt{position:absolute;left:-12px;top:-22px;width:44px;height:44px;border:none;padding:0;background:none;-webkit-tap-highlight-color:transparent}
+.vpt::after{content:"";position:absolute;left:16px;top:17px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 22%,transparent),0 0 14px color-mix(in srgb,var(--accent) 60%,transparent)}
+.vpt:active::after{transform:scale(1.25)}
 /* la derniere question et sa reponse restent en haut des sous-titres */
 .vqa{position:sticky;top:0;z-index:3;display:flex;flex-direction:column;gap:8px;margin:0 -6px 8px;padding:14px 14px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--card-line);box-shadow:0 10px 30px color-mix(in srgb,#2457C5 14%,transparent)}
 .vqa:empty{display:none}
@@ -1036,7 +1042,7 @@ If nobody speaks in the clip (music, silence), return an empty list. Never inven
     l = l.filter(x => x.t >= a - 2 && x.t <= b + 2).sort((x, y) => x.t - y.t);
     v.subs = v.subs.filter(x => x.k !== k).concat(l.map(x => ({...x, k}))).sort((x, y) => x.t - y.t);
     v.blocs.set(k, "ok"); dessinerSous(v); ecrireSous(v);
-  } catch (e) { console.error(e); if (video === v) { v.blocs.set(k, "ko"); setTimeout(() => { if (v.blocs.get(k) === "ko") v.blocs.delete(k); }, 8000); if (e?.code === "rate") setStatus("Limite gratuite atteinte : plus de sous-titres pour l'instant."); } }
+  } catch (e) { console.error(e); if (video === v) { v.blocs.set(k, "ko"); (v.koVu ||= new Set()).add(k); setTimeout(() => { if (v.blocs.get(k) === "ko") v.blocs.delete(k); }, 8000); if (e?.code === "rate") setStatus("Limite gratuite atteinte : plus de sous-titres pour l'instant."); } }
 }
 const ICO_SIGNET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></svg>';
 function dessinerSous(v){
@@ -1074,7 +1080,7 @@ function toucherLigne(v, i){
   let joue = false; try { joue = v.player.getPlayerState() === 1; } catch {}
   if (v.ouverte == null && i === v.cur && !joue) { ouvrirLigne(v, i); return; }
   stopSpeak(); hidePop(); finParcours(v);
-  v.ouverte = null; v.lent = false; v.cur = -2;
+  v.ouverte = null; v.lent = false; v.cur = -2; v.attSous = false;
   viserLigne(v, i);
   try { v.player.setPlaybackRate(1); v.player.seekTo(Math.max(0, v.subs[i].t - .15), true); v.player.pauseVideo(); } catch {}
   suivreSous(v);
@@ -1082,7 +1088,7 @@ function toucherLigne(v, i){
 // la phrase en cours s'ouvre : la video se met en pause, la phrase vient au point fixe et montre sa traduction
 function ouvrirLigne(v, i){
   if (v.ouverte === i) { hidePop(); return; }   // deja ouverte : un toucher ne fait que fermer la bulle d'un mot
-  try { v.player.pauseVideo(); } catch {}
+  v.attSous = false; try { v.player.pauseVideo(); } catch {}
   stopSpeak(); hidePop(); v.ouverte = i; v.cur = -2; placerSous(v);
 }
 // le retour de la phrase ouverte : on revient aux sous-titres, la video reste en pause
@@ -1111,18 +1117,21 @@ function placerSous(v){
 // Parcourir les sous-titres au doigt. Problemes prevus : le suivi automatique ne doit pas se battre avec le doigt
 // (il se met en attente), un glisser ne doit pas ouvrir une phrase, et on doit pouvoir revenir au direct
 // (bouton, bouton Lecture, ou tout seul apres 5 s sans toucher pendant que la video joue).
-function finParcours(v, sansPlacer){ if (!v.libre) return; v.libre = false; v.vue.classList.remove("parcours", "glisse"); if (!sansPlacer) { v.cur = -2; } }
+function finParcours(v, sansPlacer){ if (!v.libre) return; v.libre = false; v.vue.classList.remove("parcours", "glisse"); majRail(v); if (!sansPlacer) { v.cur = -2; } }
 function parcourirSous(v){
-  const b = el("button", "suivre"); b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'; b.setAttribute("aria-label", "Revenir à la phrase en cours");
-  b.onclick = e => { e.stopPropagation(); arreterElan(); finParcours(v); placerSous(v); }; v.vue.append(b);
-  let y0 = null, base = 0, bouge = false, pts = [], raf = 0, ici = -1;
+  // le repere dans la marge gauche : le point principal (la phrase en cours) au milieu, qu'on touche pour y revenir,
+  // et un second point la ou on regarde ; l'ecart suit une courbe qui sature (vite au debut, puis de moins en moins)
+  const rail = el("div", "vrail"), trait = el("i", "vtrait"), pt = el("button", "vpt"), loin = el("i", "vpt2");
+  pt.setAttribute("aria-label", "Revenir à la phrase en cours"); rail.append(trait, loin, pt); v.vue.append(rail); v.rail = rail;
+  pt.onclick = e => { e.stopPropagation(); arreterElan(); finParcours(v); placerSous(v); };
+  let y0 = null, base = 0, bouge = false, pts = [], raf = 0, ici = -1;   // (ici : la phrase sous le point de lecture)
   const borne = y => { const dernier = v.sous.lastElementChild, haut = v.vue.clientHeight * .2, bas = dernier ? haut - dernier.offsetTop : haut; return Math.max(bas, Math.min(haut, y)); };
   // la phrase qui passe au point de lecture : une vibration tres legere quand elle change
   const quelle = () => { const ref = v.vue.clientHeight * .2 - v.y + 12; let i = 0; for (const l of v.sous.children) { if (l.offsetTop <= ref) i++; else break; } return i; };
-  const poser = y => { v.y = Math.round(borne(y)); v.sous.style.transform = "translateY(" + v.y + "px)"; const i = quelle(); if (i !== ici) { if (ici !== -1) vibre(4); ici = i; } return v.y; };
+  const poser = y => { v.y = Math.round(borne(y)); v.sous.style.transform = "translateY(" + v.y + "px)"; const i = quelle(); if (i !== ici) { if (ici !== -1) vibre(4); ici = i; } v.regard = i - 1; majRail(v); return v.y; };
   function arreterElan(){ if (!raf) return; cancelAnimationFrame(raf); raf = 0; v.vue.classList.remove("glisse"); v.glisseT = v.libreT = Date.now(); }
   v.vue.addEventListener("pointerdown", e => {
-    if (v.ouverte != null || e.target.closest(".suivre")) return;
+    if (v.ouverte != null || e.target.closest(".vpt")) return;
     if (raf) { arreterElan(); v.glisseT = Date.now(); }   // le doigt rattrape la liste : elle s'arrete, sans ouvrir de phrase
     y0 = e.clientY; base = v.y || 0; bouge = false; pts = [{y:e.clientY, t:e.timeStamp}]; ici = quelle();
   });
@@ -1153,6 +1162,13 @@ function parcourirSous(v){
   };
   v.vue.addEventListener("pointerup", fin); v.vue.addEventListener("pointercancel", fin);
 }
+// l'ecart du second point : d phrases d'ecart -> une fraction qui sature (1 phrase : 15 %, 6 : 63 %, 20 : 96 %)
+function majRail(v){
+  if (!v.rail) return;
+  const d = v.libre && v.cur >= 0 && v.regard != null ? v.regard - v.cur : 0;
+  const m = v.vue.clientHeight * .3, o = Math.sign(d) * m * (1 - Math.exp(-Math.abs(d) / 6));
+  v.rail.style.setProperty("--o", o.toFixed(1) + "px"); v.rail.classList.toggle("on", !!v.libre && d !== 0);
+}
 // suit la lecture : charge la tranche en cours (et la suivante un peu avant), amene la phrase dite au point fixe
 function suivreSous(v){
   if (video !== v || v.fini) return;
@@ -1161,10 +1177,15 @@ function suivreSous(v){
   const k = Math.floor(t / TRANCHE);
   chargerSous(v, k); if (t - k * TRANCHE > TRANCHE - 25) chargerSous(v, k + 1);
   v.att.hidden = v.blocs.get(k) !== "attente";
+  // les sous-titres de cette minute ne sont pas encore la : la video attend (pause), puis repart seule quand ils arrivent.
+  // Une tranche qui a deja echoue ne bloque plus (Google sature : on regarde sans sous-titres plutot que rester bloque).
+  const attendSous = v.blocs.get(k) === "attente" && !v.koVu?.has(k);
+  if (attendSous && joue) { try { v.player.pauseVideo(); } catch {} v.attSous = true; joue = false; }
+  else if (!attendSous && v.attSous) { v.attSous = false; if (v.ouverte == null && !v.disc && !enLecture) { v.veutJouer = true; try { v.player.playVideo(); } catch {} } }
   // la video charge (pas encore prete, mise en memoire, ou lecture demandee mais pas encore partie) : le bouton le montre
   let etat = -1; try { etat = v.player.getPlayerState(); } catch {}
   if (joue || etat === 2 || etat === 0) v.veutJouer = false;
-  const charge = etat === 3 || (v.veutJouer && !joue);
+  const charge = etat === 3 || (v.veutJouer && !joue) || attendSous;
   pb_charge(charge);
   const pb = $("playBtn"); if (pb._joue !== joue) { pb._joue = joue; pb.innerHTML = joue ? PAUSE : PLAY; pb.setAttribute("aria-label", joue ? "Pause" : "Lecture"); pb.classList.toggle("joue", joue); }
   if (v.seek && v.seekP == null) { let d = 0; try { d = v.player.getDuration() || 0; } catch {} if (d) v.seek.style.setProperty("--p", Math.min(1, t / d)); }
@@ -1177,7 +1198,7 @@ function suivreSous(v){
     if (ci < 0 || i === ci || Date.now() > v.cible.jusqu) v.cible = null; else i = ci;
   }
   if (v.libre && joue && Date.now() - (v.libreT || 0) > 5000 && !v.vue.classList.contains("glisse")) { finParcours(v); }
-  if (i === v.cur) return;
+  if (i === v.cur) { if (v.libre) majRail(v); return; }
   if (v.lent && v.cur >= 0 && i > v.cur) { v.lent = false; try { v.player.setPlaybackRate(1); } catch {} }   // la phrase lente est finie
   v.cur = i; placerSous(v);
 }
@@ -1230,7 +1251,7 @@ function majZone(v){
 // ouvrir la discussion, ou la reprendre la ou on l'avait laissee (sa zone tient compte de ce qu'on a vu depuis)
 function lancerDiscussion(){
   const v = video; if (!v || busy || v.disc) return;
-  try { v.player.pauseVideo(); } catch {}
+  v.attSous = false; try { v.player.pauseVideo(); } catch {}
   hidePop(); stopSpeak(); finParcours(v, true); v.ouverte = null;
   let D = v.discMem;
   if (!D) {
@@ -1398,7 +1419,7 @@ He already knows everyday English up to B1 (building, car, company, to grow, to 
 }
 function afficherVocVideo(){
   const v = video; if (!v) return;
-  try { v.player.pauseVideo(); } catch {}
+  v.attSous = false; try { v.player.pauseVideo(); } catch {}
   stopSpeak(); hidePop();
   const box = $("vvocListe");
   const g = vocsVideos()[v.id];
@@ -1443,7 +1464,7 @@ function afficherPassages(){
 $("playBtn").onclick = () => {
   const v = video; if (!v?.player?.playVideo || $("playBtn").classList.contains("charge")) return; hidePop(); stopSpeak();
   let joue = false; try { joue = v.player.getPlayerState() === 1; } catch {}
-  if (joue) { v.player.pauseVideo(); return; }
+  if (joue) { v.attSous = false; v.player.pauseVideo(); return; }
   if (v.disc) fermerDiscussion(v);
   let ici = -1, t = 0; try { t = v.player.getCurrentTime() || 0; } catch {}
   for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .05) ici = j; else break; }
@@ -1892,7 +1913,7 @@ function garderFlux(){ clearTimeout(fluxTimer); fluxTimer = setTimeout(libererFl
 function libererFlux(){ clearTimeout(fluxTimer); fluxGarde?.getTracks().forEach(t => t.stop()); fluxGarde = null; }
 document.addEventListener("visibilitychange", () => { if (document.hidden && !(enreg && enreg.state === "recording")) libererFlux(); });
 async function basculerEnreg(opts = {}){
-  if (video && !(enreg && enreg.state === "recording")) { try { video.player?.pauseVideo?.(); } catch {} }   // on met la video en pause pour poser sa question
+  if (video && !(enreg && enreg.state === "recording")) { video.attSous = false; try { video.player?.pauseVideo?.(); } catch {} }   // on met la video en pause pour poser sa question
   const auto = !!opts.auto;
   if (enreg && enreg.state === "recording") { enreg.forcer?.(); enreg.stop(); return; }
   if (busy || enTransition || !started) return;

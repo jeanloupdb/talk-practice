@@ -91,7 +91,9 @@ svg{width:24px;height:24px;flex:none}
 .okico,.bico{flex:none;display:grid;place-items:center;border-radius:50%}
 .okico{width:22px;height:22px;margin-top:1px;background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
 .okico svg{width:13px;height:13px}
-.btuiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.btuiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+.btuile.pts .bico{background:color-mix(in srgb,#F2B35C 24%,transparent);color:#E09A2B}
+.btuile:nth-child(3){animation-delay:.24s}
 .btuile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--soft);border-radius:18px;padding:12px 14px;animation:popin .45s var(--rebond) both}
 .btuile+.btuile{animation-delay:.12s}
 .btuile b{font-size:1.6rem;font-weight:800;line-height:1.1}
@@ -148,6 +150,20 @@ svg{width:24px;height:24px;flex:none}
 .defibas{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px}
 .defiseg{position:relative;display:block;width:88px;height:6px;border-radius:3px;background:rgba(255,255,255,.28);overflow:hidden;--p:0}
 .defiseg::before{content:"";position:absolute;inset:0 auto 0 0;width:calc(var(--p) * 100%);background:#fff;border-radius:3px;transition:width .55s var(--ease)}
+.gojour{display:inline-flex;align-items:center;gap:6px;margin-left:auto;margin-right:12px;font-size:.85rem;font-weight:800}
+.flammering b svg{width:13px;height:13px;display:block}
+.flammering.plein{background:conic-gradient(#FFC46B 100%,transparent 0)}
+.flammering.plein b{color:#FFC46B}
+/* les signes qui s'envolent */
+.envol{position:fixed;z-index:70;display:inline-flex;align-items:center;gap:3px;pointer-events:none;font-weight:800;font-size:1.05rem;color:var(--good);animation:envol 1.2s cubic-bezier(.2,.8,.3,1) forwards}
+.envol.combo{color:#E8772E;font-size:1.3rem;animation-duration:1.3s}
+.envol.combo svg{width:22px;height:22px}
+.envol.objectif{color:#E8772E}.envol.objectif svg{width:40px;height:40px}
+@keyframes envol{0%{opacity:0;transform:translateY(8px) scale(.6)}18%{opacity:1;transform:translateY(-6px) scale(1.15)}30%{transform:translateY(-10px) scale(1)}100%{opacity:0;transform:translateY(-46px) scale(1)}}
+.you.secoue .faute{display:inline-block;animation:secoue .4s ease}
+@keyframes secoue{20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
+.you.rattrape{animation:rattrape .7s ease}
+@keyframes rattrape{30%{text-shadow:0 0 14px color-mix(in srgb,var(--good) 70%,transparent)}}
 .definiv{display:inline-flex;align-items:center;gap:8px;font-size:.8rem;font-weight:700;opacity:.95}
 .ring{width:30px;height:30px;border-radius:50%;background:conic-gradient(#fff calc(var(--p) * 1%),rgba(255,255,255,.25) 0);display:grid;place-items:center}
 .ring b{width:22px;height:22px;border-radius:50%;background:rgba(20,33,61,.38);display:grid;place-items:center;font-size:.72rem;font-weight:800;color:#fff}
@@ -191,9 +207,7 @@ svg{width:24px;height:24px;flex:none}
 .sujetligne .fl{color:var(--muted);font-size:1.3rem;line-height:1}
 .sujetligne:active{background:color-mix(in srgb,var(--accent) 8%,transparent)}
 .titleblock{min-width:0;flex:1}
-.marque{display:none;width:40px;height:27px;overflow:visible}
-.aghome{display:block;width:min(46vw,190px);height:auto;margin:0 auto 22px;overflow:visible;cursor:pointer}
-.agconv{display:block;width:62px;height:48px;margin:0 auto 2px;overflow:visible;pointer-events:none}
+.marque{display:none;width:32px;height:32px}
 body.home .marque{display:block}
 body.home #modeName{display:none}
 /* en conversation : pas de titre, le defi en cours tient la place */
@@ -508,7 +522,7 @@ button:not(:disabled):active{transform:scale(.94)}
     <div class="blobs" aria-hidden="true"><span class="blob b1"><i></i></span><span class="blob b2"><i></i></span><span class="blob b3"><i></i></span></div><span class="voix" aria-hidden="true"></span>
     <div class="bar">
       <button class="iconbtn back" id="newTheme" aria-label="Retour à l’accueil" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <div class="titleblock"><span class="title"><svg class="marque" id="agLogo" viewBox="26 34 48 32" role="img" aria-label="Talk Practice"></svg><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span><span class="theme leconchip" id="leconChip" hidden></span></div>
+      <div class="titleblock"><span class="title"><svg class="marque" viewBox="0 0 64 64" role="img" aria-label="Talk Practice"><defs><linearGradient id="mq" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F6BF2"/><stop offset="1" stop-color="#7B5CF0"/></linearGradient></defs><path d="M32 5C47 5 59 15 59 30C59 45 48 55 33 55C29 55 26 54.5 23 53.5L12 59C10.5 59.8 9 58.5 9.5 57L12 48C7 43 5 37 5 30C5 15 17 5 32 5Z" fill="url(#mq)"/><g fill="#fff"><rect x="19.5" y="25" width="5" height="10" rx="2.5"/><rect x="29.5" y="19" width="5" height="22" rx="2.5"/><rect x="39.5" y="23" width="5" height="14" rx="2.5"/></g></svg><span id="modeName">Talk Practice</span></span><span class="theme" id="themeName"></span><span class="theme leconchip" id="leconChip" hidden></span></div>
       <div class="barbtns">
         <button class="iconbtn" id="vocBtn" aria-label="Mes fiches de vocabulaire" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M7 10h7M7 14h4"/></svg>
@@ -521,13 +535,12 @@ button:not(:disabled):active{transform:scale(.94)}
     <p id="voiceStatus"></p>
     <div id="feed" aria-live="polite">
       <div class="empty" id="empty">
-        <svg id="agHome" class="aghome" viewBox="14 24 72 52" aria-hidden="true"></svg>
         <div class="choix">
           <div class="split">
             <button class="defi" id="go">
               <span class="defisur"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.6-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>Continue the lesson</span>
               <span class="defititre" id="goLabel">Practice</span>
-              <span class="defibas"><span class="defiseg" id="goPts"></span><span class="definiv" id="goNiv"></span></span>
+              <span class="defibas"><span class="defiseg" id="goPts"></span><span class="gojour" id="goJour"></span><span class="definiv" id="goNiv"></span></span>
             </button>
             <button class="defi splitchev" id="topicBtn" aria-label="Parler en premier, historique"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
           </div>
@@ -542,7 +555,6 @@ button:not(:disabled):active{transform:scale(.94)}
   </section>
 
   <footer>
-    <svg id="agConv" class="agconv" viewBox="14 26 72 48" aria-hidden="true"></svg>
     <p class="status" id="status"></p>
     <div class="row mainrow">
       <button class="round" id="mlBtn" aria-label="Mode mains libres" hidden>
@@ -696,130 +708,6 @@ if ((S.v || 1) < 4) {
 }
 if (S.theme?.fr && S.theme?.en && S.theme?.role) setTheme(S.theme); else setTheme(THEMES[0]);
 if (S.leconSuspendue) { S.lecon = S.leconSuspendue; delete S.leconSuspendue; saveS(); }
-/* ---------- L'agent : deux yeux et une ligne de voix, montes sur ressorts ----------
-   Il vit a trois endroits : le logo de l'en-tete, en grand sur l'accueil, en petit au-dessus du micro.
-   Son etat suit ce qui se passe vraiment : ecoute (micro), reflexion (IA), parole (voix), reussite, faute. */
-let agNivV = 0, agNivT = 0;
-const agNiv = sim => (performance.now() - agNivT < 250) ? Math.min(1, .18 + agNivV * 1.5) : sim;
-const AG_NP = 40;                                   // points de la ligne de voix
-const agMix = (a, b, k) => a + (b - a) * k;
-// echantillonne une suite de points (polyligne) en AG_NP points regulierement espaces
-function agPoly(pts){
-  const L = [0]; for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
-  const tot = L[L.length - 1], out = []; let j = 1;
-  for (let k = 0; k < AG_NP; k++) { const d = tot * k / (AG_NP - 1); while (j < pts.length - 1 && L[j] < d) j++; const a = pts[j - 1], b = pts[j], f = (d - L[j - 1]) / ((L[j] - L[j - 1]) || 1); out.push([agMix(a[0], b[0], f), agMix(a[1], b[1], f)]); }
-  return out;
-}
-// une agCourbe y = f(u), u de -1 a 1, sur une largeur donnee
-const agCourbe = (larg, f) => Array.from({length:AG_NP}, (_, k) => { const u = -1 + 2 * k / (AG_NP - 1); return [50 + u * larg / 2, f(u)]; });
-const AG_YEUX = 50, AG_BOUCHE = 50, AG_EX = 13;   // yeux et ligne au meme centre : jamais ensemble
-
-// --- les etats : la ligne, les yeux, l'allure ---
-// yeux : h hauteur ; e = 0 capsule, 1 arc ; s = +1 arc rieur, -1 arc doux ; op opacite ; clin = clin d'oeil droit
-const AG_SANS = t => agCourbe(20, u => AG_BOUCHE);   // la ligne au repos, invisible, prete a s'ouvrir
-const AG_ETATS = {
-  repos:    {nom:"Au repos", quand:"Deux yeux qui clignent, respirent et te suivent du regard.", regard:true, cligne:true, ligne:AG_SANS, ligneOp:0, yeux:{h:13}},
-  salut:    {nom:"Il te salue", quand:"À l'ouverture : un clin d'œil et un petit saut.", ligne:AG_SANS, ligneOp:0, yeux:{h:13, clin:1}, tilt:7, saut:true},
-  ecoute:   {nom:"Il t'écoute", quand:"Ses yeux s'ouvrent grand et battent avec ta voix.", vifYeux:true, ligne:AG_SANS, ligneOp:0,
-             yeux:{h:t => 15 + 13 * agNiv(Math.abs(Math.sin(t / 160) * Math.sin(t / 370 + 1)))}, tilt:-3},
-  curieux:  {nom:"Curieux", quand:"Quand il te pose une question : un œil plus grand, la tête penchée.", ligne:AG_SANS, ligneOp:0, yeux:{h:11, hd:8, dx:1.5}, tilt:9},
-  reflechit:{nom:"Il réfléchit", quand:"Les yeux fondent en trois points qui ondulent.", points:true, ligne:AG_SANS, ligneOp:0, yeux:{h:4, op:0, dy:-2}, tilt:4},
-  parle:    {nom:"Il parle", quand:"Les yeux s'étirent en une onde : sa voix.", vif:true,
-             ligne:t => { const v = agNiv(.35 + .65 * Math.abs(Math.sin(t / 105) * Math.sin(t / 251 + 1))); return agCourbe(54, u => AG_BOUCHE + Math.pow(1 - u * u, 1.4) * v * 13 * (Math.sin(u * 6.5 - t / 70) * .65 + Math.sin(u * 11 + t / 55) * .35)); }, yeux:{h:3, op:0}},
-  coche:    {nom:"Phrase juste", quand:"Une coche verte, qui claque avec le ding.", vert:1, saut:true, larg:8,
-             ligne:t => agPoly([[31, 51], [44, 64], [69, 36]]), yeux:{h:3, op:0}},
-  content:  {nom:"Content", quand:"Puis les yeux reviennent, rieurs, et sautillent.", ligne:AG_SANS, ligneOp:0, yeux:{e:1, s:1}, rebonds:true},
-  doux:     {nom:"Une faute", quand:"Regard doux et penché : on réessaie, sans drame.", ligne:AG_SANS, ligneOp:0, yeux:{e:1, s:-1, hd:-2}, tilt:-11},
-  reessaie: {nom:"Réessaie", quand:"Une flèche qui tourne : à toi.", fleche:true, larg:7,
-             ligne:t => { const a0 = t / 420; return Array.from({length:AG_NP}, (_, k) => { const a = a0 + k / (AG_NP - 1) * 4.9; return [50 + Math.cos(a) * 15, 50 + Math.sin(a) * 15]; }); }, yeux:{h:3, op:0}},
-  fete:     {nom:"Défi validé", quand:"Yeux rieurs, il danse, des étincelles jaillissent.", etincelles:true, ligne:AG_SANS, ligneOp:0, yeux:{e:1, s:1}, danse:true},
-  dort:     {nom:"Il somnole", quand:"Yeux fermés, souffle lent. Touche-le pour le réveiller.", zzz:true, ligne:AG_SANS, ligneOp:0, yeux:{h:0, e:1, s:-1, plat:1}, tilt:-7}
-};
-
-function creerAgent(svg, id, opts = {}){
-  const fixe = opts.fixe, blanc = opts.blanc;
-  svg.innerHTML = `<defs><linearGradient id="g${id}" gradientUnits="userSpaceOnUse" x1="22" y1="28" x2="78" y2="76"><stop class="c1" offset="0" stop-color="#2F6BF2"/><stop class="c2" offset="1" stop-color="#7B5CF0"/></linearGradient></defs>
-  <g class="t" fill="none" stroke="${blanc ? "#fff" : `url(#g${id})`}" stroke-linecap="round" stroke-linejoin="round">
-    <g class="ray">${`<path/>`.repeat(6)}</g>
-    <path class="og"/><path class="od"/>
-    <path class="li"/><path class="fl" stroke-width="6.5"/>
-    <g class="pt" stroke-width="9"><path/><path/><path/></g>
-    <g class="zz" stroke-width="2.6"><path/><path/></g>
-  </g>`;
-  const q = s => svg.querySelector(s), qa = s => [...svg.querySelectorAll(s)];
-  const el = {t:q(".t"), og:q(".og"), od:q(".od"), li:q(".li"), fl:q(".fl"), pt:qa(".pt path"), zz:qa(".zz path"), ray:qa(".ray path"), c1:q(".c1"), c2:q(".c2")};
-  // un ressort par valeur
-  const R = (v, k = .12, d = .7) => ({v, c:v, vel:0, k, d});
-  const pas = r => { r.vel = r.vel * r.d + (r.c - r.v) * r.k; r.v += r.vel; return r.v; };
-  const now = performance.now();
-  const pts = AG_ETATS.repos.ligne(now).map(p => [R(p[0]), R(p[1])]);
-  const s = {h:R(15), e:R(0, .14, .62), sg:R(1), op:R(1, .2, .5), clin:R(0, .2, .6), dx:R(0, .1, .75), dy:R(0, .1, .75), cl:R(1, .5, .3),
-             tilt:R(0, .07, .8), sc:R(1, .16, .72), y:R(0, .14, .7), vert:R(0, .12, .6), lop:R(1, .2, .5), larg:R(6, .15, .65), pop:R(0, .2, .5), fop:R(0, .2, .5), zop:R(0, .05, .8), rop:R(0, .2, .5), plat:R(0), hd:R(0, .14, .62)};
-  const api = {etat:"repos", cx:0, cy:0, next:now + 1800, coup(){ s.sc.vel -= .09; s.y.vel -= 2.4; }};
-  function maj(t){
-    const E = AG_ETATS[api.etat], Y = E.yeux;
-    // la ligne
-    const cible = E.ligne(t), k = E.vif ? .34 : .12, d = E.vif ? .5 : .7;
-    const P = pts.map((p, i) => { for (let a = 0; a < 2; a++) { p[a].c = cible[i][a]; p[a].k = k; p[a].d = d; pas(p[a]); } return [p[0].v, p[1].v]; });
-    s.lop.c = E.ligneOp ?? 1; s.larg.c = E.larg || 6; s.vert.c = E.vert || 0;
-    el.li.setAttribute("d", "M" + P.map(p => p[0].toFixed(2) + " " + p[1].toFixed(2)).join("L"));
-    el.li.setAttribute("stroke-width", pas(s.larg).toFixed(2)); el.li.setAttribute("opacity", Math.max(0, Math.min(1, pas(s.lop))).toFixed(2));
-    // la pointe de la fleche suit le bout de la ligne
-    s.fop.c = E.fleche ? 1 : 0; const fo = Math.max(0, Math.min(1, pas(s.fop)));
-    const b = P[AG_NP - 1], a = P[AG_NP - 4], ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
-    el.fl.setAttribute("d", `M${(b[0] - Math.cos(ang - .75) * 9).toFixed(2)} ${(b[1] - Math.sin(ang - .75) * 9).toFixed(2)}L${b[0].toFixed(2)} ${b[1].toFixed(2)}L${(b[0] - Math.cos(ang + .75) * 9).toFixed(2)} ${(b[1] - Math.sin(ang + .75) * 9).toFixed(2)}`);
-    el.fl.setAttribute("opacity", fo.toFixed(2));
-    // les trois points de reflexion
-    s.pop.c = E.points ? 1 : 0; const po = Math.max(0, Math.min(1, pas(s.pop)));
-    el.pt.forEach((p, i) => { const x = 50 + (i - 1) * 13 * po, y = AG_BOUCHE - 5.5 * Math.max(0, Math.sin(t / 190 - i * .9)) * po; p.setAttribute("d", `M${x.toFixed(2)} ${y.toFixed(2)}h.01`); p.setAttribute("opacity", po.toFixed(2)); });
-    // les yeux
-    if (!fixe && E.cligne && t > api.next) { s.cl.c = .08; setTimeout(() => s.cl.c = 1, 110); api.next = t + 2200 + Math.random() * 2600; }
-    s.h.c = typeof Y.h === "function" ? Y.h(t) : (Y.h ?? 13); s.h.k = E.vifYeux ? .4 : .12; s.h.d = E.vifYeux ? .45 : .7; s.hd.c = Y.hd || 0; s.e.c = Y.e || 0; s.sg.c = Y.s || 1; s.op.c = Y.op ?? 1; s.clin.c = Y.clin || 0; s.plat.c = Y.plat || 0;
-    s.dx.c = Y.dx ?? (E.regard ? api.cx * 3.2 : 0); s.dy.c = Y.dy ?? (E.regard ? api.cy * 2.6 : 0);
-    const h = pas(s.h), e = Math.max(0, Math.min(1, pas(s.e))), sg = pas(s.sg), op = Math.max(0, Math.min(1, pas(s.op))), cl = Math.max(.05, pas(s.cl)), clin = Math.max(0, Math.min(1, pas(s.clin))), dx = pas(s.dx), dy = pas(s.dy), plat = pas(s.plat), hd = pas(s.hd);
-    const oeil = (p, x, ee, plus = 0) => {
-      // capsule -> point -> arc : la hauteur se tasse, puis la largeur s'ouvre
-      const hh = Math.max(0, h + plus) * cl * Math.max(0, 1 - 2 * ee), ww = 15 * Math.max(0, 2 * ee - 1), cour = ww * .55 * sg * (1 - plat * .85);
-      x += dx; const y = AG_YEUX + dy;
-      p.setAttribute("d", `M${(x - ww / 2).toFixed(2)} ${(y - hh / 2 + cour * .3).toFixed(2)}Q${x.toFixed(2)} ${(y - cour).toFixed(2)} ${(x + ww / 2).toFixed(2)} ${(y + hh / 2 + cour * .3).toFixed(2)}`);
-      p.setAttribute("opacity", op.toFixed(2)); p.setAttribute("stroke-width", agMix(10.5, 7, Math.max(0, 2 * ee - 1)).toFixed(2));
-    };
-    oeil(el.og, 50 - AG_EX, e); oeil(el.od, 50 + AG_EX, Math.max(e, clin), hd);
-    // les z du sommeil, les etincelles de la fete
-    s.zop.c = E.zzz ? 1 : 0; const zo = pas(s.zop);
-    el.zz.forEach((z, i) => { const ph = ((t / 2400) + i * .5) % 1, x = 68 + ph * 7 + i * 3, y = 40 - ph * 13, g = 5 - i; z.setAttribute("d", `M${x} ${y}h${g}l${-g} ${g}h${g}`); z.setAttribute("opacity", Math.max(0, zo * Math.sin(ph * Math.PI) * .8).toFixed(2)); });
-    s.rop.c = E.etincelles ? 1 : 0; const ro = Math.max(0, pas(s.rop));
-    el.ray.forEach((r, i) => { const an = i * 1.047 + .5, ph = (t / 700 + i * .37) % 1, r1 = 27 + ph * 8, r2 = r1 + 5 * Math.sin(ph * Math.PI); r.setAttribute("d", `M${(50 + Math.cos(an) * r1).toFixed(2)} ${(50 + Math.sin(an) * r1).toFixed(2)}L${(50 + Math.cos(an) * r2).toFixed(2)} ${(50 + Math.sin(an) * r2).toFixed(2)}`); r.setAttribute("stroke-width", 3.4); r.setAttribute("opacity", (ro * Math.sin(ph * Math.PI)).toFixed(2)); });
-    // l'allure : souffle, penche, sauts
-    s.tilt.c = (E.tilt || 0) + (E.danse ? Math.sin(t / 230) * 6 : 0);
-    s.sc.c = 1 + (fixe ? 0 : Math.sin(t / 950) * .018);
-    s.y.c = E.danse ? -Math.abs(Math.sin(t / 230)) * 9 : E.rebonds ? -Math.max(0, Math.sin(t / 200)) * 3.5 : 0;
-    el.t.setAttribute("transform", `translate(0 ${pas(s.y).toFixed(2)}) translate(50 50) rotate(${pas(s.tilt).toFixed(2)}) scale(${pas(s.sc).toFixed(4)}) translate(-50 -50)`);
-    // la couleur glisse vers le vert pour la coche
-    if (!blanc) { const v = Math.max(0, Math.min(1, pas(s.vert))); const c = (a, b) => "rgb(" + a.map((x, i) => Math.round(agMix(x, b[i], v))).join(",") + ")"; el.c1.setAttribute("stop-color", c([47, 107, 242], [24, 160, 88])); el.c2.setAttribute("stop-color", c([123, 92, 240], [43, 182, 115])); }
-  }
-  const boucle = t => { if (!document.hidden && svg.getClientRects().length) maj(t); requestAnimationFrame(boucle); };
-  if (fixe) { for (let k = 0; k < 60; k++) maj(now + k * 16); } else requestAnimationFrame(boucle);
-  return api;
-}
-const AG = {logo:creerAgent($("agLogo"), "l"), accueil:creerAgent($("agHome"), "h"), conv:creerAgent($("agConv"), "c")};
-let agTemp = null, agTempFin = 0, agSuite = null;
-// un etat passager (coche, visage doux, fete...) puis eventuellement un autre, avant de revenir au fil
-function agentJoue(etat, ms, suite){ agTemp = etat; agTempFin = performance.now() + ms; agSuite = suite || null; if (AG_ETATS[etat].saut) AG.conv.coup(); }
-setInterval(() => {
-  const t = performance.now();
-  if (agTemp && t > agTempFin) { if (agSuite) { const [e, ms] = agSuite; agSuite = null; agTemp = e; agTempFin = t + ms; } else agTemp = null; }
-  const cl = document.body.classList;
-  const enreg1 = cl.contains("ecoute"), parle1 = cl.contains("parle");
-  if (enreg1 && agTemp === "reessaie") agTemp = null;
-  AG.conv.etat = enreg1 ? "ecoute" : agTemp && agTemp !== "reessaie" ? agTemp : parle1 ? "parle" : busy ? "reflechit" : agTemp || "repos";
-  AG.logo.etat = "repos";
-}, 120);
-// accueil : il salue a l'arrivee, suit le doigt, rebondit au toucher
-function agentAccueil(){ AG.accueil.etat = "salut"; AG.accueil.coup(); setTimeout(() => { if (AG.accueil.etat === "salut") AG.accueil.etat = "repos"; }, 2400); }
-$("stage").addEventListener("pointermove", ev => { const r = $("agHome").getBoundingClientRect(); if (!r.width) return; AG.accueil.cx = Math.max(-1, Math.min(1, (ev.clientX - r.left - r.width / 2) / 160)); AG.accueil.cy = Math.max(-1, Math.min(1, (ev.clientY - r.top - r.height / 2) / 160)); });
-$("agHome").addEventListener("click", () => { AG.accueil.etat = "content"; AG.accueil.coup(); setTimeout(() => AG.accueil.etat = "repos", 1500); });
-agentAccueil();
 majVocBtn();
 
 
@@ -856,7 +744,7 @@ async function genAudio(sentence){
   return p;
 }
 let analyseSortie = null, rafVox = 0;
-function setVox(v){ document.documentElement.style.setProperty("--vox", Math.min(1, Math.max(0, v)).toFixed(3)); if (v > 0) { agNivV = Math.min(1, v); agNivT = performance.now(); } }
+function setVox(v){ document.documentElement.style.setProperty("--vox", Math.min(1, Math.max(0, v)).toFixed(3)); }
 function suivreVox(an, encore){
   const d = new Uint8Array(an.fftSize);
   const boucle = () => {
@@ -905,7 +793,6 @@ function bip(){
 }
 // fanfare : un defi reussi, une seance terminee
 function fanfare(){
-  try { agentJoue("fete", 2800); } catch {}
   if (!actx) return Promise.resolve();
   const t = actx.currentTime;
   [[523.25, 0], [659.25, 0.1], [783.99, 0.2], [1046.5, 0.32]].forEach(([f, dt], k) => {
@@ -918,12 +805,12 @@ function fanfare(){
   return pause(700);
 }
 function ding(){
-  try { agentJoue("coche", 850, ["content", 1300]); } catch {}
   if (!actx) return Promise.resolve();
   const t = actx.currentTime;
+  const ton = Math.pow(2, Math.min(7, Math.max(0, serie - 1)) / 12);   // la serie s'entend : chaque bonne reponse d'affilee monte la note
   [[880, 0], [1318.5, 0.11]].forEach(([f, dt]) => {
     const o = actx.createOscillator(), g = actx.createGain();
-    o.type = "sine"; o.frequency.value = f;
+    o.type = "sine"; o.frequency.value = f * ton;
     g.gain.setValueAtTime(0.0001, t + dt);
     g.gain.exponentialRampToValueAtTime(0.25, t + dt + 0.015);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.45);
@@ -935,7 +822,7 @@ function ding(){
 /* Voix Google (Gemini TTS) : toute la reponse en un appel, ~4 s, avec la meme cle. */
 const MODELES_TTS = ["gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts", "gemini-2.5-flash-preview-tts"];
 const ttsModelesKO = new Set(); // modeles de voix dont le quota du jour est epuise
-const STYLE_VITESSE = {0.8:"Speak slowly and very clearly, for a language learner: ", 0.9:"Speak clearly, a little slowly: ", 1:""};
+// plus de consigne de vitesse dans le texte envoye : la voix la lisait parfois a voix haute. On ralentit a la lecture.
 let ttsGoogleKO = false; // passe a true quand la limite gratuite est atteinte (jusqu'au prochain lancement)
 // PCM 16 bits, dans un WAV (Gemini 3.8, Azure) ou brut (audio/L16;rate=24000).
 // On lit l'en-tete WAV a la main : plus simple et plus fiable que decodeAudioData.
@@ -998,7 +885,7 @@ async function genAudioGoogle(text){
   if (audioCache.has(k)) return audioCache.get(k);
   const p = (async () => {
     const body = JSON.stringify({
-      contents:[{parts:[{text:(STYLE_VITESSE[S.speed] || "") + text}]}],
+      contents:[{parts:[{text}]}],
       generationConfig:{responseModalities:["AUDIO"], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:S.voice.startsWith("g:") ? S.voice.slice(2) : "Kore"}}}}
     });
     let r = null;
@@ -1021,7 +908,9 @@ async function genAudioGoogle(text){
     if (!part) throw new Error("TTS Google : pas d'audio");
     const bin = atob(part.inlineData.data), bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return lireAudio(bytes, part.inlineData.mimeType || "");
+    const a = lireAudio(bytes, part.inlineData.mimeType || "");
+    const v = Number(S.speed) || 1; if (a?.sampling_rate && v < 1) a.sampling_rate = Math.round(a.sampling_rate * v);   // vitesse lente = lecture ralentie
+    return a;
   })();
   audioCache.set(k, p);
   p.catch(() => audioCache.delete(k));
@@ -1560,7 +1449,14 @@ async function animerValidation(v){
   chev.classList.remove("charge"); GO.btn.disabled = false; chev.disabled = false;
   setTimeout(() => GO.label.classList.remove("arrive"), 450);
 }
+function majJour(){
+  const j = xpJour(), n = serieJours(), p = Math.min(1, j.n / OBJECTIF_JOUR);
+  const a = el("span", "ring flammering" + (p >= 1 ? " plein" : "")); a.style.setProperty("--p", p * 100); const ic = el("b"); ic.innerHTML = ICO_FLAMME; a.append(ic);
+  $("goJour").replaceChildren(a, document.createTextNode(n ? String(n) : ""));
+  $("goJour").setAttribute("aria-label", "Objectif du jour : " + Math.round(p * 100) + " %, série de " + n + " jours");
+}
 function majDepart(){
+  majJour();
   const l = lecon() || choisirLecon(), p = profil(), n = Math.min(10, Math.max(1, p.niveau || 4));
   const titre = l.cible.fr.charAt(0).toUpperCase() + l.cible.fr.slice(1);
   GO.label.textContent = titre;
@@ -2334,7 +2230,6 @@ function noterJour(){ if (!Array.isArray(S.jours)) S.jours = []; const j = jourI
 function serieJours(){ const set = new Set(S.jours || []); let n = 0; const d = new Date(); while (set.has(jourIso(d))) { n++; d.setDate(d.getDate() - 1); } return n; }
 // confettis qui partent d'un bouton
 function confettis(depuis){
-  try { agentJoue("fete", 2400); AG.accueil.etat = "fete"; setTimeout(() => { if (AG.accueil.etat === "fete") AG.accueil.etat = "repos"; }, 2600); } catch {}
   const r = depuis.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
   const couleurs = ["#2457C5", "#6A5AE0", "#18A058", "#F2B35C", "#EC4B3E"];
   for (let k = 0; k < 22; k++) {
@@ -2390,7 +2285,7 @@ function afficherBilan(){
   const n = serieJours(), justes = seance.faits.length;
   const tuile = (ico, cls, val, lib) => { const t = el("div", "btuile " + cls); const i = el("span", "bico"); i.innerHTML = ico; t.append(i, el("b", null, String(val)), el("span", null, lib)); return t; };
   const tuiles = el("div", "btuiles");
-  tuiles.append(tuile(ICO_FLAMME, "flamme", n, n > 1 ? "jours d'affilée" : "jour"), tuile(ICO_OK, "juste", justes, justes > 1 ? "phrases justes" : "phrase juste"));
+  tuiles.append(tuile(ICO_FLAMME, "flamme", n, n > 1 ? "jours d'affilée" : "jour"), tuile(ICO_OK, "juste", justes, justes > 1 ? "phrases justes" : "phrase juste"), tuile(ICO_ECLAIR, "pts", "+" + xpSession, "points"));
   c.append(tuiles);
   const faits = seance.faits.slice(-3);
   if (faits.length) { const ul = el("div", "cfaits"); faits.forEach(f => { const l = el("div", "cfait"); const i = el("span", "okico"); i.innerHTML = ICO_OK; l.append(i, el("span", null, f)); ul.append(l); }); c.append(ul); }
@@ -2643,7 +2538,7 @@ function renderFix(d, youEl, onSkip){
     return youEl;
   }
   marquer(youEl, list, "faute");
-  if (onSkip) agentJoue("doux", 1900, ["reessaie", 60000]);
+  if (onSkip) reagirFaute(youEl);
   if (onSkip) {
     const skip = el("button", "skip", "Passer");
     skip.onclick = () => { skip.remove(); onSkip(); };
@@ -2721,6 +2616,44 @@ let serie = 0;            // reponses justes du premier coup, d'affilee
 let nbQuestions = 0;
 function majCompteur(){}   // le compteur n'est plus affiche (la serie sert encore a la logique)
 function setSerie(n){ const monte = n > serie; serie = n; majCompteur(monte); }
+
+/* ---------- Le jeu : des points, une serie qui monte, un objectif par jour ----------
+   Chaque reaction de l'appli se voit, s'entend et se sent (vibration) : phrase juste, serie, faute, rattrapage, objectif. */
+const OBJECTIF_JOUR = 60;
+const ICO_ECLAIR = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 5 13.5h5.5L9.5 22 19 10h-6z"/></svg>';
+let xpSession = 0;
+function xpJour(){ const j = jourIso(); if (!S.xpJour || S.xpJour.j !== j) S.xpJour = {j, n:0}; return S.xpJour; }
+const vibre = m => { try { navigator.vibrate?.(m); } catch {} };
+// un petit signe qui s'envole depuis un element (+10, x3, flamme...)
+function envol(depuis, html, cls){
+  if (!depuis?.getBoundingClientRect) return;
+  const r = depuis.getBoundingClientRect(); if (!r.width) return;
+  const e = el("span", "envol " + (cls || "")); e.innerHTML = html;
+  e.style.left = Math.min(innerWidth - 70, Math.max(8, r.right - 46)) + "px"; e.style.top = (r.top - 6) + "px";
+  document.body.append(e); setTimeout(() => e.remove(), 1300);
+}
+function gagner(n, depuis){
+  const jour = xpJour(), avant = jour.n;
+  S.xp = (S.xp || 0) + n; jour.n += n; xpSession += n; saveS();
+  envol(depuis, "+" + n, "pts");
+  // l'objectif du jour vient d'etre atteint : une vraie fete, une seule fois par jour
+  if (avant < OBJECTIF_JOUR && jour.n >= OBJECTIF_JOUR) setTimeout(() => { noterJour(); fanfare(); confettis(mic); envol(mic, ICO_FLAMME, "objectif"); vibre([30, 60, 30, 60, 80]); }, 700);
+}
+// phrase juste du premier coup : la serie monte, et ses paliers se fetent
+function reagirJuste(youEl){
+  gagner(10 + Math.min(5, serie - 1) * 2, youEl); vibre(12);
+  if (serie >= 3 && (serie === 3 || serie === 5 || serie % 5 === 0)) { const n = serie; setTimeout(() => { envol(youEl, ICO_FLAMME + "<b>×" + n + "</b>", "combo"); vibre([15, 40, 25]); if (n >= 5) confettis(youEl); }, 350); }
+}
+// faute rattrapee : moins de points, mais ca compte
+function reagirRattrape(youEl){ gagner(5, youEl); vibre(10); youEl.classList.add("rattrape"); }
+// faute : les mots faux tremblent, un son doux et grave, jamais punitif
+function reagirFaute(youEl){
+  youEl.classList.remove("secoue"); void youEl.offsetWidth; youEl.classList.add("secoue"); vibre(35);
+  if (!actx) return; const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+  o.type = "sine"; o.frequency.setValueAtTime(330, t); o.frequency.exponentialRampToValueAtTime(220, t + .22);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.14, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + .3);
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + .32);
+}
 function compterQuestion(){ nbQuestions++; majCompteur(true); }
 
 // l'IA a "entendu" mot pour mot une phrase deja dite avant : c'est une invention sur un audio trop bas
@@ -2826,7 +2759,7 @@ async function ask(learner, youEl, opts = {}){
     if (learner) {
       if (sansBlocage) renderFix(d, youEl, null); else if (!opts.force) renderFix(d, youEl);
       journal.push({role:"user", content:learner, ok:!sansBlocage, forced:!!opts.force, conseil:(!opts.force && d.conseil?.better) ? d.conseil : null, t:Date.now()});
-      if (!essai && !opts.force && !sansBlocage) setSerie(serie + 1);
+      if (!opts.force && !sansBlocage && d.ok) { if (!essai) { setSerie(serie + 1); reagirJuste(youEl); } else reagirRattrape(youEl); }
       const moi = [...history].reverse().find(h => h.role === "user");
       if (d.learner_asked && moi) { moi.asked = true; compterQuestion(); }
       observer(d); if (!opts.force) suivreLecon(d, learner);
@@ -2948,14 +2881,14 @@ function allerAccueil(){
   mic.disabled = true;
   if (S.leconSuspendue) { S.lecon = S.leconSuspendue; delete S.leconSuspendue; saveS(); }
   entrainement = null; libre = null; boutonDefi(false);
-  feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home"); majDepart(); agTemp = null; agentAccueil();
+  feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home"); majDepart();
   if (validationAccueil) { const v = validationAccueil; validationAccueil = null; animerValidation(v); }
   if (window.history.state?.tp === "in") window.history.replaceState(null, "");
 }
 // Entree dans le fil : les derniers echanges s'affichent en leger, puis on continue.
 function ouvrirFil(libre){
   unlockAudio(); stopSpeak(); if (voixKokoro()) loadTTS();
-  started = true; notionsVues = new Set(); chargerFil(); lastHint = null; essai = null; nbQuestions = 0; setSerie(0); seance = null; scene = null; boutonDefi(false);
+  started = true; xpSession = 0; notionsVues = new Set(); chargerFil(); lastHint = null; essai = null; nbQuestions = 0; setSerie(0); seance = null; scene = null; boutonDefi(false);
   modeConversation(libre);
   feed.replaceChildren(); afficherEchanges();
 }
@@ -2983,7 +2916,7 @@ function terminerLibre(){
   const n = serieJours();
   const tuile = (ico, cls, val, lib) => { const t = el("div", "btuile " + cls); const i = el("span", "bico"); i.innerHTML = ico; t.append(i, el("b", null, String(val)), el("span", null, lib)); return t; };
   const tuiles = el("div", "btuiles");
-  tuiles.append(tuile(ICO_FLAMME, "flamme", n, n > 1 ? "jours d'affilée" : "jour"), tuile(ICO_OK, "juste", libre.justes, libre.justes > 1 ? "phrases justes" : "phrase juste"));
+  tuiles.append(tuile(ICO_FLAMME, "flamme", n, n > 1 ? "jours d'affilée" : "jour"), tuile(ICO_OK, "juste", libre.justes, libre.justes > 1 ? "phrases justes" : "phrase juste"), tuile(ICO_ECLAIR, "pts", "+" + xpSession, "points"));
   c.append(tuiles);
   // les phrases a garder (corrigees) : touchables pour les reentendre ; elles reviendront en rappel
   const phrases = [...new Set(libre.phrases)].slice(-3);

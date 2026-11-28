@@ -264,7 +264,7 @@ body.video .mainrow #playBtn.joue{background:var(--soft);color:var(--muted);tran
 /* la feuille Watch : la derniere video en grand (reprise au bon moment), les autres en rangee, le lien dessous */
 .wvids{display:flex;flex-direction:column;gap:18px;margin:12px 0 4px}
 .wvids:empty{display:none}
-.wcarte{display:flex;flex-direction:column;gap:10px;width:100%;background:none;border:none;padding:0;text-align:left;color:var(--ink);-webkit-tap-highlight-color:transparent}
+.wcarte{display:flex;flex-direction:column;gap:8px;min-width:0;width:100%;background:none;border:none;padding:0;text-align:left;color:var(--ink);-webkit-tap-highlight-color:transparent}
 .wcarte:active .wmini{transform:scale(.98)}
 .wmini{position:relative;width:100%;aspect-ratio:16/9;border-radius:18px;overflow:hidden;background:var(--soft);transition:transform .2s var(--ease)}
 .wmini img{width:100%;height:100%;object-fit:cover;display:block}
@@ -272,15 +272,14 @@ body.video .mainrow #playBtn.joue{background:var(--soft);color:var(--muted);tran
 .wprog b{display:block;height:100%;width:calc(var(--p) * 100%);background:var(--accent)}
 .wplay{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:rgba(0,0,0,.42);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;display:grid;place-items:center}
 .wplay svg{width:24px;height:24px;margin-left:2px}
-.wt{font-weight:700;font-size:1.02rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.wt{font-weight:500;font-size:.98rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:100%}
 .wrangee{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -20px;padding:0 20px 2px;scrollbar-width:none}
 .wrangee::-webkit-scrollbar{display:none}
 .wrangee .wcarte{flex:0 0 44%;gap:7px;scroll-snap-align:start}
 .wrangee .wmini{border-radius:14px}
 .wrangee .wplay{display:none}
-.wrangee .wt{font-size:.88rem;font-weight:600;color:var(--muted)}
-.wtip{margin-top:6px}
-.wlien{display:flex;gap:10px;align-items:center;margin:14px 0 4px}
+.wrangee .wt{font-size:.86rem;color:var(--muted)}
+.wlien{display:flex;align-items:center;margin:18px 0 4px}
 .wlien input{flex:1;border-radius:999px;padding:14px 18px;background:var(--soft);border:none}
 .wlien input.non{animation:secoue .4s ease}
 .wlien .round{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
@@ -751,8 +750,7 @@ button:not(:disabled):active{transform:scale(.94)}
   <div class="sheet" role="dialog" aria-labelledby="watchTitle">
     <div class="mothead"><h2 id="watchTitle">Watch</h2><button class="iconbtn" id="watchClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="watchList"></div>
-    <div class="wlien"><input id="watchUrl" type="url" inputmode="url" placeholder="Lien YouTube" autocomplete="off" aria-label="Lien YouTube"><button class="round" id="watchPaste" aria-label="Coller le lien"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="12" height="16" rx="3"/><path d="M9 5a3 3 0 0 1 6 0"/></svg></button></div>
-    <p class="tip wtip">Ou depuis YouTube : Partager, puis Talk Practice.</p>
+    <div class="wlien"><input id="watchUrl" type="url" inputmode="url" placeholder="Lien YouTube" autocomplete="off" aria-label="Lien YouTube"></div>
   </div>
 </div>
 <div class="sheetwrap" id="passages" hidden>
@@ -1337,7 +1335,6 @@ function essayerLien(t){ const id = ytId(t); if (id) { ouvrirVideo(id); return t
 $("watchHome").onclick = () => { if (busy) return; hidePop(); afficherWatch(); };
 $("watchUrl").oninput = () => { if (ytId($("watchUrl").value)) essayerLien($("watchUrl").value); };
 $("watchUrl").onkeydown = e => { if (e.key === "Enter") essayerLien($("watchUrl").value); };
-$("watchPaste").onclick = async () => { try { const t = await navigator.clipboard.readText(); $("watchUrl").value = t; essayerLien(t); } catch { $("watchUrl").focus(); } };
 $("watch").onclick = e => { if (e.target.id === "watch" || e.target.closest("#watchClose")) fermer("watch"); };
 // arrivee par "Partager" depuis YouTube (l'appli installee est dans la liste de partage)
 {

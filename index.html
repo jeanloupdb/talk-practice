@@ -203,7 +203,7 @@ body.video #feed.defile{overflow-y:auto}
 .sousvue.vite .sl{transition-duration:.25s}
 /* le repere de la marge gauche : invisible tant qu'on suit la lecture */
 body.video .sousvue{margin:0 -20px;padding:0 20px}
-.vrail{position:absolute;z-index:2;left:10px;top:47%;width:0;height:30vh;margin-top:-15vh;--o:0px;--e:0;opacity:0;pointer-events:none;transition:opacity .35s}
+.vrail{position:absolute;z-index:2;left:4px;top:47%;width:0;height:30vh;margin-top:-15vh;--o:0px;--e:0;opacity:0;pointer-events:none;transition:opacity .35s}
 .vrail.on{opacity:1;pointer-events:auto}
 .vrail>*{position:absolute;left:0;top:50%}
 /* l'elastique : il s'affine et palit en s'etirant */
@@ -967,7 +967,7 @@ function purgerSous(garder){
   for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k?.startsWith("tp-sous-") && !ids.has(k.slice(8))) localStorage.removeItem(k); }
 }
 function ecrireSous(v){
-  const d = JSON.stringify({v:1, blocs:Object.fromEntries([...v.blocs].filter(([, e]) => e === "ok" || e === "fin")), subs:v.subs.map(({t, en, fr, g, k}) => ({t, en, fr, g, k}))});
+  const d = JSON.stringify({v:1, blocs:Object.fromEntries([...v.blocs].filter(([, e]) => e === "ok" || e === "fin")), modeles:v.modeles || {}, subs:v.subs.map(({t, en, fr, g, k}) => ({t, en, fr, g, k}))});
   try { localStorage.setItem(CLE_SOUS(v.id), d); }
   catch { try { purgerSous(v.id); localStorage.setItem(CLE_SOUS(v.id), d); } catch {} }   // plein : on retire les videos hors liste
 }
@@ -1002,7 +1002,7 @@ async function ouvrirVideo(id){
   feed.classList.remove("defile"); feed.replaceChildren(v.qa, v.att, v.vue);
   parcourirSous(v);
   const garde = lireSous(id);   // sous-titres deja transcrits pour cette video
-  if (garde) { v.subs = garde.subs; for (const [k, e] of Object.entries(garde.blocs || {})) v.blocs.set(+k, e); dessinerSous(v); }
+  if (garde) { v.subs = garde.subs; v.modeles = garde.modeles || {}; for (const [k, e] of Object.entries(garde.blocs || {})) { v.blocs.set(+k, e); if (e === "ok" && !v.modeles[k]) v.modeles[k] = "?"; } dessinerSous(v); }   // (tranche d'avant cette version : modele inconnu, refaite par Flash)
   mainsLibres = false; mlMaj(); boutonFin(false); $("askBtn").hidden = true; $("gardeBtn").hidden = false; $("playBtn").hidden = false; $("discBtn").hidden = false; $("playBtn").innerHTML = PLAY; $("playBtn")._joue = false; majLeconChip(); mic.disabled = false; xpSession = 0;
   $("lecteur").innerHTML = '<div id="ytp"></div>' + VRETOUR; $("lecteur").hidden = false; commandesVideo(v);
   v.veutJouer = true; pb_charge(true);   // la video va partir seule : chargement jusqu'a ce qu'elle joue vraiment
@@ -1054,24 +1054,32 @@ function commandesVideo(v){
 }
 const SCHEMA_SOUS = {type:"OBJECT", properties:{lignes:{type:"ARRAY", items:{type:"OBJECT", properties:{t:{type:"NUMBER"}, en:{type:"STRING"}, fr:{type:"STRING"}, g:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}}, required:["t","en","fr","g"], propertyOrdering:["t","en","fr","g"]}}}, required:["lignes"], propertyOrdering:["lignes"]};
 const TRANCHE = 60;
+const MODELE_SOUS = "gemini-flash-latest";   // Flash : temps nettement plus justes que Lite (mesure contre des sous-titres officiels)
 async function chargerSous(v, k){
-  if (v.blocs.has(k)) return; v.blocs.set(k, "attente");
+  // une tranche faite par le modele de secours est refaite (en fond, l'ancienne reste affichee) quand Flash repond de nouveau
+  const refaire = v.blocs.get(k) === "ok" && v.modeles?.[k] && v.modeles[k] !== MODELE_SOUS && !(modeleKO.m === MODELE_SOUS && Date.now() < modeleKO.jusqu) && modeleEpuise !== MODELE_SOUS && !v.refaits?.has(k);
+  if (refaire) (v.refaits ||= new Set()).add(k);
+  else { if (v.blocs.has(k)) return; v.blocs.set(k, "attente"); }
   const a = k * TRANCHE; let duree = 0; try { duree = v.player.getDuration() || 0; } catch {}
   if (duree && a >= duree) { v.blocs.set(k, "fin"); ecrireSous(v); return; }
   const b = duree ? Math.min(duree, a + TRANCHE) : a + TRANCHE;
   try {
     const d = await llm(`Transcribe exactly what is SPOKEN in this video clip, which goes from ${a}s to ${Math.round(b)}s of the full video.
 - "lignes": short subtitle lines in order (12 words at most each, cut at natural pauses). For each: "t" = when the line starts, in seconds counted from the START OF THIS CLIP (the clip lasts ${Math.round(b - a)} s, so between 0 and ${Math.round(b - a)}), with tenths of a second, as precise as you can; "en" = the exact words spoken (keep them in their original language); "fr" = a natural French translation; "g" = the line cut into consecutive groups of 1 to 4 words that belong together (joined with spaces they give "en" exactly; keep phrasal verbs and set expressions in one group), each with "fr" = the French meaning of THAT group in this sentence.
-If nobody speaks in the clip (music, silence), return an empty list. Never invent words.`, SCHEMA_SOUS, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, debut:a, fin:Math.round(b)}, modele:"gemini-flash-latest"});   // Flash : temps deux fois plus justes que Lite (mesure sur une vraie video)
+If nobody speaks in the clip (music, silence), return an empty list. Never invent words.`, SCHEMA_SOUS, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, debut:a, fin:Math.round(b)}, modele:MODELE_SOUS});
     if (video !== v) return;
     let l = (d.lignes || []).filter(x => x && x.en && isFinite(x.t));
     // Gemini compte en principe depuis le debut de l'extrait, mais renvoie parfois des temps absolus, voire un melange :
     // chaque ligne est ramenee au temps de la video entiere (un temps deja dans [a, b] est garde tel quel)
-    if (a > 0) l = l.map(x => ({...x, t: x.t >= a - 2 && x.t <= b + 2 ? x.t : x.t + a}));
+    // (relatif ou absolu : la majorite des lignes tranche, puis chaque ligne hors de sa plage est corrigee)
+    const relatif = a > 0 && l.filter(x => x.t <= b - a + 2).length * 2 >= l.length;
+    if (a > 0) l = l.map(x => ({...x, t: relatif ? (x.t <= b - a + 2 ? x.t + a : x.t) : (x.t >= a - 2 ? x.t : x.t + a)}));
     l = l.filter(x => x.t >= a - 2 && x.t <= b + 2).sort((x, y) => x.t - y.t);
     v.subs = v.subs.filter(x => x.k !== k).concat(l.map(x => ({...x, k}))).sort((x, y) => x.t - y.t);
-    v.blocs.set(k, "ok"); dessinerSous(v); ecrireSous(v);
-  } catch (e) { console.error(e); if (video === v) { v.blocs.set(k, "ko"); (v.koVu ||= new Set()).add(k); setTimeout(() => { if (v.blocs.get(k) === "ko") v.blocs.delete(k); }, 8000); if (e?.code === "rate") setStatus("Limite gratuite atteinte : plus de sous-titres pour l'instant."); } }
+    if (refaire && !l.length && v.subs.some(x => x.k === k)) return;   // une reprise vide ne remplace pas une tranche qui avait du texte
+    (v.modeles ||= {})[k] = d._modele || MODELE_SOUS;
+    v.blocs.set(k, "ok"); if (v.ouverte == null || !refaire) { dessinerSous(v); if (refaire) { v.cur = -2; suivreSous(v); } } ecrireSous(v);
+  } catch (e) { console.error(e); if (refaire) return; if (video === v) { v.blocs.set(k, "ko"); (v.koVu ||= new Set()).add(k); setTimeout(() => { if (v.blocs.get(k) === "ko") v.blocs.delete(k); }, 8000); if (e?.code === "rate") setStatus("Limite gratuite atteinte : plus de sous-titres pour l'instant."); } }
 }
 const ICO_SIGNET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></svg>';
 function dessinerSous(v){
@@ -2719,14 +2727,14 @@ async function llm(prompt, schema = SCHEMA, audio = null){
   const essais = modeleEpuise === principal || flashKO
     ? [{model:secours, attente:0}, {model:secours, attente:2000}]
     : [{model:principal, attente:0}, {model:principal, attente:1500}, {model:principal, attente:3000}, {model:secours, attente:1000}];
-  let r;
+  let r, repondu = principal;
   for (let i = 0; i < essais.length; i++) {
     const {model, attente} = essais[i];
     const dernier = i === essais.length - 1;
     if (attente) { setStatus(model === principal ? "Google est saturé, nouvel essai…" : "Toujours saturé, j’essaie le modèle de secours…"); await pause(attente); }
     try { r = await appelGemini(model, prompt, schema, audio); }
     catch (e) { if (audio?.modele && model === principal && !dernier) { modeleKO = {m:principal, jusqu:Date.now() + 120000}; i = essais.findIndex(x => x.model === secours) - 1; continue; } throw e; }   // connexion coupee sur un modele impose : on passe au secours
-    if (r.ok) break;
+    if (r.ok) { repondu = model; break; }
     if (r.status === 503 && audio?.modele && model === principal) modeleKO = {m:principal, jusqu:Date.now() + 120000};
     if (r.status === 503 && !dernier) continue;
     if (r.status === 429) {
@@ -2737,7 +2745,7 @@ async function llm(prompt, schema = SCHEMA, audio = null){
           modeleEpuise = principal;
           setStatus("Quota gratuit du jour épuisé pour " + principal + ", je passe sur " + secours + "…");
           r = await appelGemini(secours, prompt, schema, audio);
-          if (r.ok) break;
+          if (r.ok) { repondu = secours; break; }
           if (r.status === 429) throw {code:"rate", detail: await r.text().catch(() => "")};
           continue;
         }
@@ -2750,7 +2758,7 @@ async function llm(prompt, schema = SCHEMA, audio = null){
   }
   const j = await r.json();
   const txt = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
-  try { return JSON.parse(txt.replace(/```json|```/g, "").trim()); }
+  try { const res = JSON.parse(txt.replace(/```json|```/g, "").trim()); if (res && typeof res === "object") Object.defineProperty(res, "_modele", {value:repondu}); return res; }
   catch (e) { throw {code:"parse", detail:txt}; }
 }
 

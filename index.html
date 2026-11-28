@@ -245,6 +245,7 @@ body.vdisc #playBtn,body.vdisc #gardeBtn,body.vdet #playBtn,body.vdet #gardeBtn{
 .lecteur iframe{pointer-events:none}
 .vvocbtn{left:auto;right:8px}
 .vvocbtn.charge{cursor:default}
+.vvocbtn.brille{animation:brille .9s var(--ease)}
 .vvocbtn.charge svg{animation:vvpulse 1.4s ease-in-out infinite}
 @keyframes vvpulse{0%,100%{opacity:.18}50%{opacity:.45}}
 /* la page du vocabulaire : plein ecran, un retour, une liste */
@@ -254,6 +255,9 @@ body.vdisc #playBtn,body.vdisc #gardeBtn,body.vdet #playBtn,body.vdet #gardeBtn{
 .vvliste{display:flex;flex-direction:column}
 .vvl{display:flex;align-items:center;gap:14px;width:100%;padding:13px 0;border:none;border-bottom:1px solid var(--line);background:none;color:var(--ink);text-align:left;-webkit-tap-highlight-color:transparent}
 .vvl:last-child{border-bottom:none}
+.vvl.perso .vven::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin:0 8px 2px 0;vertical-align:middle}
+.vajout{margin:-4px 0 0;font-size:.85rem;color:var(--muted)}
+.vajout b{color:var(--accent);font-weight:600}
 .vvtx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .vven{font-size:1.05rem;font-weight:500;line-height:1.3}
 .vvfr{font-size:.92rem;color:var(--muted);line-height:1.3}
@@ -1298,7 +1302,7 @@ ${you ? `The attached AUDIO is his spoken answer to your last question, in Engli
 $("discBtn").onclick = () => { unlockAudio(); lancerDiscussion(); };
 // Parler sur la phrase ouverte : on la repete (l'IA dit ce qui etait bien ou a reprendre) ou on pose une
 // question dessus (un mot, la grammaire, le sens). La reponse prend la bulle du mode libre.
-const SCHEMA_LIGNE = {type:"OBJECT", properties:{heard:{type:"STRING"}, cas:{type:"STRING"}, reply_en:{type:"STRING"}, chunks:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}, reply_fr:{type:"STRING"}}, required:["heard","cas","reply_en","chunks","reply_fr"], propertyOrdering:["heard","cas","reply_en","chunks","reply_fr"]};
+const SCHEMA_LIGNE = {type:"OBJECT", properties:{heard:{type:"STRING"}, cas:{type:"STRING"}, mot:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}, reply_en:{type:"STRING"}, chunks:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}, reply_fr:{type:"STRING"}}, required:["heard","cas","mot","reply_en","chunks","reply_fr"], propertyOrdering:["heard","cas","mot","reply_en","chunks","reply_fr"]};
 async function parlerLigne(you, aud){
   const v = video, i = v?.ouverte, x = v?.subs[i]; if (!x || busy) { you?.remove(); return; }
   busy = true; mic.disabled = true; setStatus("");
@@ -1310,6 +1314,7 @@ async function parlerLigne(you, aud){
 ${avant ? `What you already said to each other about it:\n${avant}\n` : ""}The attached AUDIO is what he just said: either he repeats the sentence to practise, or he asks something about it (a word, the grammar, the meaning, how to say it), in French or in English.
 - "heard": his words, word for word. If the audio is silent or not intelligible, write "" and leave everything else empty: never guess.
 - "cas": "repete" if he repeated the sentence (even partly), "question" otherwise.
+- "mot": if he says he does not understand a word or an expression (or asks what it means), that word or expression as it is in the sentence, short ("en"), with its French meaning in this sentence ("fr", correct accents). Otherwise en "" and fr "".
 - "reply_en": in simple spoken English, 1 to 3 short sentences. "repete": say clearly if it was well said; otherwise name the word or words to fix and how they sound. "question": answer it simply and concretely about THIS sentence. No markdown.
 - "chunks": reply_en cut into consecutive pieces of 1 to 4 words, in order; joined with spaces they must give reply_en exactly. Keep idioms and set expressions in one piece. Each with "fr" = the French meaning of THAT piece.
 - "reply_fr": a natural French translation of reply_en (with « tu »).`, SCHEMA_LIGNE, aud);
@@ -1317,10 +1322,12 @@ ${avant ? `What you already said to each other about it:\n${avant}\n` : ""}The a
     const h = String(d.heard || "").trim();
     if (!h) { montrerBas(you, "Pas compris"); return; }
     you.className = "you"; you.textContent = h;
+    const ajout = d.mot?.en && d.mot?.fr ? ajouterVocPerso(v, {en:d.mot.en.trim(), fr:d.mot.fr.trim(), t:Math.round(x.t)}) : false;
     const texte = String(d.reply_en || "").trim();
     let chunks = (Array.isArray(d.chunks) ? d.chunks : []).filter(c => c && c.en);
     if (chunks.map(c => c.en).join(" ").replace(/\s+/g, " ") !== texte.replace(/\s+/g, " ")) chunks = texte.split(/\s+/).map(m => ({en:m, fr:""}));
     const t = renderClaude(chunks, d.reply_fr || "", false, box);
+    if (ajout) { const n = el("p", "vajout"); n.append(el("b", null, d.mot.en.trim()), " est dans le vocabulaire de la vidéo"); t.wrap.after(n); briller2($("lecteur").querySelector(".vvocbtn")); }
     const ligne = box.closest(".sl");   // (la liste a pu se redessiner pendant la reponse)
     const auBas = () => { const l = box.closest(".sl"); if (l) l.scrollTop = l.scrollHeight; };
     if (ligne) { v.vue.style.setProperty("--vh", v.vue.clientHeight + "px"); auBas(); setTimeout(auBas, 450); }   // (la bulle grandit pendant son apparition)
@@ -1336,6 +1343,18 @@ ${avant ? `What you already said to each other about it:\n${avant}\n` : ""}The a
    Fait UNE fois pour toute la video (Gemini la regarde en entier, image en basse resolution pour couter peu),
    puis garde dans le telephone : on le retrouve a chaque retour sur la video, meme apres avoir quitte l'appli. */
 const SCHEMA_VOCV = {type:"OBJECT", properties:{items:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}, t:{type:"NUMBER"}}, required:["en","fr","t"], propertyOrdering:["en","fr","t"]}}}, required:["items"], propertyOrdering:["items"]};
+// un mot demande pendant la discussion sur une phrase : en tete du vocabulaire de la video (deja la ? il remonte)
+function ajouterVocPerso(v, mot){
+  const m = vocsVideos(), g = m[v.id] || (m[v.id] = {items:[], d:Date.now()});
+  const k = mot.en.toLowerCase(); g.perso = [mot, ...(g.perso || []).filter(x => x.en.toLowerCase() !== k)].slice(0, 40);
+  saveS(); return true;
+}
+// la liste affichee : les mots demandes d'abord, puis ceux de la video (sans doublon)
+function vocAffiche(id){
+  const g = vocsVideos()[id]; if (!g) return [];
+  const perso = g.perso || [], k = new Set(perso.map(x => x.en.toLowerCase()));
+  return [...perso.map(x => ({...x, perso:true})), ...(g.v === 2 ? g.items || [] : []).filter(x => !k.has(x.en.toLowerCase()))];
+}
 function vocsVideos(){ if (!S.vidVoc || typeof S.vidVoc !== "object") S.vidVoc = {}; return S.vidVoc; }
 const vocEnCours = new Map();   // id -> promesse (une seule generation a la fois par video)
 function vocVideo(v){
@@ -1351,7 +1370,7 @@ He already knows everyday English up to B1 (building, car, company, to grow, to 
     .then(d => {
       const vus = new Set(), items = (d.items || []).filter(x => x && x.en && x.fr && !vus.has(x.en.toLowerCase()) && vus.add(x.en.toLowerCase())).map(x => ({en:x.en.trim(), fr:x.fr.trim(), t:isFinite(x.t) ? Math.round(x.t) : 0}));
       if (items.length) {
-        const m = vocsVideos(); m[v.id] = {items, d:Date.now(), v:2};
+        const m = vocsVideos(); m[v.id] = {...(m[v.id] || {}), items, d:Date.now(), v:2};   // (les mots demandes restent)
         const garder = new Set(videosVues().map(x => x.id)); garder.add(v.id);   // on ne garde que les videos de la liste
         for (const k of Object.keys(m)) if (!garder.has(k)) delete m[k];
         saveS();
@@ -1366,9 +1385,9 @@ function afficherVocVideo(){
   try { v.player.pauseVideo(); } catch {}
   stopSpeak(); hidePop();
   const box = $("vvocListe");
-  const g = vocsVideos()[v.id], deja = g?.v === 2 ? g.items : null;
-  if (!deja?.length) { preparerVoc(v); return; }   // pas encore prete : l'icone charge, la page ne s'ouvre pas
-  box.replaceChildren(listeVoc(deja));
+  const g = vocsVideos()[v.id];
+  if (!(g?.v === 2 && g.items?.length)) { preparerVoc(v); return; }   // pas encore prete : l'icone charge, la page ne s'ouvre pas
+  box.replaceChildren(listeVoc(vocAffiche(v.id)));
   ouvrir("vvoc"); $("vvoc").querySelector(".sheet").scrollTop = 0;
 }
 // 2. la liste se prepare des l'ouverture de la video, en arriere-plan ; l'icone pulse doucement en attendant
@@ -1383,7 +1402,7 @@ function preparerVoc(v){
 function listeVoc(items){
   const ul = el("div", "vvliste");
   for (const x of items) {
-    const b = el("button", "vvl"), tx = el("span", "vvtx"), ic = el("span", "vvson"); ic.innerHTML = PLAY;
+    const b = el("button", "vvl" + (x.perso ? " perso" : "")), tx = el("span", "vvtx"), ic = el("span", "vvson"); ic.innerHTML = PLAY;
     tx.append(el("span", "vven", x.en), el("span", "vvfr", x.fr)); b.append(tx, ic);
     b.onclick = () => { unlockAudio(); speak(x.en, b, null); };
     ul.append(b);

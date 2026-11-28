@@ -270,7 +270,9 @@ body.vdisc #playBtn,body.vdisc #gardeBtn,body.vdet #playBtn,body.vdet #gardeBtn{
 .vseek.annule .vtag{opacity:0}
 .vseek.annule .rail i{transform:scale(.4);opacity:.5}
 /* pendant la lecture, le bouton s'efface : les yeux restent sur la video */
-body.video .mainrow #playBtn{transition:background .35s,color .35s,transform .35s var(--ease),box-shadow .35s}
+body.video .mainrow #playBtn{position:relative;transition:background .35s,color .35s,transform .35s var(--ease),box-shadow .35s}
+body.video .mainrow #playBtn.charge svg{opacity:0}
+body.video .mainrow #playBtn.charge::after{width:24px;height:24px;margin:-13px 0 0 -13px;border-width:2.5px}
 body.video .mainrow #playBtn.joue{background:var(--soft);color:var(--muted);transform:scale(.82)}
 .vretour{z-index:4}
 .lecteur iframe,#ytp{width:100%;height:100%;border:0;display:block}
@@ -945,6 +947,7 @@ async function ouvrirVideo(id){
   parcourirSous(v);
   mainsLibres = false; mlMaj(); boutonFin(false); $("askBtn").hidden = true; $("gardeBtn").hidden = false; $("playBtn").hidden = false; $("discBtn").hidden = false; $("playBtn").innerHTML = PLAY; $("playBtn")._joue = false; majLeconChip(); mic.disabled = false; xpSession = 0;
   $("lecteur").innerHTML = '<div id="ytp"></div>' + VRETOUR; $("lecteur").hidden = false; commandesVideo(v);
+  v.veutJouer = true; pb_charge(true);   // la video va partir seule : chargement jusqu'a ce qu'elle joue vraiment
   await chargerYT(); if (video !== v) return;
   v.depart = reprise(videosVues().find(x => x.id === id));   // on reprend ou on s'etait arrete
   v.player = new YT.Player("ytp", {videoId:id, playerVars:{start:Math.max(0, v.depart - 2), autoplay:1, playsinline:1, rel:0, modestbranding:1, controls:0, disablekb:1, fs:0, iv_load_policy:3, cc_load_policy:0}, events:{
@@ -1001,7 +1004,7 @@ async function chargerSous(v, k){
   try {
     const d = await llm(`Transcribe exactly what is SPOKEN in this video clip, which goes from ${a}s to ${Math.round(b)}s of the full video.
 - "lignes": short subtitle lines in order (12 words at most each, cut at natural pauses). For each: "t" = when the line starts, in seconds counted from the START OF THIS CLIP (the clip lasts ${Math.round(b - a)} s, so between 0 and ${Math.round(b - a)}), with tenths of a second, as precise as you can; "en" = the exact words spoken (keep them in their original language); "fr" = a natural French translation; "g" = the line cut into consecutive groups of 1 to 4 words that belong together (joined with spaces they give "en" exactly; keep phrasal verbs and set expressions in one group), each with "fr" = the French meaning of THAT group in this sentence.
-If nobody speaks in the clip (music, silence), return an empty list. Never invent words.`, SCHEMA_SOUS, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, debut:a, fin:Math.round(b)}});
+If nobody speaks in the clip (music, silence), return an empty list. Never invent words.`, SCHEMA_SOUS, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, debut:a, fin:Math.round(b)}, modele:"gemini-flash-latest"});   // Flash : temps deux fois plus justes que Lite (mesure sur une vraie video)
     if (video !== v) return;
     let l = (d.lignes || []).filter(x => x && x.en && isFinite(x.t));
     // Gemini compte en principe depuis le debut de l'extrait, mais renvoie parfois des temps absolus, voire un melange :
@@ -1135,12 +1138,17 @@ function suivreSous(v){
   const k = Math.floor(t / TRANCHE);
   chargerSous(v, k); if (t - k * TRANCHE > TRANCHE - 25) chargerSous(v, k + 1);
   v.att.hidden = v.blocs.get(k) !== "attente";
+  // la video charge (pas encore prete, mise en memoire, ou lecture demandee mais pas encore partie) : le bouton le montre
+  let etat = -1; try { etat = v.player.getPlayerState(); } catch {}
+  if (joue || etat === 2 || etat === 0) v.veutJouer = false;
+  const charge = etat === 3 || (v.veutJouer && !joue);
+  pb_charge(charge);
   const pb = $("playBtn"); if (pb._joue !== joue) { pb._joue = joue; pb.innerHTML = joue ? PAUSE : PLAY; pb.setAttribute("aria-label", joue ? "Pause" : "Lecture"); pb.classList.toggle("joue", joue); }
   if (v.seek && v.seekP == null) { let d = 0; try { d = v.player.getDuration() || 0; } catch {} if (d) v.seek.style.setProperty("--p", Math.min(1, t / d)); }
   if (joue && v.ouverte != null) { v.ouverte = null; v.cur = -2; hidePop(); }
   document.body.classList.toggle("vdet", v.ouverte != null && !v.disc);
   if (v.ouverte != null) v.vue.style.setProperty("--vh", v.vue.clientHeight + "px");   // la phrase ouverte prend toute la hauteur dispo   // la lecture a repris : la traduction se referme
-  let i = -1; for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .25) i = j; else break; }
+  let i = -1; for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .05) i = j; else break; }
   if (v.cible) {   // juste apres un saut : on garde la phrase visee tant que YouTube n'a pas rattrape
     const ci = v.subs.findIndex(x => x.t === v.cible.t);
     if (ci < 0 || i === ci || Date.now() > v.cible.jusqu) v.cible = null; else i = ci;
@@ -1150,6 +1158,7 @@ function suivreSous(v){
   if (v.lent && v.cur >= 0 && i > v.cur) { v.lent = false; try { v.player.setPlaybackRate(1); } catch {} }   // la phrase lente est finie
   v.cur = i; placerSous(v);
 }
+function pb_charge(on){ const pb = $("playBtn"); pb.classList.toggle("charge", on); pb.setAttribute("aria-busy", on ? "true" : "false"); }
 function rejouerVideo(sec){ stopSpeak(); try { video.player.seekTo(Math.max(0, sec - 1), true); video.player.playVideo(); } catch {} }
 /* ---------- Discuter de la video avec l'IA ----------
    L'IA ouvre par une question precise sur la partie VUE (les secondes reellement regardees, montrees par une barre).
@@ -1385,14 +1394,14 @@ function afficherPassages(){
 }
 // Lecture / pause. En sortant d'une phrase etudiee, la lecture reprend a cette phrase.
 $("playBtn").onclick = () => {
-  const v = video; if (!v?.player?.playVideo) return; hidePop(); stopSpeak();
+  const v = video; if (!v?.player?.playVideo || $("playBtn").classList.contains("charge")) return; hidePop(); stopSpeak();
   let joue = false; try { joue = v.player.getPlayerState() === 1; } catch {}
   if (joue) { v.player.pauseVideo(); return; }
   if (v.disc) fermerDiscussion(v);
   let ici = -1, t = 0; try { t = v.player.getCurrentTime() || 0; } catch {}
-  for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .25) ici = j; else break; }
+  for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .05) ici = j; else break; }
   if (v.ouverte != null && v.ouverte !== ici) { jouerLigne(v, v.ouverte, 1); return; }   // on a navigue vers une autre phrase : on repart de la
-  finParcours(v); v.ouverte = null; v.cur = -2; v.player.playVideo();
+  finParcours(v); v.ouverte = null; v.cur = -2; v.veutJouer = true; pb_charge(true); v.player.playVideo();
 };
 $("gardeBtn").onclick = () => { if (busy) return; try { video?.player?.pauseVideo?.(); } catch {} hidePop(); afficherPassages(); };
 $("passages").onclick = e => { if (e.target.id === "passages" || e.target.closest("#passagesClose")) { fermer("passages"); stopSpeak(); } };
@@ -2483,25 +2492,26 @@ async function llm(prompt, schema = SCHEMA, audio = null){
   // Google renvoie souvent 503 ("modele tres demande") sur le niveau gratuit : on retente
   // avec une pause, puis on bascule sur le modele de secours si ca ne passe toujours pas.
   // Un 429 "par jour" = quota du jour epuise sur ce modele : on passe au secours direct.
-  const secours = S.model === MODELE_SECOURS ? "gemini-3.5-flash-lite" : MODELE_SECOURS;
-  const essais = modeleEpuise === S.model
+  const principal = audio?.modele || S.model;   // (un appel peut imposer son modele)
+  const secours = principal === MODELE_SECOURS ? "gemini-3.5-flash-lite" : MODELE_SECOURS;
+  const essais = modeleEpuise === principal
     ? [{model:secours, attente:0}, {model:secours, attente:2000}]
-    : [{model:S.model, attente:0}, {model:S.model, attente:1500}, {model:S.model, attente:3000}, {model:secours, attente:1000}];
+    : [{model:principal, attente:0}, {model:principal, attente:1500}, {model:principal, attente:3000}, {model:secours, attente:1000}];
   let r;
   for (let i = 0; i < essais.length; i++) {
     const {model, attente} = essais[i];
     const dernier = i === essais.length - 1;
-    if (attente) { setStatus(model === S.model ? "Google est saturé, nouvel essai…" : "Toujours saturé, j’essaie le modèle de secours…"); await pause(attente); }
+    if (attente) { setStatus(model === principal ? "Google est saturé, nouvel essai…" : "Toujours saturé, j’essaie le modèle de secours…"); await pause(attente); }
     r = await appelGemini(model, prompt, schema, audio);
     if (r.ok) break;
     if (r.status === 503 && !dernier) continue;
     if (r.status === 429) {
       const detail = await r.text().catch(() => "");
       const parJour = /per_day|PerDay|retry in \d+h/i.test(detail);
-      if (model === S.model && !dernier) {
+      if (model === principal && !dernier) {
         if (parJour) {
-          modeleEpuise = S.model;
-          setStatus("Quota gratuit du jour épuisé pour " + S.model + ", je passe sur " + secours + "…");
+          modeleEpuise = principal;
+          setStatus("Quota gratuit du jour épuisé pour " + principal + ", je passe sur " + secours + "…");
           r = await appelGemini(secours, prompt, schema, audio);
           if (r.ok) break;
           if (r.status === 429) throw {code:"rate", detail: await r.text().catch(() => "")};

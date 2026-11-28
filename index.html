@@ -214,7 +214,8 @@ body.vdisc #feed{padding-bottom:10px}
 .dbarre{position:relative;height:8px;border-radius:4px;background:var(--soft);overflow:hidden}
 .dbarre i{position:absolute;top:0;bottom:0;background:var(--accent);border-radius:4px}
 .dbarre u{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);border-radius:1px}
-.dhaut2 .vfermer{position:static;flex:none}
+.dretour2{flex:none;margin-left:-10px}
+.dbarre i.vu{background:color-mix(in srgb,var(--accent) 30%,transparent)}
 .dfil{position:relative;flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding:14px 0 10px;scrollbar-width:none}
 .dfil::-webkit-scrollbar{display:none}
 /* la discussion reprend les bulles du mode libre (flou, lecture, afficher, traduire), un peu plus petites sous la video */
@@ -230,7 +231,7 @@ body.video .claude .ctrl{margin-top:10px}
 .mainrow #discBtn svg{width:24px;height:24px}
 body.video:not(.vdisc) .mainrow #mic{display:none}
 body.vdisc .mainrow #discBtn{display:none}
-body.video.vdisc .mainrow #mic:not(.on):not(.prep):not(.refuse){background:var(--accent);color:var(--on-accent)}
+body.vdisc #playBtn,body.vdisc #gardeBtn{display:none}
 .lecteur iframe,.lecteur>div{width:100%;height:100%;border:0;display:block}
 .lecteur[hidden]{display:none}
 .wlien{display:flex;gap:10px;align-items:center;margin:10px 0 4px}
@@ -456,10 +457,10 @@ body.home .micreg{display:none}
 .mainrow #playBtn{grid-column:2;width:72px;height:72px;background:var(--accent);color:var(--on-accent)}
 .mainrow #playBtn svg{width:28px;height:28px}
 .mainrow #playBtn:active{transform:scale(.94)}
-body.video .mainrow #mic{grid-column:3;justify-self:end;width:52px;height:52px}
-body.video .mainrow #mic svg{width:22px;height:22px}
-body.video .micreg{display:none}
-body.video .mainrow #mic:not(.on):not(.prep):not(.refuse){background:var(--soft);color:var(--accent)}
+body.video:not(.vdisc) .mainrow #mic{grid-column:3;justify-self:end;width:52px;height:52px}
+body.video:not(.vdisc) .mainrow #mic svg{width:22px;height:22px}
+body.video:not(.vdisc) .micreg{display:none}
+body.video:not(.vdisc) .mainrow #mic:not(.on):not(.prep):not(.refuse){background:var(--soft);color:var(--accent)}
 .mainrow #gardeBtn{grid-column:1;justify-self:start;width:52px;height:52px;background:var(--soft);color:var(--accent)}
 .mainrow #gardeBtn svg{width:22px;height:22px}
 .mainrow #gardeBtn.brille{animation:brille .9s var(--ease)}
@@ -800,6 +801,7 @@ window.addEventListener("popstate", () => {
     if (started) navDedans();          // on reste dans la conversation : on remet l'entree
     return;
   }
+  if (video?.disc) { fermerDiscussion(video); navDedans(); return; }
   if (started && !busy) allerAccueil();
   else if (started) navDedans();       // reponse en cours : on ne quitte pas, on remet l'entree
 });
@@ -995,34 +997,65 @@ function plagesVues(v){
   return r;
 }
 const ligneVue = (v, x) => { const s = Math.floor(x.t); return v.vus.has(s) || v.vus.has(s + 1) || v.vus.has(s + 2); };
-function barrePlage(v, plages){
+// la zone dont parle l'IA : les dernieres secondes vues, elargie vers l'arriere a chaque question
+// (90 s, puis +60 s par question), jusqu'a tout ce qui a ete vu. Elle suit aussi ce qu'on regarde entre-temps.
+function zoneDisc(v, n){
+  const plages = plagesVues(v); if (!plages.length) return null;
+  const fin = plages[plages.length - 1][1];
+  for (let w = 90 + 60 * n; ; w += 60) {
+    const deb = Math.max(0, fin - w);
+    const zone = plages.filter(p => p[1] > deb).map(p => [Math.max(p[0], deb), p[1]]);
+    const lignes = v.subs.filter(x => ligneVue(v, x) && x.t >= deb - 1);
+    if (lignes.length || deb === 0) return {plages, zone, lignes:lignes.slice(-250), deb, fin};
+  }
+}
+function barrePlage(v, z){
   let duree = 0; try { duree = v.player.getDuration() || 0; } catch {}
-  const fin = Math.max(duree, ...plages.map(p => p[1]), 1);
+  const fin = Math.max(duree, z.fin, 1);
   const box = el("div", "dplage"), lib = el("div", "dlib"), barre = el("div", "dbarre");
-  lib.append("L’IA parle de ", el("b", null, mmss(plages[0][0])), " à ", el("b", null, mmss(plages[plages.length - 1][1])), plages.length > 1 ? " (passages vus)" : "");
-  plages.forEach(([a, b]) => { const i = el("i"); i.style.left = (a / fin * 100) + "%"; i.style.width = Math.max(1.5, (b - a) / fin * 100) + "%"; barre.append(i); });
+  lib.append("L’IA parle de ", el("b", null, mmss(z.zone[0][0])), " à ", el("b", null, mmss(z.fin)));
+  // en clair : tout ce qui a ete vu ; en couleur : la zone des questions
+  const seg = ([a, b], cls) => { const i = el("i", cls); i.style.left = (a / fin * 100) + "%"; i.style.width = Math.max(1.5, (b - a) / fin * 100) + "%"; barre.append(i); };
+  z.plages.forEach(p => seg(p, "vu")); z.zone.forEach(p => seg(p));
   let t = 0; try { t = v.player.getCurrentTime() || 0; } catch {}
   const u = el("u"); u.style.left = Math.min(99.5, t / fin * 100) + "%"; barre.append(u);
-  box.append(lib, barre); box.title = "0:00 — " + mmss(fin); return box;
+  box.append(lib, barre); return box;
 }
+function majZone(v){
+  const D = v.disc || v.discMem; if (!D) return null;
+  const z = zoneDisc(v, D.tours.filter(x => x.r === "ia").length); if (!z) return null;
+  D.lignes = z.lignes; D.haut.querySelector(".dplage")?.replaceWith(barrePlage(v, z)); return z;
+}
+// ouvrir la discussion, ou la reprendre la ou on l'avait laissee (sa zone tient compte de ce qu'on a vu depuis)
 function lancerDiscussion(){
   const v = video; if (!v || busy || v.disc) return;
   try { v.player.pauseVideo(); } catch {}
   hidePop(); stopSpeak(); finParcours(v, true); v.ouverte = null;
-  const lignes = v.subs.filter(x => ligneVue(v, x)), plages = plagesVues(v);
-  if (!lignes.length || !plages.length) { setStatus("Regarde un peu la vidéo : l’IA te posera des questions sur ce que tu as vu."); return; }
-  setStatus("");
-  const x = el("button", "vfermer", "×"); x.setAttribute("aria-label", "Fermer la discussion"); x.onclick = () => fermerDiscussion(v);
-  const haut = el("div", "dhaut2"), fil = el("div", "dfil"); haut.append(barrePlage(v, plages), x);
-  v.disc = {fil, tours:[], lignes:lignes.slice(-250)};
-  v.qa.className = "vqa disc"; v.qa.replaceChildren(haut, fil);
+  let D = v.discMem;
+  if (!D) {
+    if (!zoneDisc(v, 0)?.lignes.length) { setStatus("Regarde un peu la vidéo : l’IA te posera des questions sur ce que tu as vu."); return; }
+    const retour = el("button", "iconbtn dretour2"); retour.setAttribute("aria-label", "Revenir à la vidéo");
+    retour.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+    retour.onclick = () => fermerDiscussion(v);
+    const haut = el("div", "dhaut2"); haut.append(retour, el("div", "dplage"));
+    D = v.discMem = {haut, fil:el("div", "dfil"), tours:[], lignes:[]};
+  }
+  setStatus(""); navDedans();
+  v.disc = D; majZone(v);
+  v.qa.className = "vqa disc"; v.qa.replaceChildren(D.haut, D.fil);
   document.body.classList.add("vdisc");
-  tourDiscussion(null, null);
+  // la barre du bas devient celle du mode libre : micro au centre, reglage du micro, mains libres
+  if (S.mainsLibres && ecouteGemini()) { mainsLibres = true; mlWake(true); }
+  mlMaj();
+  if (!D.tours.length) tourDiscussion(null, null);
+  else { D.fil.scrollTop = D.fil.scrollHeight; mlApres(); }
 }
+// sortir de la discussion sans la perdre (retour, ou un moment de la video touche)
 function fermerDiscussion(v){
   if (!v?.disc) return;
   if (enreg && enreg.state === "recording") { jeterEnreg = "quitte"; enreg.stop(); }
-  stopSpeak(); v.disc = null; v.qa.className = "vqa"; v.qa.replaceChildren();
+  stopSpeak(); hidePop(); v.disc = null; v.qa.className = "vqa"; v.qa.replaceChildren();
+  mainsLibres = false; mlMaj(); mlWake(false);
   document.body.classList.remove("vdisc"); v.cur = -2;
 }
 const SCHEMA_DISC = {type:"OBJECT", properties:{
@@ -1034,6 +1067,7 @@ async function tourDiscussion(you, aud){
   const v = video, D = v?.disc; if (!D || busy) return;
   busy = true; mic.disabled = true; setStatus("");
   const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); D.fil.append(dots); D.fil.scrollTop = D.fil.scrollHeight;
+  if (v.disc === D) majZone(v);
   const transcript = D.lignes.map(x => `[${Math.round(x.t)}] ${x.en}`).join("\n");
   const fil = D.tours.map(x => (x.r === "ia" ? "TUTOR: " : "LEARNER: ") + x.t).join("\n");
   try {
@@ -1051,10 +1085,10 @@ ${you ? `The attached AUDIO is his spoken answer to your last question, in Engli
 - "reply_en": "reaction" then "question", joined with a space: exactly what you will say.
 - "chunks": reply_en cut into consecutive pieces of 1 to 4 words, in order; joined with spaces they must give reply_en exactly. Keep idioms, phrasal verbs and set expressions in one piece. Punctuation stays attached to its piece. Each with "fr" = the French meaning of THAT piece in this sentence.
 - "reply_fr": a natural French translation of reply_en (with « tu »).`, SCHEMA_DISC, aud);
-    dots.remove(); if (video !== v || v.disc !== D) return;
+    dots.remove(); if (video !== v) return;
     if (you) {
       const h = String(d.heard || "").trim();
-      if (!h) { montrerBas(you, "Pas compris"); return; }
+      if (!h) { montrerBas(you, "Pas compris"); if (v.disc === D) mlApres(); return; }
       you.className = "you"; you.textContent = h; D.tours.push({r:"moi", t:h});
       v.questions++; gagner(d.cas === "juste" ? 10 : 5, you); noterJour();
     }
@@ -1067,17 +1101,17 @@ ${you ? `The attached AUDIO is his spoken answer to your last question, in Engli
     const tps = [...new Set((d.sources || []).filter(n => isFinite(n) && n >= 0).map(n => Math.round(n)))].slice(0, 3);
     if (d.reaction && tps.length) {
       const src = el("div", "dsrc"); src.append(el("span", null, "La réponse est à"));
-      tps.forEach(n => { const b = el("button"); b.innerHTML = PLAY; b.append(mmss(n)); b.setAttribute("aria-label", "Revoir à " + mmss(n)); b.onclick = () => rejouerVideo(n); src.append(b); });
+      tps.forEach(n => { const b = el("button"); b.innerHTML = PLAY; b.append(mmss(n)); b.setAttribute("aria-label", "Revoir à " + mmss(n)); b.onclick = () => { fermerDiscussion(v); rejouerVideo(n); }; src.append(b); });
       t.wrap.insertBefore(src, t.wrap.querySelector(".ctrl"));
     }
     D.fil.scrollTop = Math.max(0, (you || t.wrap).offsetTop - 8);   // le tour se lit depuis son debut
     D.tours.push({r:"ia", t:t.text});
     prechargerVoix(t.text); t.play.classList.remove("ready");
-    await speak(t.text, t.play, t.reveal);
+    if (v.disc === D) { await speak(t.text, t.play, t.reveal); if (v.disc === D) mlApres(); }
   } catch (e) {
     dots.remove(); console.error(e); you?.remove();
     setStatus(e?.code === "rate" ? "Limite gratuite atteinte, réessaie plus tard." : e?.code === "net" ? "Pas de réseau." : "Pas de réponse, réessaie.");
-    if (!D.tours.length) fermerDiscussion(v);
+    if (!D.tours.length) { fermerDiscussion(v); v.discMem = null; }
   } finally { busy = false; mic.disabled = !started; }
 }
 $("discBtn").onclick = () => { unlockAudio(); lancerDiscussion(); };
@@ -1666,7 +1700,7 @@ async function mlWake(on){
   } catch {}
 }
 function mlMaj(){
-  mlBtn.hidden = !started || !ecouteGemini() || !!video;
+  mlBtn.hidden = !started || !ecouteGemini() || (!!video && !video.disc);
   mlBtn.classList.toggle("actif", mainsLibres);
   mlBtn.setAttribute("aria-label", mainsLibres ? "Quitter le mode mains libres" : "Mode mains libres");
   mic.classList.toggle("ml", mainsLibres);

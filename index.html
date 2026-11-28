@@ -148,7 +148,10 @@ svg{width:24px;height:24px;flex:none}
 .portes .gros{padding:16px 14px;white-space:nowrap}
 .portes #watchHome{grid-column:1/-1}
 /* Watch with Talk : la video en haut, la discussion dessous */
-.lecteur{position:relative;z-index:1;flex:0 0 50%;min-height:0;overflow:hidden;background:#000;animation:entre .4s var(--ease) both}
+.lecteur{position:relative;z-index:1;flex:0 0 50%;min-height:0;overflow:hidden;background:#000;animation:entre .4s var(--ease) both;transition:flex-basis .45s cubic-bezier(.22,.9,.24,1)}
+body.vdet .lecteur{flex-basis:24%}
+body.vdet .vseek{opacity:0;pointer-events:none}
+.vseek{transition:opacity .3s}
 body.video .bar,body.video #voiceStatus{display:none}
 /* en video tout est noir, dans la continuite des bandes noires du lecteur */
 body.video{--bg:#000;--ink:#F3F5FA;--muted:#98A1B6;--accent:#8DB0FF;--on-accent:#000;--soft:#16181F;--line:#23262F;--card:rgba(255,255,255,.06);--card-line:rgba(255,255,255,.1);--pop:#F3F5FA;--on-pop:#000;--good:#7DD6A7;--bad:#F2877D;--warn:#F2B35C;--live:#F2877D;color-scheme:dark}
@@ -180,7 +183,8 @@ body.video #feed.defile{overflow-y:auto}
 .sl.ouverte .sg.sel{background:color-mix(in srgb,var(--accent) 16%,transparent)}
 /* phrase ouverte : un petit signet en haut a droite garde ce moment ; une phrase longue retrecit, et defile si besoin */
 .sl{position:relative}
-.shaut{display:none;align-items:center;justify-content:space-between;margin:0 0 6px -8px}
+.shaut{display:none;align-items:center;justify-content:flex-end;margin:0 0 6px -8px}
+.shaut .sretour{display:none}
 .sl.ouverte .shaut{display:flex}
 .sretour{width:38px;height:38px;border:none;background:none;color:var(--ink);display:grid;place-items:center;padding:0}
 .sretour svg{width:22px;height:22px}
@@ -250,6 +254,15 @@ body.video .claude .ctrl{margin-top:10px}
 body.video:not(.vdisc):not(.vdet) .mainrow #mic{display:none}
 body.vdisc .mainrow #discBtn,body.vdet .mainrow #discBtn{display:none}
 body.vdisc #playBtn,body.vdisc #gardeBtn,body.vdet #playBtn,body.vdet #gardeBtn{display:none}
+#detRetour{display:none}
+body.vdet .mainrow>*{grid-row:1}
+body.vdet .mainrow #detRetour{display:grid;grid-column:2;width:72px;height:72px;background:var(--soft);color:var(--ink)}
+body.vdet .mainrow #detRetour svg{width:28px;height:28px}
+body.vdet .mainrow #mic{grid-column:3;justify-self:end;width:52px;height:52px}
+body.vdet .mainrow #mic svg{width:22px;height:22px}
+body.vdet .mainrow #mic:not(.on):not(.prep):not(.refuse){background:var(--accent);color:var(--on-accent)}
+body.vdet .micreg{position:static;grid-column:1;justify-self:start;width:52px;height:52px;border:none;background:var(--soft);color:var(--muted)}
+body.vdet .micreg svg{width:22px;height:22px}
 /* nos commandes : l'image ne reagit qu'a nous, le curseur se fait oublier tant qu'on ne le touche pas */
 .lecteur iframe{pointer-events:none}
 .vvocbtn{left:auto;right:8px}
@@ -272,8 +285,8 @@ body.vdisc #playBtn,body.vdisc #gardeBtn,body.vdet #playBtn,body.vdet #gardeBtn{
 .sl .tx{display:none}
 .sl.ouverte .tx{display:block}
 .sl.ouverte .txv{display:none}
-.vmot{border-bottom:1.5px dotted color-mix(in srgb,currentColor 45%,transparent);border-radius:2px}
-.vmot.vfr{color:var(--accent);border-bottom-color:transparent}
+.vmot{text-decoration:underline dotted;text-decoration-thickness:2px;text-underline-offset:5px;text-decoration-color:color-mix(in srgb,currentColor 75%,transparent)}
+.vmot.vfr{color:var(--accent);text-decoration-color:transparent}
 .slvoc{position:absolute;right:-6px;top:50%;margin-top:-17px;width:34px;height:34px;border:none;border-radius:50%;padding:0;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);display:grid;place-items:center;animation:popin .3s var(--rebond) both}
 .slvoc[hidden]{display:none}
 .slvoc svg{width:16px;height:16px}
@@ -778,6 +791,7 @@ button:not(:disabled):active{transform:scale(.94)}
       <button class="round" id="mic" aria-label="Parler" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
       <button class="round" id="finBtn" aria-label="Terminer la conversation" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
       <button class="round" id="redoBtn" aria-label="Recommencer ce défi" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
+      <button class="round" id="detRetour" aria-label="Retour aux sous-titres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
       <button class="round" id="discBtn" aria-label="Parler de la vidéo avec l’IA" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M9.5 9.6a2.6 2.6 0 1 1 3.4 2.5c-.6.2-.9.7-.9 1.3v.4"/><circle cx="12" cy="16.6" r=".6" fill="currentColor"/></svg></button>
       <button class="round" id="askBtn" aria-label="Poser une question en français">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><text x="12" y="14.6" text-anchor="middle" font-size="7.5" font-weight="800" font-family="Figtree,system-ui,sans-serif" fill="currentColor" stroke="none" letter-spacing=".3">FR</text></svg>
@@ -961,13 +975,14 @@ function barreNoire(on){ document.querySelectorAll('meta[name="theme-color"]').f
    sur la video, meme apres avoir quitte l'appli, les tranches deja transcrites ne sont pas redemandees a Gemini.
    On ne garde que les videos de la liste des recentes. */
 const CLE_SOUS = id => "tp-sous-" + id;
-function lireSous(id){ try { const d = JSON.parse(localStorage.getItem(CLE_SOUS(id)) || "null"); if (d?.v === 1 && Array.isArray(d.subs)) return d; } catch {} return null; }
+const SOUS_V = 2;   // v2 : tranches de 20 s (les sous-titres gardes en tranches de 60 s sont refaits)
+function lireSous(id){ try { const d = JSON.parse(localStorage.getItem(CLE_SOUS(id)) || "null"); if (d?.v === SOUS_V && Array.isArray(d.subs)) return d; } catch {} return null; }
 function purgerSous(garder){
   const ids = new Set(videosVues().map(x => x.id)); if (garder) ids.add(garder);
   for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k?.startsWith("tp-sous-") && !ids.has(k.slice(8))) localStorage.removeItem(k); }
 }
 function ecrireSous(v){
-  const d = JSON.stringify({v:1, blocs:Object.fromEntries([...v.blocs].filter(([, e]) => e === "ok" || e === "fin")), modeles:v.modeles || {}, subs:v.subs.map(({t, en, fr, g, k}) => ({t, en, fr, g, k}))});
+  const d = JSON.stringify({v:SOUS_V, blocs:Object.fromEntries([...v.blocs].filter(([, e]) => e === "ok" || e === "fin")), modeles:v.modeles || {}, subs:v.subs.map(({t, en, fr, g, k}) => ({t, en, fr, g, k}))});
   try { localStorage.setItem(CLE_SOUS(v.id), d); }
   catch { try { purgerSous(v.id); localStorage.setItem(CLE_SOUS(v.id), d); } catch {} }   // plein : on retire les videos hors liste
 }
@@ -1053,7 +1068,9 @@ function commandesVideo(v){
   seek.addEventListener("pointerup", fin); seek.addEventListener("pointercancel", fin);
 }
 const SCHEMA_SOUS = {type:"OBJECT", properties:{lignes:{type:"ARRAY", items:{type:"OBJECT", properties:{t:{type:"NUMBER"}, en:{type:"STRING"}, fr:{type:"STRING"}, g:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}}, required:["t","en","fr","g"], propertyOrdering:["t","en","fr","g"]}}}, required:["lignes"], propertyOrdering:["lignes"]};
-const TRANCHE = 60;
+// Tranches de 20 s, image en basse resolution : mesure contre les sous-titres officiels de 3 videos, ecart moyen
+// 0,24 a 0,43 s (contre 0,8 a 1,05 s en tranches de 60 s, ou Gemini prend du retard au fil de l'extrait).
+const TRANCHE = 20;
 const MODELE_SOUS = "gemini-flash-latest";   // Flash : temps nettement plus justes que Lite (mesure contre des sous-titres officiels)
 async function chargerSous(v, k){
   // une tranche faite par le modele de secours est refaite (en fond, l'ancienne reste affichee) quand Flash repond de nouveau
@@ -1066,7 +1083,7 @@ async function chargerSous(v, k){
   try {
     const d = await llm(`Transcribe exactly what is SPOKEN in this video clip, which goes from ${a}s to ${Math.round(b)}s of the full video.
 - "lignes": short subtitle lines in order (12 words at most each, cut at natural pauses). For each: "t" = when the line starts, in seconds counted from the START OF THIS CLIP (the clip lasts ${Math.round(b - a)} s, so between 0 and ${Math.round(b - a)}), with tenths of a second, as precise as you can; "en" = the exact words spoken (keep them in their original language); "fr" = a natural French translation; "g" = the line cut into consecutive groups of 1 to 4 words that belong together (joined with spaces they give "en" exactly; keep phrasal verbs and set expressions in one group), each with "fr" = the French meaning of THAT group in this sentence.
-If nobody speaks in the clip (music, silence), return an empty list. Never invent words.`, SCHEMA_SOUS, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, debut:a, fin:Math.round(b)}, modele:MODELE_SOUS});
+If nobody speaks in the clip (music, silence), return an empty list. Never invent words.`, SCHEMA_SOUS, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, debut:a, fin:Math.round(b), basse:true}, modele:MODELE_SOUS});
     if (video !== v) return;
     let l = (d.lignes || []).filter(x => x && x.en && isFinite(x.t));
     // Gemini compte en principe depuis le debut de l'extrait, mais renvoie parfois des temps absolus, voire un melange :
@@ -1284,7 +1301,7 @@ function suivreSous(v){
   let t = 0, joue = false; try { t = v.player.getCurrentTime() || 0; joue = v.player.getPlayerState() === 1; } catch { return; }
   if (joue) { v.vus.add(Math.floor(t)); if (Date.now() - (v.posT || 0) > 5000) memoVideo(v, t); }
   const k = Math.floor(t / TRANCHE);
-  chargerSous(v, k); if (t - k * TRANCHE > TRANCHE - 25) chargerSous(v, k + 1);
+  chargerSous(v, k); chargerSous(v, k + 1); if (t - k * TRANCHE > TRANCHE / 2) chargerSous(v, k + 2);   // (toujours une a deux tranches d'avance)
   v.att.hidden = v.blocs.get(k) !== "attente";
   // les sous-titres de cette minute ne sont pas encore la : la video attend (pause), puis repart seule quand ils arrivent.
   // Une tranche qui a deja echoue ne bloque plus (Google sature : on regarde sans sous-titres plutot que rester bloque).
@@ -1449,6 +1466,7 @@ ${you ? `The attached AUDIO is his spoken answer to your last question, in Engli
     if (!D.tours.length) { fermerDiscussion(v); v.discMem = null; }
   } finally { busy = false; mic.disabled = !started; }
 }
+$("detRetour").onclick = () => { if (video) fermerLigne(video); };
 $("discBtn").onclick = () => { unlockAudio(); lancerDiscussion(); };
 // Parler sur la phrase ouverte : on la repete (l'IA dit ce qui etait bien ou a reprendre) ou on pose une
 // question dessus (un mot, la grammaire, le sens). La reponse prend la bulle du mode libre.
@@ -1507,25 +1525,26 @@ function marquerConnu(en, oui){ const k = en.toLowerCase(), l = motsConnus().fil
 function vocAffiche(id){
   const g = vocsVideos()[id]; if (!g) return [];
   const perso = g.perso || [], k = new Set(perso.map(x => x.en.toLowerCase()));
-  return [...perso.map(x => ({...x, perso:true})), ...(g.v === 2 ? g.items || [] : []).filter(x => !k.has(x.en.toLowerCase()))];
+  return [...perso.map(x => ({...x, perso:true})), ...(g.v === VOC_V ? g.items || [] : []).filter(x => !k.has(x.en.toLowerCase()))];
 }
 function vocsVideos(){ if (!S.vidVoc || typeof S.vidVoc !== "object") S.vidVoc = {}; return S.vidVoc; }
+const VOC_V = 3;   // v3 : listes plus fournies (environ 3 mots par minute)
 const vocEnCours = new Map();   // id -> promesse (une seule generation a la fois par video)
 function vocVideo(v){
-  const deja = vocsVideos()[v.id]; if (deja?.items?.length && deja.v === 2) return Promise.resolve(deja.items);   // (v2 : listes sans mots trop faciles)
+  const deja = vocsVideos()[v.id]; if (deja?.items?.length && deja.v === VOC_V) return Promise.resolve(deja.items);   // (version de la consigne : une liste d'une version plus ancienne est refaite)
   if (vocEnCours.has(v.id)) return vocEnCours.get(v.id);
   let duree = 0; try { duree = v.player.getDuration() || 0; } catch {}
   const fin = duree > 2700 ? 2700 : null;   // au-dela de 45 min, on s'en tient au debut
   const demande = modele => llm(`Watch this YouTube video${v.titre ? ` ("${v.titre}")` : ""}. A French-speaking learner of English (level A2/B1) is watching it and wants to understand it better.
 ${motsConnus().length ? `He has told us he already knows these, never list them: ${motsConnus().slice(-120).join(", ")}.
 ` : ""}He already knows everyday English up to B1 (building, car, company, to grow, to build, important...) and every word that looks like French (laser, technology, rocket, economy, idea...): NEVER list those, nor numbers, names or brands.
-- "items": the vocabulary that would really stop him, in the order it appears: less common words (milestone, leverage, bottleneck...), idioms, phrasal verbs (figure out, ramp up...), collocations and sentence patterns that a French speaker would not guess, as they are used in the video. Prefer 15 to 30 items spread over the WHOLE video from start to end; fewer is fine if the video is simple, but never fill the list with easy words. For each: "en" = the word or expression (short, as said in the video), "fr" = its French translation in this context (short, natural, correct French spelling with all accents: é, è, à, ç...), "t" = the time in seconds when it is first said, "dit" = the exact words as they are SPOKEN at that moment, inflected as in the video (e.g. "figured it out" for "figure out", "milestones" for "milestone").`, SCHEMA_VOCV, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, ...(fin ? {debut:0, fin} : {}), basse:true}, modele});
+- "items": the vocabulary that would really stop him, in the order it appears: less common words (milestone, leverage, bottleneck...), idioms, phrasal verbs (figure out, ramp up...), collocations and sentence patterns that a French speaker would not guess, as they are used in the video. Give 30 to 60 items spread over the WHOLE video from start to end (about 3 per minute), still never the easy words above. For each: "en" = the word or expression (short, as said in the video), "fr" = its French translation in this context (short, natural, correct French spelling with all accents: é, è, à, ç...), "t" = the time in seconds when it is first said, "dit" = the exact words as they are SPOKEN at that moment, inflected as in the video (e.g. "figured it out" for "figure out", "milestones" for "milestone").`, SCHEMA_VOCV, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, ...(fin ? {debut:0, fin} : {}), basse:true}, modele});
   // Flash traduit bien mieux que Lite (Lite invente des sens et perd les accents) ; Lite seulement si Flash ne repond pas
   const p = demande("gemini-flash-latest").catch(e => { if (e?.code === "key") throw e; return demande(MODELE_SECOURS); })
     .then(d => {
       const vus = new Set(), items = (d.items || []).filter(x => x && x.en && x.fr && !vus.has(x.en.toLowerCase()) && vus.add(x.en.toLowerCase())).map(x => ({en:x.en.trim(), fr:x.fr.trim(), t:isFinite(x.t) ? Math.round(x.t) : 0, ...(x.dit && x.dit.trim().toLowerCase() !== x.en.trim().toLowerCase() ? {dit:x.dit.trim()} : {})}));
       if (items.length) {
-        const m = vocsVideos(); m[v.id] = {...(m[v.id] || {}), items, d:Date.now(), v:2};   // (les mots demandes restent)
+        const m = vocsVideos(); m[v.id] = {...(m[v.id] || {}), items, d:Date.now(), v:VOC_V};   // (les mots demandes restent)
         const garder = new Set(videosVues().map(x => x.id)); garder.add(v.id);   // on ne garde que les videos de la liste
         for (const k of Object.keys(m)) if (!garder.has(k)) delete m[k];
         saveS();
@@ -1541,7 +1560,7 @@ function afficherVocVideo(focus){
   stopSpeak(); hidePop();
   const box = $("vvocListe");
   const g = vocsVideos()[v.id];
-  if (!(g?.v === 2 && g.items?.length)) { preparerVoc(v); return; }   // pas encore prete : l'icone charge, la page ne s'ouvre pas
+  if (!(g?.v === VOC_V && g.items?.length)) { preparerVoc(v); return; }   // pas encore prete : l'icone charge, la page ne s'ouvre pas
   rendreVoc(v.id);
   ouvrir("vvoc"); const sh = $("vvoc").querySelector(".sheet"); sh.scrollTop = 0;
   if (focus) {   // venu d'un mot du fil : la liste s'ouvre sur lui, en bleu
@@ -1552,7 +1571,7 @@ function afficherVocVideo(focus){
 // 2. la liste se prepare des l'ouverture de la video, en arriere-plan ; l'icone pulse doucement en attendant
 function preparerVoc(v){
   const b = () => $("lecteur").querySelector(".vvocbtn");
-  const g = vocsVideos()[v.id]; if (g?.v === 2 && g.items?.length) { b()?.classList.remove("charge"); return; }
+  const g = vocsVideos()[v.id]; if (g?.v === VOC_V && g.items?.length) { b()?.classList.remove("charge"); return; }
   b()?.classList.add("charge");
   vocVideo(v).then(items => { if (video === v) { b()?.classList.toggle("charge", false); if (!items.length) b()?.remove(); else if (v.ouverte == null) { dessinerSous(v); v.cur = -2; suivreSous(v); } } })
     .catch(e => { console.error(e); if (video === v) { b()?.classList.remove("charge"); setStatus(e?.code === "rate" ? "Vocabulaire : limite gratuite atteinte, réessaie plus tard." : "Vocabulaire indisponible, touche l’icône pour réessayer."); } });

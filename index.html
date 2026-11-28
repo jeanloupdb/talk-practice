@@ -208,12 +208,14 @@ body.vdisc #feed>.sousvue,body.vdisc #feed>.dots{display:none}
 body.vdisc #feed{padding-bottom:10px}
 .vqa.disc{position:relative;flex:1;min-height:0;margin:0;padding:0;gap:0;border:none;border-radius:0;box-shadow:none;background:none}
 .dhaut2{display:flex;align-items:center;gap:12px;padding:2px 0 10px;border-bottom:1px solid var(--line)}
-.dplage{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
-.dplage .dlib{font-size:.8rem;font-weight:700;color:var(--muted)}
-.dplage .dlib b{color:var(--ink)}
-.dbarre{position:relative;height:8px;border-radius:4px;background:var(--soft);overflow:hidden}
-.dbarre i{position:absolute;top:0;bottom:0;background:var(--accent);border-radius:4px}
-.dbarre u{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);border-radius:1px}
+/* la zone des questions : une barre de toute la video, la zone en couleur, ses deux temps poses sous ses bouts */
+.dplage{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding:4px 18px 0 0}
+.dbarre{position:relative;height:10px;border-radius:5px;background:var(--soft)}
+.dbarre i{position:absolute;top:0;bottom:0;background:var(--accent);border-radius:5px;box-shadow:0 0 12px color-mix(in srgb,var(--accent) 45%,transparent)}
+.dbarre i.vu{box-shadow:none}
+.dbarre u{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1.5px;background:var(--ink);border-radius:2px}
+.dtps{position:relative;height:16px;font-size:.78rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+.dtps span{position:absolute;top:0;white-space:nowrap}
 .dretour2{flex:none;margin-left:-10px}
 .dbarre i.vu{background:color-mix(in srgb,var(--accent) 30%,transparent)}
 /* le fil deborde jusqu'aux bords de l'ecran : le flou du texte n'est pas coupe net, le haut s'estompe en defilant */
@@ -1012,15 +1014,18 @@ function zoneDisc(v, n){
 }
 function barrePlage(v, z){
   let duree = 0; try { duree = v.player.getDuration() || 0; } catch {}
-  const fin = Math.max(duree, z.fin, 1);
-  const box = el("div", "dplage"), lib = el("div", "dlib"), barre = el("div", "dbarre");
-  lib.append("L’IA parle de ", el("b", null, mmss(z.zone[0][0])), " à ", el("b", null, mmss(z.fin)));
+  const fin = Math.max(duree, z.fin, 1), pc = x => x / fin * 100;
+  const box = el("div", "dplage"), barre = el("div", "dbarre"), tps = el("div", "dtps");
   // en clair : tout ce qui a ete vu ; en couleur : la zone des questions
-  const seg = ([a, b], cls) => { const i = el("i", cls); i.style.left = (a / fin * 100) + "%"; i.style.width = Math.max(1.5, (b - a) / fin * 100) + "%"; barre.append(i); };
+  const seg = ([a, b], cls) => { const i = el("i", cls); i.style.left = pc(a) + "%"; i.style.width = Math.max(1.5, pc(b - a)) + "%"; barre.append(i); };
   z.plages.forEach(p => seg(p, "vu")); z.zone.forEach(p => seg(p));
   let t = 0; try { t = v.player.getCurrentTime() || 0; } catch {}
-  const u = el("u"); u.style.left = Math.min(99.5, t / fin * 100) + "%"; barre.append(u);
-  box.append(lib, barre); return box;
+  const u = el("u"); u.style.left = Math.min(99.5, pc(t)) + "%"; barre.append(u);
+  // les deux temps de la zone, sous ses bouts ; trop proches, un seul libelle au milieu de la zone
+  const a = pc(z.zone[0][0]), b = pc(z.fin);
+  const lib = (txt, x) => { const sp = el("span", null, txt); sp.style.left = x + "%"; sp.style.transform = x < 8 ? "none" : x > 92 ? "translateX(-100%)" : "translateX(-50%)"; tps.append(sp); };
+  if (b - a < 20) lib(mmss(z.zone[0][0]) + " - " + mmss(z.fin), (a + b) / 2); else { lib(mmss(z.zone[0][0]), a); lib(mmss(z.fin), b); }
+  box.append(barre, tps); box.title = "Zone des questions de l’IA"; return box;
 }
 function majZone(v){
   const D = v.disc || v.discMem; if (!D) return null;

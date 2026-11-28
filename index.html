@@ -235,7 +235,23 @@ body.video .claude .ctrl{margin-top:10px}
 body.video:not(.vdisc) .mainrow #mic{display:none}
 body.vdisc .mainrow #discBtn{display:none}
 body.vdisc #playBtn,body.vdisc #gardeBtn{display:none}
-.lecteur iframe,.lecteur>div{width:100%;height:100%;border:0;display:block}
+/* nos commandes : l'image ne reagit qu'a nous, le curseur se fait oublier tant qu'on ne le touche pas */
+.lecteur iframe{pointer-events:none}
+.vtouche{position:absolute;inset:0;z-index:1;-webkit-tap-highlight-color:transparent}
+.vseek{position:absolute;z-index:3;left:0;right:0;bottom:0;height:30px;display:flex;align-items:flex-end;touch-action:none;-webkit-tap-highlight-color:transparent;--p:0}
+.vseek .rail{position:relative;width:100%;height:2px;background:rgba(255,255,255,.14);transition:height .25s var(--ease),background .25s}
+.vseek .rail b{position:absolute;inset:0 auto 0 0;width:calc(var(--p) * 100%);background:rgba(255,255,255,.42);transition:background .25s}
+.vseek .rail i{position:absolute;top:50%;left:calc(var(--p) * 100%);width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#fff;box-shadow:0 0 0 5px rgba(255,255,255,.14);transform:scale(0);transition:transform .25s var(--rebond)}
+.vseek.actif .rail{height:5px;background:rgba(255,255,255,.22)}
+.vseek.actif .rail b{background:#fff}
+.vseek.actif .rail i{transform:scale(1)}
+.vtag{position:absolute;bottom:20px;transform:translateX(-50%);padding:3px 9px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff;font-size:.78rem;font-weight:700;font-variant-numeric:tabular-nums;opacity:0;transition:opacity .2s;pointer-events:none}
+.vseek.glisse .vtag{opacity:1}
+/* pendant la lecture, le bouton s'efface : les yeux restent sur la video */
+body.video .mainrow #playBtn{transition:background .35s,color .35s,transform .35s var(--ease),box-shadow .35s}
+body.video .mainrow #playBtn.joue{background:var(--soft);color:var(--muted);transform:scale(.82)}
+.vretour{z-index:4}
+.lecteur iframe,#ytp{width:100%;height:100%;border:0;display:block}
 .lecteur[hidden]{display:none}
 .wlien{display:flex;gap:10px;align-items:center;margin:10px 0 4px}
 .wlien input{flex:1;border-radius:999px;padding:14px 18px;background:var(--soft);border:none}
@@ -872,9 +888,10 @@ async function ouvrirVideo(id){
   feed.classList.remove("defile"); feed.replaceChildren(v.qa, v.att, v.vue);
   parcourirSous(v);
   mainsLibres = false; mlMaj(); boutonFin(false); $("askBtn").hidden = true; $("gardeBtn").hidden = false; $("playBtn").hidden = false; $("discBtn").hidden = false; $("playBtn").innerHTML = PLAY; $("playBtn")._joue = false; majLeconChip(); mic.disabled = false; xpSession = 0;
-  $("lecteur").hidden = false;
+  $("lecteur").hidden = false; commandesVideo(v);
   await chargerYT(); if (video !== v) return;
-  v.player = new YT.Player("ytp", {videoId:id, playerVars:{playsinline:1, rel:0, modestbranding:1}, events:{
+  v.player = new YT.Player("ytp", {videoId:id, playerVars:{playsinline:1, rel:0, modestbranding:1, controls:0, disablekb:1, fs:0, iv_load_policy:3, cc_load_policy:0}, events:{
+    onStateChange: e => { if (e.data === 1) { try { v.player.unloadModule("captions"); v.player.unloadModule("cc"); } catch {} } },
     onReady: () => { v.tick = setInterval(() => suivreSous(v), 300); try { v.titre = v.player.getVideoData().title || ""; } catch {} const l = videosVues().filter(x => x.id !== id); l.push({id, titre:v.titre, t:Date.now()}); S.videos = l.slice(-8); saveS(); },
     onError: () => {
       // certaines videos refusent d'etre lues hors de YouTube
@@ -882,6 +899,31 @@ async function ouvrirVideo(id){
       const o = el("a", "gros second vouvrir", "Ouvrir dans YouTube"); o.href = "https://www.youtube.com/watch?v=" + id; o.target = "_blank"; o.rel = "noopener"; b.append(o); v.qa.replaceChildren(b);
     }
   }});
+}
+// nos commandes sur la video : un toucher sur l'image = lecture/pause ; en bas, un curseur a peine visible
+// qui s'epaissit sous le doigt, et qu'on fait glisser pour aller ailleurs dans la video (seul un petit temps s'affiche)
+function commandesVideo(v){
+  const ecran = el("div", "vtouche"), seek = el("div", "vseek"), rail = el("div", "rail"), tag = el("span", "vtag");
+  rail.append(el("b"), el("i")); seek.append(rail, tag); $("lecteur").append(ecran, seek); v.seek = seek;
+  ecran.onclick = () => $("playBtn").click();
+  let x0 = null, cache = 0;
+  const duree = () => { try { return v.player.getDuration() || 0; } catch { return 0; } };
+  const ratio = e => { const r = rail.getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); };
+  const montrer = p => { seek.style.setProperty("--p", p); tag.textContent = mmss(p * duree()); tag.style.left = Math.max(7, Math.min(93, p * 100)) + "%"; };
+  seek.addEventListener("pointerdown", e => {
+    if (!duree()) return; e.preventDefault(); clearTimeout(cache);
+    x0 = e.clientX; v.seekP = ratio(e); seek.classList.add("actif", "glisse"); montrer(v.seekP); vibre(4);
+    try { seek.setPointerCapture(e.pointerId); } catch {}
+  });
+  seek.addEventListener("pointermove", e => { if (x0 == null) return; v.seekP = ratio(e); montrer(v.seekP); });
+  const fin = () => {
+    if (x0 == null) return; x0 = null; seek.classList.remove("glisse");
+    const t = v.seekP * duree(); v.seekP = null;
+    try { v.player.seekTo(t, true); } catch {}
+    hidePop(); v.ouverte = null; finParcours(v); v.cur = -2;
+    cache = setTimeout(() => seek.classList.remove("actif"), 1400);
+  };
+  seek.addEventListener("pointerup", fin); seek.addEventListener("pointercancel", fin);
 }
 const SCHEMA_SOUS = {type:"OBJECT", properties:{lignes:{type:"ARRAY", items:{type:"OBJECT", properties:{t:{type:"NUMBER"}, en:{type:"STRING"}, fr:{type:"STRING"}, g:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}}, required:["t","en","fr","g"], propertyOrdering:["t","en","fr","g"]}}}, required:["lignes"], propertyOrdering:["lignes"]};
 const TRANCHE = 60;
@@ -958,17 +1000,43 @@ function placerSous(v){
 function finParcours(v, sansPlacer){ if (!v.libre) return; v.libre = false; v.vue.classList.remove("parcours", "glisse"); if (!sansPlacer) { v.cur = -2; } }
 function parcourirSous(v){
   const b = el("button", "suivre"); b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'; b.setAttribute("aria-label", "Revenir à la phrase en cours");
-  b.onclick = e => { e.stopPropagation(); finParcours(v); placerSous(v); }; v.vue.append(b);
-  let y0 = null, base = 0, bouge = false;
-  v.vue.addEventListener("pointerdown", e => { if (v.ouverte != null || e.target.closest(".suivre")) return; y0 = e.clientY; base = v.y || 0; bouge = false; });
+  b.onclick = e => { e.stopPropagation(); arreterElan(); finParcours(v); placerSous(v); }; v.vue.append(b);
+  let y0 = null, base = 0, bouge = false, pts = [], raf = 0, ici = -1;
+  const borne = y => { const dernier = v.sous.lastElementChild, haut = v.vue.clientHeight * .2, bas = dernier ? haut - dernier.offsetTop : haut; return Math.max(bas, Math.min(haut, y)); };
+  // la phrase qui passe au point de lecture : une vibration tres legere quand elle change
+  const quelle = () => { const ref = v.vue.clientHeight * .2 - v.y + 12; let i = 0; for (const l of v.sous.children) { if (l.offsetTop <= ref) i++; else break; } return i; };
+  const poser = y => { v.y = Math.round(borne(y)); v.sous.style.transform = "translateY(" + v.y + "px)"; const i = quelle(); if (i !== ici) { if (ici !== -1) vibre(4); ici = i; } return v.y; };
+  function arreterElan(){ if (!raf) return; cancelAnimationFrame(raf); raf = 0; v.vue.classList.remove("glisse"); v.glisseT = v.libreT = Date.now(); }
+  v.vue.addEventListener("pointerdown", e => {
+    if (v.ouverte != null || e.target.closest(".suivre")) return;
+    if (raf) { arreterElan(); v.glisseT = Date.now(); }   // le doigt rattrape la liste : elle s'arrete, sans ouvrir de phrase
+    y0 = e.clientY; base = v.y || 0; bouge = false; pts = [{y:e.clientY, t:e.timeStamp}]; ici = quelle();
+  });
   v.vue.addEventListener("pointermove", e => {
     if (y0 == null) return; const dy = e.clientY - y0;
     if (!bouge && Math.abs(dy) < 8) return;
     if (!bouge) { bouge = true; v.libre = true; v.vue.classList.add("parcours", "glisse"); hidePop(); try { v.vue.setPointerCapture(e.pointerId); } catch {} }
-    const dernier = v.sous.lastElementChild, haut = v.vue.clientHeight * .2, bas = dernier ? haut - dernier.offsetTop : haut;
-    v.y = Math.round(Math.max(bas, Math.min(haut, base + dy))); v.sous.style.transform = "translateY(" + v.y + "px)";
+    pts.push({y:e.clientY, t:e.timeStamp}); if (pts.length > 6) pts.shift();
+    poser(base + dy);
   });
-  const fin = () => { if (y0 == null) return; y0 = null; if (bouge) { v.glisseT = v.libreT = Date.now(); v.vue.classList.remove("glisse"); } };
+  const fin = e => {
+    if (y0 == null) return; y0 = null; if (!bouge) return;
+    v.glisseT = v.libreT = Date.now();
+    // vitesse des derniers instants : la liste continue sur sa lancee et ralentit doucement
+    const recents = pts.filter(p => (e?.timeStamp || 0) - p.t < 100), p0 = recents[0], p1 = recents[recents.length - 1];
+    let vit = p0 && p1 && p1.t > p0.t ? (p1.y - p0.y) / (p1.t - p0.t) : 0;   // px par ms
+    if (Math.abs(vit) < .15) { v.vue.classList.remove("glisse"); return; }
+    vit = Math.max(-4, Math.min(4, vit));
+    let avant = null, yf = v.y;
+    const pas = now => {
+      const dt = avant == null ? 16 : Math.max(0, Math.min(32, now - avant)); avant = now;
+      yf += vit * dt; const bute = borne(yf) !== yf; poser(yf);
+      vit *= Math.pow(.95, dt / 16); v.libreT = Date.now();
+      if (Math.abs(vit) < .02 || bute) { raf = 0; v.vue.classList.remove("glisse"); v.glisseT = Date.now() - 200; return; }
+      raf = requestAnimationFrame(pas);
+    };
+    raf = requestAnimationFrame(pas);
+  };
   v.vue.addEventListener("pointerup", fin); v.vue.addEventListener("pointercancel", fin);
 }
 // suit la lecture : charge la tranche en cours (et la suivante un peu avant), amene la phrase dite au point fixe
@@ -979,7 +1047,8 @@ function suivreSous(v){
   const k = Math.floor(t / TRANCHE);
   chargerSous(v, k); if (t - k * TRANCHE > TRANCHE - 25) chargerSous(v, k + 1);
   v.att.hidden = v.blocs.get(k) !== "attente";
-  const pb = $("playBtn"); if (pb._joue !== joue) { pb._joue = joue; pb.innerHTML = joue ? PAUSE : PLAY; pb.setAttribute("aria-label", joue ? "Pause" : "Lecture"); }
+  const pb = $("playBtn"); if (pb._joue !== joue) { pb._joue = joue; pb.innerHTML = joue ? PAUSE : PLAY; pb.setAttribute("aria-label", joue ? "Pause" : "Lecture"); pb.classList.toggle("joue", joue); }
+  if (v.seek && v.seekP == null) { let d = 0; try { d = v.player.getDuration() || 0; } catch {} if (d) v.seek.style.setProperty("--p", Math.min(1, t / d)); }
   if (joue && v.ouverte != null) { v.ouverte = null; v.cur = -2; hidePop(); }   // la lecture a repris : la traduction se referme
   let i = -1; for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .25) i = j; else break; }
   if (v.libre && joue && Date.now() - (v.libreT || 0) > 5000 && !v.vue.classList.contains("glisse")) { finParcours(v); }

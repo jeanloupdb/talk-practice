@@ -179,6 +179,14 @@ body.video #feed.defile{overflow-y:auto}
 .sbtn svg{width:16px;height:16px}
 .sbtn.garde{background:var(--accent);color:var(--on-accent)}
 .sbtn:disabled{opacity:.3}
+/* parcourir au doigt : le suivi se met en attente, toutes les phrases redeviennent lisibles, un bouton ramene au direct */
+.sousvue{touch-action:none}
+.sousvue.parcours .sl{opacity:.6;transform:none}
+.sousvue.parcours .sl.on{opacity:1}
+.sousvue.glisse .sous{transition:none}
+.suivre{position:absolute;z-index:2;left:50%;bottom:10px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;height:36px;padding:0 14px;border-radius:999px;border:none;background:var(--accent);color:var(--on-accent);display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 35%,transparent);transition:opacity .3s,transform .4s var(--ease)}
+.suivre svg{width:16px;height:16px}
+.sousvue.parcours .suivre{opacity:1;pointer-events:auto;transform:translateX(-50%)}
 /* la derniere question et sa reponse restent en haut des sous-titres */
 .vqa{position:sticky;top:0;z-index:3;display:flex;flex-direction:column;gap:8px;margin:0 -6px 8px;padding:14px 14px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--card-line);box-shadow:0 10px 30px color-mix(in srgb,#2457C5 14%,transparent)}
 .vqa:empty{display:none}
@@ -815,6 +823,7 @@ async function ouvrirVideo(id){
   document.body.classList.add("video");
   v.qa = el("div", "vqa"); v.sous = el("div", "sous"); v.vue = el("div", "sousvue"); v.vue.append(v.sous); v.att = el("div", "dots"); v.att.append(el("i"), el("i"), el("i"));
   feed.classList.remove("defile"); feed.replaceChildren(v.qa, v.att, v.vue);
+  parcourirSous(v);
   mainsLibres = false; mlMaj(); boutonFin(false); $("askBtn").hidden = true; $("gardeBtn").hidden = false; $("playBtn").hidden = false; $("playBtn").innerHTML = PLAY; $("playBtn")._joue = false; majLeconChip(); mic.disabled = false; xpSession = 0;
   $("lecteur").hidden = false;
   await chargerYT(); if (video !== v) return;
@@ -863,7 +872,7 @@ function dessinerSous(v){
     garder.onclick = e => { e.stopPropagation(); if (!x.garde) { x.garde = true; passages().push({en:x.en, fr:x.fr || "", v:v.id, t:x.t, titre:v.titre, d:Date.now()}); S.passages = S.passages.slice(-60); ajouterRappel({type:"video", en:x.en}); noterJour(); garder.classList.add("garde"); vibre(10); briller2($("gardeBtn")); } };
     const fl = (sens, d) => { const b = el("button", "sbtn"); b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg>'; b.setAttribute("aria-label", sens < 0 ? "Phrase précédente" : "Phrase suivante"); b.disabled = !v.subs[i + sens]; b.onclick = e => { e.stopPropagation(); if (v.subs[i + sens]) ouvrirLigne(v, i + sens); }; return b; };
     act.append(rejouer, garder, el("span", "espace"), fl(-1, "M15 5l-7 7 7 7"), fl(1, "M9 5l7 7-7 7")); dd.append(el("p", "sfr", x.fr || ""), act); d.append(dd); l.append(d);
-    l.onclick = () => ouvrirLigne(v, i);
+    l.onclick = () => { if (Date.now() - (v.glisseT || 0) < 300) return; ouvrirLigne(v, i); };
     return l;
   }));
   v.cur = -2; v.ouverte = ouvert == null ? null : v.subs.findIndex(x => x.t === ouvert);
@@ -886,7 +895,28 @@ function placerSous(v){
   lignes.forEach((b, j) => { b.classList.toggle("on", j === f); b.classList.toggle("d1", Math.abs(j - f) === 1); b.classList.toggle("ouverte", j === v.ouverte); });
   const cible = lignes[Math.max(0, f)], focus = v.ouverte != null;
   v.vue.classList.toggle("focus", focus);
-  v.sous.style.transform = "translateY(" + Math.round(cible ? (focus ? 4 : v.vue.clientHeight * .2) - cible.offsetTop : 0) + "px)";
+  if (focus) finParcours(v, true);
+  if (v.libre) return;   // on parcourt au doigt : la liste ne bouge pas toute seule
+  v.y = Math.round(cible ? (focus ? 4 : v.vue.clientHeight * .2) - cible.offsetTop : 0); v.sous.style.transform = "translateY(" + v.y + "px)";
+}
+// Parcourir les sous-titres au doigt. Problemes prevus : le suivi automatique ne doit pas se battre avec le doigt
+// (il se met en attente), un glisser ne doit pas ouvrir une phrase, et on doit pouvoir revenir au direct
+// (bouton, bouton Lecture, ou tout seul apres 5 s sans toucher pendant que la video joue).
+function finParcours(v, sansPlacer){ if (!v.libre) return; v.libre = false; v.vue.classList.remove("parcours", "glisse"); if (!sansPlacer) { v.cur = -2; } }
+function parcourirSous(v){
+  const b = el("button", "suivre"); b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'; b.setAttribute("aria-label", "Revenir à la phrase en cours");
+  b.onclick = e => { e.stopPropagation(); finParcours(v); placerSous(v); }; v.vue.append(b);
+  let y0 = null, base = 0, bouge = false;
+  v.vue.addEventListener("pointerdown", e => { if (v.ouverte != null || e.target.closest(".suivre")) return; y0 = e.clientY; base = v.y || 0; bouge = false; });
+  v.vue.addEventListener("pointermove", e => {
+    if (y0 == null) return; const dy = e.clientY - y0;
+    if (!bouge && Math.abs(dy) < 8) return;
+    if (!bouge) { bouge = true; v.libre = true; v.vue.classList.add("parcours", "glisse"); hidePop(); try { v.vue.setPointerCapture(e.pointerId); } catch {} }
+    const dernier = v.sous.lastElementChild, haut = v.vue.clientHeight * .2, bas = dernier ? haut - dernier.offsetTop : haut;
+    v.y = Math.round(Math.max(bas, Math.min(haut, base + dy))); v.sous.style.transform = "translateY(" + v.y + "px)";
+  });
+  const fin = () => { if (y0 == null) return; y0 = null; if (bouge) { v.glisseT = v.libreT = Date.now(); v.vue.classList.remove("glisse"); } };
+  v.vue.addEventListener("pointerup", fin); v.vue.addEventListener("pointercancel", fin);
 }
 // suit la lecture : charge la tranche en cours (et la suivante un peu avant), amene la phrase dite au point fixe
 function suivreSous(v){
@@ -898,6 +928,7 @@ function suivreSous(v){
   const pb = $("playBtn"); if (pb._joue !== joue) { pb._joue = joue; pb.innerHTML = joue ? PAUSE : PLAY; pb.setAttribute("aria-label", joue ? "Pause" : "Lecture"); }
   if (joue && v.ouverte != null) { v.ouverte = null; v.cur = -2; hidePop(); }   // la lecture a repris : la traduction se referme
   let i = -1; for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .25) i = j; else break; }
+  if (v.libre && joue && Date.now() - (v.libreT || 0) > 5000 && !v.vue.classList.contains("glisse")) { finParcours(v); }
   if (i === v.cur) return;
   if (v.lent && v.cur >= 0 && i > v.cur) { v.lent = false; try { v.player.setPlaybackRate(1); } catch {} }   // la phrase lente est finie
   v.cur = i; placerSous(v);
@@ -966,7 +997,7 @@ $("playBtn").onclick = () => {
   let ici = -1, t = 0; try { t = v.player.getCurrentTime() || 0; } catch {}
   for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .25) ici = j; else break; }
   if (v.ouverte != null && v.ouverte !== ici) { jouerLigne(v, v.ouverte, 1); return; }   // on a navigue vers une autre phrase : on repart de la
-  v.ouverte = null; v.cur = -2; v.player.playVideo();
+  finParcours(v); v.ouverte = null; v.cur = -2; v.player.playVideo();
 };
 $("gardeBtn").onclick = () => { if (busy) return; try { video?.player?.pauseVideo?.(); } catch {} hidePop(); afficherPassages(); };
 $("passages").onclick = e => { if (e.target.id === "passages" || e.target.closest("#passagesClose")) { fermer("passages"); stopSpeak(); } };

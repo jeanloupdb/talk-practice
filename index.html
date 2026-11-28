@@ -1101,15 +1101,45 @@ function dessinerSous(v){
 }
 // Les mots du vocabulaire (non connus) dans une ligne : soulignes discretement ; en pause, un toucher les met en
 // francais, en bleu, et fait paraitre a droite l'icone du vocabulaire, qui ouvre la liste sur ce mot.
+// Reperer une expression du vocabulaire sous la forme ou elle est dite : « figure out » dans « figured it out »,
+// « milestone » dans « milestones », « take off » dans « took off », « to be amazed by » dans « was amazed by »...
+const IRREG = {be:"am is are was were been being 's 're 'm", have:"has had having 've 'd", do:"does did done doing", go:"goes went gone going", get:"gets got gotten getting", make:"makes made making", take:"takes took taken taking", come:"comes came coming", give:"gives gave given giving", know:"knows knew known knowing", think:"thinks thought thinking", see:"sees saw seen seeing", say:"says said saying", tell:"tells told telling", find:"finds found finding", bring:"brings brought bringing", buy:"buys bought buying", build:"builds built building", keep:"keeps kept keeping", leave:"leaves left leaving", lose:"loses lost losing", mean:"means meant meaning", run:"runs ran running", set:"sets setting", put:"puts putting", cut:"cuts cutting", hold:"holds held holding", stand:"stands stood standing", understand:"understands understood understanding", feel:"feels felt feeling", grow:"grows grew grown growing", fall:"falls fell fallen falling", break:"breaks broke broken breaking", choose:"chooses chose chosen choosing", drive:"drives drove driven driving", lead:"leads led leading", rise:"rises rose risen rising", write:"writes wrote written writing", speak:"speaks spoke spoken speaking", spend:"spends spent spending", send:"sends sent sending", teach:"teaches taught teaching", catch:"catches caught catching", fight:"fights fought fighting", pay:"pays paid paying", sell:"sells sold selling", shut:"shuts shutting", wear:"wears wore worn wearing", win:"wins won winning", begin:"begins began begun beginning", show:"shows showed shown showing", deal:"deals dealt dealing", sink:"sinks sank sunk sinking", blow:"blows blew blown blowing", throw:"throws threw thrown throwing", shake:"shakes shook shaken shaking", hit:"hits hitting", let:"lets letting"};
+const GENERIQUES = new Set(["someone","somebody","something","sb","sth","one's","oneself","someone's","your","yourself","his","her","their","it"]);
+const PARTICULES = new Set(["up","out","off","down","in","on","over","back","away","through","around","about","into","onto","along","apart","forward","together","by"]);
+const echap = t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function formesMot(w){
+  if (IRREG[w]) return [w, ...IRREG[w].split(" ")];
+  if (w.length < 3 || !/^[a-z]+$/.test(w)) return [w];
+  const f = new Set([w, w + "s", w + "es", w + "ed", w + "d", w + "ing", w + "er", w + "ers"]);
+  if (w.endsWith("e")) { f.add(w.slice(0, -1) + "ing"); f.add(w.slice(0, -1) + "ed"); }
+  if (/[^aeiou]y$/.test(w)) { f.add(w.slice(0, -1) + "ies"); f.add(w.slice(0, -1) + "ied"); }
+  if (/[^aeiou][aeiou][bdgklmnprt]$/.test(w)) { const c = w + w.slice(-1); f.add(c + "ed"); f.add(c + "ing"); f.add(c + "er"); }
+  return [...f];
+}
+const motifCache = new Map();
+function motifVoc(x){
+  const cle = x.en + "|" + (x.dit || ""); if (motifCache.has(cle)) return motifCache.get(cle);
+  const base = x.en.toLowerCase().replace(/\([^)]*\)/g, " ").replace(/[.,!?;:"]+/g, " ").replace(/^\s*to\s+/, "").replace(/\s+/g, " ").trim();
+  const mots = base.split(" ").filter(Boolean), alts = [];
+  if (mots.length) {
+    const parts = mots.map(w => GENERIQUES.has(w) ? "[a-z']+(?:\\s+[a-z']+){0,2}" : "(?:" + formesMot(w).map(echap).join("|") + ")");
+    // une particule peut etre separee du verbe par un ou deux mots : « figure it out », « take your shoes off »
+    alts.push(parts.map((p, n) => n === 0 ? p : (PARTICULES.has(mots[n]) && n === mots.length - 1 && mots.length <= 3 ? "(?:\\s+[a-z']+){0,2}\\s+" : "\\s+") + p).join(""));
+    // sans le « be » de tete : « to be amazed by » se trouve aussi dans « amazed by »
+    if (mots[0] === "be" && mots.length > 1) alts.push(parts.slice(1).join("\\s+"));
+  }
+  if (x.dit) alts.unshift(echap(x.dit.toLowerCase().replace(/[.,!?;:"]+$/g, "").trim()).replace(/\s+/g, "\\s+"));
+  const re = alts.length ? new RegExp("(^|[^a-z'])(" + alts.join("|") + ")(?=$|[^a-z'])", "i") : null;
+  motifCache.set(cle, re); return re;
+}
 function motsVocLigne(v, en){
   const items = vocAffiche(v.id).filter(x => !estConnu(x.en)), bas = en.toLowerCase(), pris = [];
-  const formes = x => { const f = x.en.toLowerCase().replace(/[.,!?;:"]+$/g, "").trim(); return [...new Set([f, f.replace(/^to be /, ""), f.replace(/^to /, ""), f.replace(/^(be|get) /, "")])].filter(y => y.length > 2); };
-  for (const x of items) for (const f of formes(x)) {
-    const re = new RegExp("(^|[^a-z'])(" + f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")(?=$|[^a-z'])", "i"), m = re.exec(bas);
-    if (!m) continue;
+  // les plus longues d'abord : « figure out » avant « figure »
+  for (const x of [...items].sort((a, b) => b.en.length - a.en.length)) {
+    const re = motifVoc(x), m = re && re.exec(bas); if (!m) continue;
     const d = m.index + m[1].length, fin = d + m[2].length;
-    if (pris.some(p => d < p.fin && fin > p.d)) continue;
-    pris.push({d, fin, x}); break;
+    if (fin - d < 3 || pris.some(p => d < p.fin && fin > p.d)) continue;
+    pris.push({d, fin, x});
   }
   return pris.sort((a, b) => a.d - b.d);
 }
@@ -1445,7 +1475,7 @@ ${avant ? `What you already said to each other about it:\n${avant}\n` : ""}The a
 /* ---------- Le vocabulaire de la video ----------
    Fait UNE fois pour toute la video (Gemini la regarde en entier, image en basse resolution pour couter peu),
    puis garde dans le telephone : on le retrouve a chaque retour sur la video, meme apres avoir quitte l'appli. */
-const SCHEMA_VOCV = {type:"OBJECT", properties:{items:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}, t:{type:"NUMBER"}}, required:["en","fr","t"], propertyOrdering:["en","fr","t"]}}}, required:["items"], propertyOrdering:["items"]};
+const SCHEMA_VOCV = {type:"OBJECT", properties:{items:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, dit:{type:"STRING"}, fr:{type:"STRING"}, t:{type:"NUMBER"}}, required:["en","dit","fr","t"], propertyOrdering:["en","dit","fr","t"]}}}, required:["items"], propertyOrdering:["items"]};
 // un mot demande pendant la discussion sur une phrase : en tete du vocabulaire de la video (deja la ? il remonte)
 function ajouterVocPerso(v, mot){
   const m = vocsVideos(), g = m[v.id] || (m[v.id] = {items:[], d:Date.now()});
@@ -1472,11 +1502,11 @@ function vocVideo(v){
   const demande = modele => llm(`Watch this YouTube video${v.titre ? ` ("${v.titre}")` : ""}. A French-speaking learner of English (level A2/B1) is watching it and wants to understand it better.
 ${motsConnus().length ? `He has told us he already knows these, never list them: ${motsConnus().slice(-120).join(", ")}.
 ` : ""}He already knows everyday English up to B1 (building, car, company, to grow, to build, important...) and every word that looks like French (laser, technology, rocket, economy, idea...): NEVER list those, nor numbers, names or brands.
-- "items": the vocabulary that would really stop him, in the order it appears: less common words (milestone, leverage, bottleneck...), idioms, phrasal verbs (figure out, ramp up...), collocations and sentence patterns that a French speaker would not guess, as they are used in the video. Prefer 15 to 30 items spread over the WHOLE video from start to end; fewer is fine if the video is simple, but never fill the list with easy words. For each: "en" = the word or expression (short, as said in the video), "fr" = its French translation in this context (short, natural, correct French spelling with all accents: é, è, à, ç...), "t" = the time in seconds when it is first said.`, SCHEMA_VOCV, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, ...(fin ? {debut:0, fin} : {}), basse:true}, modele});
+- "items": the vocabulary that would really stop him, in the order it appears: less common words (milestone, leverage, bottleneck...), idioms, phrasal verbs (figure out, ramp up...), collocations and sentence patterns that a French speaker would not guess, as they are used in the video. Prefer 15 to 30 items spread over the WHOLE video from start to end; fewer is fine if the video is simple, but never fill the list with easy words. For each: "en" = the word or expression (short, as said in the video), "fr" = its French translation in this context (short, natural, correct French spelling with all accents: é, è, à, ç...), "t" = the time in seconds when it is first said, "dit" = the exact words as they are SPOKEN at that moment, inflected as in the video (e.g. "figured it out" for "figure out", "milestones" for "milestone").`, SCHEMA_VOCV, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, ...(fin ? {debut:0, fin} : {}), basse:true}, modele});
   // Flash traduit bien mieux que Lite (Lite invente des sens et perd les accents) ; Lite seulement si Flash ne repond pas
   const p = demande("gemini-flash-latest").catch(e => { if (e?.code === "key") throw e; return demande(MODELE_SECOURS); })
     .then(d => {
-      const vus = new Set(), items = (d.items || []).filter(x => x && x.en && x.fr && !vus.has(x.en.toLowerCase()) && vus.add(x.en.toLowerCase())).map(x => ({en:x.en.trim(), fr:x.fr.trim(), t:isFinite(x.t) ? Math.round(x.t) : 0}));
+      const vus = new Set(), items = (d.items || []).filter(x => x && x.en && x.fr && !vus.has(x.en.toLowerCase()) && vus.add(x.en.toLowerCase())).map(x => ({en:x.en.trim(), fr:x.fr.trim(), t:isFinite(x.t) ? Math.round(x.t) : 0, ...(x.dit && x.dit.trim().toLowerCase() !== x.en.trim().toLowerCase() ? {dit:x.dit.trim()} : {})}));
       if (items.length) {
         const m = vocsVideos(); m[v.id] = {...(m[v.id] || {}), items, d:Date.now(), v:2};   // (les mots demandes restent)
         const garder = new Set(videosVues().map(x => x.id)); garder.add(v.id);   // on ne garde que les videos de la liste

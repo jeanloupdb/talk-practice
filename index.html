@@ -257,15 +257,32 @@ body.vdisc #playBtn,body.vdisc #gardeBtn,body.vdet #playBtn,body.vdet #gardeBtn{
 /* la page du vocabulaire : plein ecran, un retour, une liste */
 .vpage{background:none}
 .vpage .sheet{max-width:620px;height:100%;max-height:100%;border-radius:0;padding:calc(10px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px))}
-.vphaut{display:flex;align-items:center;margin:0 0 6px -10px}
+.vphaut{display:flex;align-items:center;justify-content:space-between;min-height:44px;margin:0 0 6px -10px}
+#vvocRetirer{height:36px;padding:0 16px;border-radius:999px;border:none;background:var(--accent);color:var(--on-accent);font:inherit;font-size:.9rem;font-weight:700;animation:popin .3s var(--rebond) both}
+.vvl.sel .vven,.vvl.sel .vvfr{opacity:.4;text-decoration:line-through;text-decoration-thickness:1.5px}
+.vvl.sel .vvok{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.vvl.cible .vven{color:var(--accent)}
+.vvl.cible{animation:vvcible 1.6s ease}
+@keyframes vvcible{0%,40%{background:color-mix(in srgb,var(--accent) 14%,transparent)}100%{background:transparent}}
+/* dans le fil : les mots du vocabulaire, soulignes discretement ; en francais, ils passent en bleu */
+.sl .txv{display:block}
+.sl .tx{display:none}
+.sl.ouverte .tx{display:block}
+.sl.ouverte .txv{display:none}
+.vmot{border-bottom:1.5px dotted color-mix(in srgb,currentColor 45%,transparent);border-radius:2px}
+.vmot.vfr{color:var(--accent);border-bottom-color:transparent}
+.slvoc{position:absolute;right:-6px;top:50%;margin-top:-17px;width:34px;height:34px;border:none;border-radius:50%;padding:0;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);display:grid;place-items:center;animation:popin .3s var(--rebond) both}
+.slvoc[hidden]{display:none}
+.slvoc svg{width:16px;height:16px}
+.sl:has(.slvoc:not([hidden])) .txv{padding-right:34px}
 .vvliste{display:flex;flex-direction:column}
 .vvl{display:flex;align-items:center;gap:10px;width:100%;border-bottom:1px solid var(--line);color:var(--ink);overflow:hidden;max-height:120px;transition:max-height .25s ease,opacity .2s}
 .vvl.part{max-height:0;opacity:0;border-bottom-color:transparent}
 .vvtx{border:none;background:none;color:inherit;text-align:left;padding:13px 0;font:inherit;-webkit-tap-highlight-color:transparent}
-.vvok{flex:none;width:34px;height:34px;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--muted) 45%,transparent);background:none;color:transparent;display:grid;place-items:center;padding:0;transition:background .2s,color .2s,border-color .2s}
+.vvok{flex:none;width:34px;height:34px;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--muted) 35%,transparent);background:none;color:var(--muted);display:grid;place-items:center;padding:0;transition:background .2s,color .2s,border-color .2s}
 .vvok svg{width:15px;height:15px}
-.vvok:active{background:color-mix(in srgb,var(--good) 20%,transparent);color:var(--good)}
-.vvliste.connus .vvok{border-color:transparent;background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+
+.vvliste.connus .vvok{border-color:transparent;background:var(--soft);color:var(--muted)}
 .vvliste.connus .vven,.vvliste.connus .vvfr{opacity:.55}
 .vvconnus{display:flex;align-items:center;gap:8px;margin:18px 0 4px;padding:6px 0;border:none;background:none;color:var(--muted);font:inherit;font-size:.88rem;font-weight:600}
 .vvconnus::after{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .2s}
@@ -787,7 +804,7 @@ button:not(:disabled):active{transform:scale(.94)}
 </div>
 <div class="sheetwrap vpage" id="vvoc" hidden>
   <div class="sheet" role="dialog" aria-label="Vocabulaire de la vidéo">
-    <div class="vphaut"><button class="iconbtn" id="vvocRetour" aria-label="Retour à la vidéo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button></div>
+    <div class="vphaut"><button class="iconbtn" id="vvocRetour" aria-label="Retour à la vidéo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><button id="vvocRetirer" hidden></button></div>
     <div id="vvocListe"></div>
   </div>
 </div>
@@ -959,6 +976,7 @@ function memoVideo(v, t){
   e.pos = Math.floor(t); if (d) e.duree = Math.floor(d); e.t = Date.now(); v.posT = Date.now(); saveS();
 }
 function reprise(e){ return e?.pos > 8 && !(e.duree && e.pos > e.duree - 15) ? e.pos : 0; }
+const ICO_LISTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg>';
 const VRETOUR = '<button class="vretour" aria-label="Retour à l’accueil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>'
   + '<button class="vretour vvocbtn" aria-label="Vocabulaire de la vidéo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg></button>';
 $("lecteur").onclick = e => { const vb = e.target.closest(".vvocbtn"); if (vb) { if (!vb.classList.contains("charge")) afficherVocVideo(); return; } if (e.target.closest(".vretour")) allerAccueil(); };
@@ -1061,7 +1079,7 @@ function dessinerSous(v){
     // chaque groupe de mots se touche (phrase ouverte) pour avoir sa traduction exacte
     const groupes = Array.isArray(x.g) && x.g.length && x.g.every(q => q && q.en) ? x.g : x.en.split(/\s+/).map(m => ({en:m, fr:""}));
     groupes.forEach((q, n) => { const sp = el("span", "sg", q.en); sp.onclick = e => { if (v.ouverte !== i) return; e.stopPropagation(); showPop(sp, q.en, q.fr); }; tx.append(sp, n < groupes.length - 1 ? " " : ""); });
-    l.append(tx);
+    l.append(tx, texteVoc(v, x, l));   // (le meme texte, avec les mots du vocabulaire touchables : affiche hors phrase ouverte)
     const d = el("div", "sd"), dd = el("div");
     if (x.garde == null) x.garde = passages().some(q => q.v === v.id && q.en === x.en);
     // le signet garde ce moment de la video (la phrase et son temps)
@@ -1080,6 +1098,40 @@ function dessinerSous(v){
   v.cur = -2; v.ouverte = ouvert == null ? null : v.subs.findIndex(x => x.t === ouvert);
   if (v.ouverte === -1) v.ouverte = null;
   if (v.ouverte != null) { const l = v.sous.children[v.ouverte]; l.classList.add("ouverte"); l.scrollTop = defile; }
+}
+// Les mots du vocabulaire (non connus) dans une ligne : soulignes discretement ; en pause, un toucher les met en
+// francais, en bleu, et fait paraitre a droite l'icone du vocabulaire, qui ouvre la liste sur ce mot.
+function motsVocLigne(v, en){
+  const items = vocAffiche(v.id).filter(x => !estConnu(x.en)), bas = en.toLowerCase(), pris = [];
+  const formes = x => { const f = x.en.toLowerCase().replace(/[.,!?;:"]+$/g, "").trim(); return [...new Set([f, f.replace(/^to be /, ""), f.replace(/^to /, ""), f.replace(/^(be|get) /, "")])].filter(y => y.length > 2); };
+  for (const x of items) for (const f of formes(x)) {
+    const re = new RegExp("(^|[^a-z'])(" + f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")(?=$|[^a-z'])", "i"), m = re.exec(bas);
+    if (!m) continue;
+    const d = m.index + m[1].length, fin = d + m[2].length;
+    if (pris.some(p => d < p.fin && fin > p.d)) continue;
+    pris.push({d, fin, x}); break;
+  }
+  return pris.sort((a, b) => a.d - b.d);
+}
+function texteVoc(v, x, l){
+  const box = el("span", "txv"), mots = motsVocLigne(v, x.en); let pos = 0;
+  for (const m of mots) {
+    box.append(x.en.slice(pos, m.d));
+    const sp = el("span", "vmot", x.en.slice(m.d, m.fin)); sp.dataset.en = x.en.slice(m.d, m.fin);
+    sp.onclick = e => {
+      let joue = false; try { joue = v.player.getPlayerState() === 1; } catch {}
+      if (joue || v.ouverte != null) return;   // en lecture : le toucher reste celui de la ligne (pause)
+      e.stopPropagation(); hidePop();
+      const fr = !sp.classList.contains("vfr"); sp.classList.toggle("vfr", fr); sp.textContent = fr ? m.x.fr : sp.dataset.en; vibre(4);
+      const bt = l.querySelector(".slvoc"); bt.hidden = !l.querySelector(".vmot.vfr"); bt._en = fr ? m.x.en : (l.querySelector(".vmot.vfr") ? bt._en : null);
+    };
+    box.append(sp); pos = m.fin;
+  }
+  box.append(x.en.slice(pos));
+  const bt = el("button", "slvoc"); bt.hidden = true; bt.innerHTML = ICO_LISTE; bt.setAttribute("aria-label", "Voir dans le vocabulaire");
+  bt.onclick = e => { e.stopPropagation(); afficherVocVideo(bt._en); };
+  l.append(bt);
+  return box;
 }
 // toucher une phrase : la video va au debut de cette phrase et se met en pause ;
 // toucher a nouveau la phrase sur laquelle on est en pause : ses details s'ouvrent
@@ -1436,7 +1488,7 @@ ${motsConnus().length ? `He has told us he already knows these, never list them:
     .finally(() => vocEnCours.delete(v.id));
   vocEnCours.set(v.id, p); return p;
 }
-function afficherVocVideo(){
+function afficherVocVideo(focus){
   const v = video; if (!v) return;
   v.attSous = false; try { v.player.pauseVideo(); } catch {}
   stopSpeak(); hidePop();
@@ -1444,46 +1496,64 @@ function afficherVocVideo(){
   const g = vocsVideos()[v.id];
   if (!(g?.v === 2 && g.items?.length)) { preparerVoc(v); return; }   // pas encore prete : l'icone charge, la page ne s'ouvre pas
   rendreVoc(v.id);
-  ouvrir("vvoc"); $("vvoc").querySelector(".sheet").scrollTop = 0;
+  ouvrir("vvoc"); const sh = $("vvoc").querySelector(".sheet"); sh.scrollTop = 0;
+  if (focus) {   // venu d'un mot du fil : la liste s'ouvre sur lui, en bleu
+    const r = [...$("vvocListe").querySelectorAll(".vvl")].find(b => b.dataset.en?.toLowerCase() === focus.toLowerCase());
+    if (r) { r.classList.add("cible"); requestAnimationFrame(() => { sh.scrollTop = Math.max(0, r.offsetTop - sh.clientHeight / 3); }); }
+  }
 }
 // 2. la liste se prepare des l'ouverture de la video, en arriere-plan ; l'icone pulse doucement en attendant
 function preparerVoc(v){
   const b = () => $("lecteur").querySelector(".vvocbtn");
   const g = vocsVideos()[v.id]; if (g?.v === 2 && g.items?.length) { b()?.classList.remove("charge"); return; }
   b()?.classList.add("charge");
-  vocVideo(v).then(items => { if (video === v) { b()?.classList.toggle("charge", false); if (!items.length) b()?.remove(); } })
+  vocVideo(v).then(items => { if (video === v) { b()?.classList.toggle("charge", false); if (!items.length) b()?.remove(); else if (v.ouverte == null) { dessinerSous(v); v.cur = -2; suivreSous(v); } } })
     .catch(e => { console.error(e); if (video === v) { b()?.classList.remove("charge"); setStatus(e?.code === "rate" ? "Vocabulaire : limite gratuite atteinte, réessaie plus tard." : "Vocabulaire indisponible, touche l’icône pour réessayer."); } });
 }
 // une liste simple : l'anglais, sa traduction dessous ; toucher une ligne la fait entendre.
-// La coche a droite : « je connais » ; le mot quitte la liste et rejoint, en bas, les mots connus (repliables).
+// Une croix par mot : elle le selectionne (plusieurs a la fois) ; « Retirer » en haut les enleve de la liste (mots connus).
+// Les mots retires restent repliables en bas, et se remettent d'un toucher.
+const vocSel = new Set();
+function majRetirer(){ const b = $("vvocRetirer"); b.hidden = !vocSel.size; b.textContent = "Retirer " + vocSel.size; }
 function rendreVoc(id, ouvrirConnus){
+  vocSel.clear(); majRetirer();
   const tous = vocAffiche(id), a = tous.filter(x => !estConnu(x.en)), c = tous.filter(x => estConnu(x.en));
-  const box = $("vvocListe"), parts = [listeVoc(a, id, false)];
+  const parts = [listeVoc(a, id, false)];
   if (c.length) {
-    const bt = el("button", "vvconnus" + (ouvrirConnus ? " ouvert" : ""), c.length + (c.length > 1 ? " mots que je connais" : " mot que je connais"));
+    const bt = el("button", "vvconnus" + (ouvrirConnus ? " ouvert" : ""), c.length + (c.length > 1 ? " mots retirés" : " mot retiré"));
     const lc = listeVoc(c, id, true); lc.hidden = !ouvrirConnus;
     bt.onclick = () => { lc.hidden = !lc.hidden; bt.classList.toggle("ouvert", !lc.hidden); };
     parts.push(bt, lc);
   }
   if (!a.length && !c.length) parts.push(el("p", "tip", "Pas de vocabulaire trouvé dans cette vidéo."));
-  box.replaceChildren(...parts);
+  $("vvocListe").replaceChildren(...parts); $("vvocListe")._id = id;
 }
-const ICO_COCHE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12.5l4 4 8-9"/></svg>';
-function listeVoc(items, id, connus){
-  const ul = el("div", "vvliste" + (connus ? " connus" : ""));
+const ICO_CROIX = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+const ICO_REMETTRE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
+function listeVoc(items, id, retires){
+  const ul = el("div", "vvliste" + (retires ? " connus" : ""));
   for (const x of items) {
     const b = el("div", "vvl" + (x.perso ? " perso" : "")), tx = el("button", "vvtx"), ok = el("button", "vvok");
-    tx.append(el("span", "vven", x.en), el("span", "vvfr", x.fr)); ok.innerHTML = ICO_COCHE;
-    ok.setAttribute("aria-label", connus ? "Je ne le connais pas finalement" : "Je connais ce mot");
+    b.dataset.en = x.en;
+    tx.append(el("span", "vven", x.en), el("span", "vvfr", x.fr)); ok.innerHTML = retires ? ICO_REMETTRE : ICO_CROIX;
+    ok.setAttribute("aria-label", retires ? "Remettre dans la liste" : "Sélectionner pour retirer");
     tx.onclick = () => { unlockAudio(); speak(x.en, b, null); };
     ok.onclick = () => {
-      vibre(8); marquerConnu(x.en, !connus);
-      b.classList.add("part"); setTimeout(() => rendreVoc(id, connus || !!$("vvocListe").querySelector(".vvconnus.ouvert")), 260);
+      vibre(6);
+      if (retires) { marquerConnu(x.en, false); b.classList.add("part"); setTimeout(() => rendreVoc(id, true), 240); return; }
+      const k = x.en; if (vocSel.has(k)) vocSel.delete(k); else vocSel.add(k);
+      b.classList.toggle("sel", vocSel.has(k)); majRetirer();
     };
     b.append(tx, ok); ul.append(b);
   }
   return ul;
 }
+$("vvocRetirer").onclick = () => {
+  const id = $("vvocListe")._id; if (!vocSel.size) return;
+  for (const en of vocSel) marquerConnu(en, true);
+  $("vvocListe").querySelectorAll(".vvl.sel").forEach(b => b.classList.add("part")); vibre(10);
+  setTimeout(() => { rendreVoc(id, !!$("vvocListe").querySelector(".vvconnus.ouvert")); if (video?.id === id && video.ouverte == null) { dessinerSous(video); video.cur = -2; suivreSous(video); } }, 260);
+};
 $("vvocRetour").onclick = () => { fermer("vvoc"); stopSpeak(); };
 $("vvoc").onclick = e => { if (e.target.id === "vvoc") { fermer("vvoc"); stopSpeak(); } };
 // les passages gardes : ceux de cette video rejouent dans la video, les autres sont lus

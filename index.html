@@ -223,7 +223,10 @@ body.video .sousvue{margin:0 -20px;padding:0 20px}
 .vqa .you{align-self:flex-end;font-size:1.05rem}
 .vqa .vfermer{position:absolute;right:6px;top:4px;width:32px;height:32px;border:none;background:none;color:var(--muted);font-size:1.3rem;line-height:1}
 /* discuter de la video : l'IA pose des questions sur la partie vue, montree par une barre */
-body.vdisc #feed>.sousvue,body.vdisc #feed>.dots{display:none}
+body.vdisc #feed>.sousvue,body.vdisc #feed>.vatt{display:none}
+/* une seule facon de dire « ca prepare » : une pastille discrete avec un petit anneau qui tourne */
+.vatt{align-self:center;display:inline-flex;align-items:center;gap:8px;margin:2px 0 6px;padding:6px 12px;border-radius:999px;background:var(--soft);color:var(--muted);font-size:.82rem;font-weight:600;animation:fondu .3s ease both}
+.vatt i{width:12px;height:12px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:tourne .8s linear infinite}
 body.vdisc #feed{padding-bottom:10px}
 .vqa.disc{position:relative;flex:1;min-height:0;margin:0;padding:0;gap:0;border:none;border-radius:0;box-shadow:none;background:none}
 .dhaut2{display:flex;align-items:center;gap:12px;padding:2px 0 10px;border-bottom:1px solid var(--line)}
@@ -266,9 +269,12 @@ body.vdet .micreg svg{width:22px;height:22px}
 /* nos commandes : l'image ne reagit qu'a nous, le curseur se fait oublier tant qu'on ne le touche pas */
 .lecteur iframe{pointer-events:none}
 .vvocbtn{left:auto;right:8px}
-.vvocbtn.charge{cursor:default}
+/* vocabulaire en preparation : l'icone palit, un anneau fin se remplit a mesure que les morceaux sont lus */
+.vvocbtn.vprep svg{opacity:.45}
+.vvocbtn.vprep::before{content:"";position:absolute;inset:0;border-radius:50%;padding:2px;background:conic-gradient(var(--ink) calc(var(--p, 0) * 360deg), color-mix(in srgb, var(--ink) 18%, transparent) 0);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
+.vvocbtn.vprep::after{content:"";position:absolute;inset:0;border-radius:50%;animation:vvpulse 1.6s ease-in-out infinite;background:color-mix(in srgb,var(--ink) 8%,transparent)}
 .vvocbtn.brille{animation:brille .9s var(--ease)}
-.vvocbtn.charge svg{animation:vvpulse 1.4s ease-in-out infinite}
+
 @keyframes vvpulse{0%,100%{opacity:.18}50%{opacity:.45}}
 /* la page du vocabulaire : plein ecran, un retour, une liste */
 .vpage{background:none}
@@ -997,7 +1003,7 @@ function reprise(e){ return e?.pos > 8 && !(e.duree && e.pos > e.duree - 15) ? e
 const ICO_LISTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg>';
 const VRETOUR = '<button class="vretour" aria-label="Retour à l’accueil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>'
   + '<button class="vretour vvocbtn" aria-label="Vocabulaire de la vidéo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg></button>';
-$("lecteur").onclick = e => { const vb = e.target.closest(".vvocbtn"); if (vb) { if (!vb.classList.contains("charge")) afficherVocVideo(); return; } if (e.target.closest(".vretour")) allerAccueil(); };
+$("lecteur").onclick = e => { const vb = e.target.closest(".vvocbtn"); if (vb) { if (!vb.classList.contains("vprep")) afficherVocVideo(); else { const pr = video?.vocProg; setStatus("Vocabulaire en préparation" + (pr && pr[1] > 1 ? " " + pr[0] + "/" + pr[1] : "") + "…"); clearTimeout(vb._st); vb._st = setTimeout(() => setStatus(""), 2500); } return; } if (e.target.closest(".vretour")) allerAccueil(); };
 function quitterVideo(){
   $("gardeBtn").hidden = true; $("playBtn").hidden = true; $("discBtn").hidden = true;
   document.body.classList.remove("vdisc", "vdet"); barreNoire(false);
@@ -1013,7 +1019,7 @@ async function ouvrirVideo(id){
   setTheme(LIBRE); ouvrirFil(true); history = [];
   const v = video = {id, titre:"", player:null, questions:0, subs:[], blocs:new Map(), cur:-1, tick:0, vus:new Set(), disc:null};
   document.body.classList.add("video"); document.body.classList.remove("vdisc"); barreNoire(true);
-  v.qa = el("div", "vqa"); v.sous = el("div", "sous"); v.vue = el("div", "sousvue"); v.vue.append(v.sous); v.att = el("div", "dots"); v.att.append(el("i"), el("i"), el("i"));
+  v.qa = el("div", "vqa"); v.sous = el("div", "sous"); v.vue = el("div", "sousvue"); v.vue.append(v.sous); v.att = el("div", "vatt"); v.att.append(el("i"), "Sous-titres en préparation"); v.att.hidden = true;
   feed.classList.remove("defile"); feed.replaceChildren(v.qa, v.att, v.vue);
   parcourirSous(v);
   const garde = lireSous(id);   // sous-titres deja transcrits pour cette video
@@ -1302,7 +1308,7 @@ function suivreSous(v){
   if (joue) { v.vus.add(Math.floor(t)); if (Date.now() - (v.posT || 0) > 5000) memoVideo(v, t); }
   const k = Math.floor(t / TRANCHE);
   chargerSous(v, k); chargerSous(v, k + 1); if (t - k * TRANCHE > TRANCHE / 2) chargerSous(v, k + 2);   // (toujours une a deux tranches d'avance)
-  v.att.hidden = v.blocs.get(k) !== "attente";
+  v.att.hidden = !(v.blocs.get(k) === "attente" && !v.subs.some(x => x.k === k));   // la minute en cours n'a pas encore ses sous-titres
   // les sous-titres de cette minute ne sont pas encore la : la video attend (pause), puis repart seule quand ils arrivent.
   // Une tranche qui a deja echoue ne bloque plus (Google sature : on regarde sans sous-titres plutot que rester bloque).
   const attendSous = v.blocs.get(k) === "attente" && !v.koVu?.has(k);
@@ -1530,7 +1536,7 @@ function vocAffiche(id){
 function vocsVideos(){ if (!S.vidVoc || typeof S.vidVoc !== "object") S.vidVoc = {}; return S.vidVoc; }
 const VOC_V = 4;   // v4 : tous les mots qui valent le coup, sans plafond
 const vocEnCours = new Map();   // id -> promesse (une seule generation a la fois par video)
-function vocVideo(v){
+function vocVideo(v, progres){
   const deja = vocsVideos()[v.id]; if (deja?.items?.length && deja.v === VOC_V) return Promise.resolve(deja.items);   // (version de la consigne : une liste d'une version plus ancienne est refaite)
   if (vocEnCours.has(v.id)) return vocEnCours.get(v.id);
   let duree = 0; try { duree = v.player.getDuration() || 0; } catch {}
@@ -1545,7 +1551,8 @@ ${motsConnus().length ? `He has told us he already knows these, never list them:
   // Un morceau qui echoue n'empeche pas les autres ; si tous echouent, l'erreur remonte.
   const unMorceau = ([a, b]) => demande("gemini-flash-latest", a, b).catch(e => { if (e?.code === "key") throw e; return demande(MODELE_SECOURS, a, b); })
     .then(d => (d.items || []).map(x => ({...x, t:isFinite(x.t) ? (x.t <= b - a + 5 ? x.t + a : x.t) : a})));
-  const p = Promise.allSettled(morceaux.map(unMorceau))
+  let fait = 0; progres?.(0, morceaux.length);
+  const p = Promise.allSettled(morceaux.map(m => unMorceau(m).finally(() => progres?.(++fait, morceaux.length))))
     .then(r => { if (r.every(x => x.status === "rejected")) throw r[0].reason; return {items:r.flatMap(x => x.status === "fulfilled" ? x.value : [])}; })
     .then(d => {
       const vus = new Set(), items = (d.items || []).filter(x => x && x.en && x.fr && !vus.has(x.en.toLowerCase()) && vus.add(x.en.toLowerCase())).map(x => ({en:x.en.trim(), fr:x.fr.trim(), t:Math.round(x.t), ...(x.dit && x.dit.trim().toLowerCase() !== x.en.trim().toLowerCase() ? {dit:x.dit.trim()} : {})})).sort((x, y) => x.t - y.t);
@@ -1577,10 +1584,11 @@ function afficherVocVideo(focus){
 // 2. la liste se prepare des l'ouverture de la video, en arriere-plan ; l'icone pulse doucement en attendant
 function preparerVoc(v){
   const b = () => $("lecteur").querySelector(".vvocbtn");
-  const g = vocsVideos()[v.id]; if (g?.v === VOC_V && g.items?.length) { b()?.classList.remove("charge"); return; }
-  b()?.classList.add("charge");
-  vocVideo(v).then(items => { if (video === v) { b()?.classList.toggle("charge", false); if (!items.length) b()?.remove(); else if (v.ouverte == null) { dessinerSous(v); v.cur = -2; suivreSous(v); } } })
-    .catch(e => { console.error(e); if (video === v) { b()?.classList.remove("charge"); setStatus(e?.code === "rate" ? "Vocabulaire : limite gratuite atteinte, réessaie plus tard." : "Vocabulaire indisponible, touche l’icône pour réessayer."); } });
+  const g = vocsVideos()[v.id]; if (g?.v === VOC_V && g.items?.length) { b()?.classList.remove("vprep"); return; }
+  const bt = b(); if (bt) { bt.classList.add("vprep"); bt.style.setProperty("--p", .06); }
+  vocVideo(v, (fait, total) => { if (video !== v) return; v.vocProg = [fait, total]; b()?.style.setProperty("--p", Math.max(.06, fait / total)); })
+    .then(items => { if (video === v) { b()?.classList.remove("vprep"); v.vocProg = null; if (!items.length) b()?.remove(); else if (v.ouverte == null) { dessinerSous(v); v.cur = -2; suivreSous(v); } } })
+    .catch(e => { console.error(e); if (video === v) { b()?.classList.remove("vprep"); v.vocProg = null; setStatus(e?.code === "rate" ? "Vocabulaire : limite atteinte, réessaie plus tard." : "Vocabulaire indisponible, touche l’icône pour réessayer."); } });
 }
 // une liste simple : l'anglais, sa traduction dessous ; toucher une ligne la fait entendre.
 // Une croix par mot : elle le selectionne (plusieurs a la fois) ; « Retirer » en haut les enleve de la liste (mots connus).

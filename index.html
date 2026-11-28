@@ -164,7 +164,14 @@ body.video #feed.defile{overflow-y:auto}
 .sl .sd{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s var(--ease)}
 .sl .sd>div{overflow:hidden}
 .sl.ouverte .sd{grid-template-rows:1fr}
-.sl .sfr{margin:6px 0 10px;font-size:1rem;font-weight:500;color:var(--muted)}
+.sl .sfr{margin:14px 0 16px;padding:2px 0 2px 14px;border-left:3px solid var(--accent);font-size:1.2rem;font-weight:500;line-height:1.4;color:var(--ink)}
+/* une phrase touchee : elle monte en haut, seule, avec son francais dessous ; a la reprise tout revient en glissant */
+.sousvue{transition:-webkit-mask-size .4s,mask-size .4s}
+.sousvue.focus{-webkit-mask-image:none;mask-image:none}
+.sousvue.focus .sl{opacity:0;pointer-events:none}
+.sousvue.focus .sl.ouverte{opacity:1;pointer-events:auto}
+.sl .tx{display:block;transition:font-size .45s cubic-bezier(.22,.9,.24,1)}
+.sl.ouverte .tx{font-size:clamp(1.45rem,6.2vw,1.8rem);line-height:1.25}
 .sl .sact{display:flex;gap:8px;padding-bottom:4px}
 .sbtn{height:38px;min-width:38px;padding:0 12px;border-radius:999px;border:none;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:.85rem;font-weight:700}
 .sbtn svg{width:16px;height:16px}
@@ -849,8 +856,9 @@ function jouerLigne(v, i, vitesse){
 function placerSous(v){
   const f = v.ouverte ?? v.cur, lignes = [...v.sous.children];
   lignes.forEach((b, j) => { b.classList.toggle("on", j === f); b.classList.toggle("d1", Math.abs(j - f) === 1); b.classList.toggle("ouverte", j === v.ouverte); });
-  const cible = lignes[Math.max(0, f)];
-  v.sous.style.transform = "translateY(" + Math.round(cible ? v.vue.clientHeight * .2 - cible.offsetTop : 0) + "px)";
+  const cible = lignes[Math.max(0, f)], focus = v.ouverte != null;
+  v.vue.classList.toggle("focus", focus);
+  v.sous.style.transform = "translateY(" + Math.round(cible ? (focus ? 4 : v.vue.clientHeight * .2) - cible.offsetTop : 0) + "px)";
 }
 // suit la lecture : charge la tranche en cours (et la suivante un peu avant), amene la phrase dite au point fixe
 function suivreSous(v){

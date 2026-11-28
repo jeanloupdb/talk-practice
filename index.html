@@ -178,6 +178,7 @@ body.video #feed.defile{overflow-y:auto}
 .sbtn{height:38px;min-width:38px;padding:0 12px;border-radius:999px;border:none;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:.85rem;font-weight:700}
 .sbtn svg{width:16px;height:16px}
 .sbtn.garde{background:var(--accent);color:var(--on-accent)}
+.sbtn:disabled{opacity:.3}
 /* la derniere question et sa reponse restent en haut des sous-titres */
 .vqa{position:sticky;top:0;z-index:3;display:flex;flex-direction:column;gap:8px;margin:0 -6px 8px;padding:14px 14px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--card-line);box-shadow:0 10px 30px color-mix(in srgb,#2457C5 14%,transparent)}
 .vqa:empty{display:none}
@@ -405,6 +406,14 @@ body.home .micreg{display:none}
 .cfait.ecoute{width:100%;background:none;border:none;color:var(--ink);text-align:left;font-size:1rem;align-items:center}
 .cfait.ecoute .rcplay{color:var(--good)}
 .bmots{margin-top:10px}
+.mainrow #playBtn{grid-column:2;width:72px;height:72px;background:var(--accent);color:var(--on-accent)}
+.mainrow #playBtn svg{width:28px;height:28px}
+.mainrow #playBtn:active{transform:scale(.94)}
+body.video .mainrow #mic{grid-column:3;justify-self:end;width:52px;height:52px}
+body.video .mainrow #mic svg{width:22px;height:22px}
+body.video .micreg{display:none}
+body.video .mainrow #mic:not(.on):not(.prep):not(.refuse){background:var(--soft);color:var(--accent)}
+.sact .espace{flex:1}
 .mainrow #gardeBtn{grid-column:1;justify-self:start;width:52px;height:52px;background:var(--soft);color:var(--accent)}
 .mainrow #gardeBtn svg{width:22px;height:22px}
 .mainrow #gardeBtn.brille{animation:brille .9s var(--ease)}
@@ -610,6 +619,7 @@ button:not(:disabled):active{transform:scale(.94)}
     <p class="status" id="status"></p>
     <div class="row mainrow">
       <button class="round" id="gardeBtn" aria-label="Mes passages gardés" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></svg></button>
+      <button class="round" id="playBtn" aria-label="Lecture" hidden></button>
       <button class="round" id="mlBtn" aria-label="Mode mains libres" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9.5" y="4" width="5" height="9" rx="2.5"/><path d="M7.5 11a4.5 4.5 0 0 0 9 0M12 15.5V19"/><path d="M4 8.5a7.5 7.5 0 0 0 0 6M20 8.5a7.5 7.5 0 0 1 0 6"/></svg>
       </button>
@@ -791,7 +801,7 @@ function videosVues(){ if (!Array.isArray(S.videos)) S.videos = []; return S.vid
 const VRETOUR = '<button class="vretour" aria-label="Retour à l’accueil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>';
 $("lecteur").onclick = e => { if (e.target.closest(".vretour")) allerAccueil(); };
 function quitterVideo(){
-  $("gardeBtn").hidden = true;
+  $("gardeBtn").hidden = true; $("playBtn").hidden = true;
   if (!video) { $("lecteur").hidden = true; return; }
   try { video.player?.destroy?.(); } catch {}
   clearInterval(video.tick); video = null; document.body.classList.remove("video"); feed.classList.remove("defile");
@@ -805,7 +815,7 @@ async function ouvrirVideo(id){
   document.body.classList.add("video");
   v.qa = el("div", "vqa"); v.sous = el("div", "sous"); v.vue = el("div", "sousvue"); v.vue.append(v.sous); v.att = el("div", "dots"); v.att.append(el("i"), el("i"), el("i"));
   feed.classList.remove("defile"); feed.replaceChildren(v.qa, v.att, v.vue);
-  mainsLibres = false; mlMaj(); boutonFin(false); $("askBtn").hidden = true; $("gardeBtn").hidden = false; majLeconChip(); mic.disabled = false; xpSession = 0;
+  mainsLibres = false; mlMaj(); boutonFin(false); $("askBtn").hidden = true; $("gardeBtn").hidden = false; $("playBtn").hidden = false; $("playBtn").innerHTML = PLAY; $("playBtn")._joue = false; majLeconChip(); mic.disabled = false; xpSession = 0;
   $("lecteur").hidden = false;
   await chargerYT(); if (video !== v) return;
   v.player = new YT.Player("ytp", {videoId:id, playerVars:{playsinline:1, rel:0, modestbranding:1}, events:{
@@ -851,7 +861,8 @@ function dessinerSous(v){
     if (x.garde == null) x.garde = passages().some(q => q.v === v.id && q.en === x.en);
     const garder = el("button", "sbtn" + (x.garde ? " garde" : "")); garder.innerHTML = ICO_SIGNET; garder.setAttribute("aria-label", "Garder cette phrase");
     garder.onclick = e => { e.stopPropagation(); if (!x.garde) { x.garde = true; passages().push({en:x.en, fr:x.fr || "", v:v.id, t:x.t, titre:v.titre, d:Date.now()}); S.passages = S.passages.slice(-60); ajouterRappel({type:"video", en:x.en}); noterJour(); garder.classList.add("garde"); vibre(10); briller2($("gardeBtn")); } };
-    act.append(rejouer, garder); dd.append(el("p", "sfr", x.fr || ""), act); d.append(dd); l.append(d);
+    const fl = (sens, d) => { const b = el("button", "sbtn"); b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg>'; b.setAttribute("aria-label", sens < 0 ? "Phrase précédente" : "Phrase suivante"); b.disabled = !v.subs[i + sens]; b.onclick = e => { e.stopPropagation(); if (v.subs[i + sens]) ouvrirLigne(v, i + sens); }; return b; };
+    act.append(rejouer, garder, el("span", "espace"), fl(-1, "M15 5l-7 7 7 7"), fl(1, "M9 5l7 7-7 7")); dd.append(el("p", "sfr", x.fr || ""), act); d.append(dd); l.append(d);
     l.onclick = () => ouvrirLigne(v, i);
     return l;
   }));
@@ -860,7 +871,7 @@ function dessinerSous(v){
 }
 // toucher une phrase : la video se met en pause, la phrase vient au point fixe et montre sa traduction
 function ouvrirLigne(v, i){
-  if (v.ouverte === i) { jouerLigne(v, i, 1); return; }   // la retoucher la rejoue
+  if (v.ouverte === i) { hidePop(); return; }   // deja ouverte : un toucher ne fait que fermer la bulle d'un mot
   try { v.player.pauseVideo(); } catch {}
   stopSpeak(); hidePop(); v.ouverte = i; v.cur = -2; placerSous(v);
 }
@@ -884,6 +895,7 @@ function suivreSous(v){
   const k = Math.floor(t / TRANCHE);
   chargerSous(v, k); if (t - k * TRANCHE > TRANCHE - 25) chargerSous(v, k + 1);
   v.att.hidden = v.blocs.get(k) !== "attente";
+  const pb = $("playBtn"); if (pb._joue !== joue) { pb._joue = joue; pb.innerHTML = joue ? PAUSE : PLAY; pb.setAttribute("aria-label", joue ? "Pause" : "Lecture"); }
   if (joue && v.ouverte != null) { v.ouverte = null; v.cur = -2; hidePop(); }   // la lecture a repris : la traduction se referme
   let i = -1; for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .25) i = j; else break; }
   if (i === v.cur) return;
@@ -899,7 +911,7 @@ function rejouerVideo(sec){ stopSpeak(); try { video.player.seekTo(Math.max(0, s
 async function demanderVideo(you, aud, texte){
   if (busy || !video) return;
   busy = true; mic.disabled = true; setStatus("");
-  const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); feed.append(dots); scrollDown();
+  const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); video.qa.append(dots);
   let t = 0; try { t = Math.floor(video.player?.getCurrentTime?.() || 0); } catch {}
   const d0 = Math.max(0, t - 45), d1 = t + 3;
   try {
@@ -946,6 +958,16 @@ function afficherPassages(){
   }) : [el("p", "tip", "Touche une phrase, puis le signet, pour la garder ici.")]));
   ouvrir("passages");
 }
+// Lecture / pause. En sortant d'une phrase etudiee, la lecture reprend a cette phrase.
+$("playBtn").onclick = () => {
+  const v = video; if (!v?.player?.playVideo) return; hidePop(); stopSpeak();
+  let joue = false; try { joue = v.player.getPlayerState() === 1; } catch {}
+  if (joue) { v.player.pauseVideo(); return; }
+  let ici = -1, t = 0; try { t = v.player.getCurrentTime() || 0; } catch {}
+  for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .25) ici = j; else break; }
+  if (v.ouverte != null && v.ouverte !== ici) { jouerLigne(v, v.ouverte, 1); return; }   // on a navigue vers une autre phrase : on repart de la
+  v.ouverte = null; v.cur = -2; v.player.playVideo();
+};
 $("gardeBtn").onclick = () => { if (busy) return; try { video?.player?.pauseVideo?.(); } catch {} hidePop(); afficherPassages(); };
 $("passages").onclick = e => { if (e.target.id === "passages" || e.target.closest("#passagesClose")) { fermer("passages"); stopSpeak(); } };
 // la feuille Watch : coller un lien, ou reprendre une video recente
@@ -2451,7 +2473,7 @@ function poserRepere(c){
   c.onclick = () => { unlockAudio(); speak([...c.querySelectorAll(".cex b")].map(b => b.textContent).join(" "), pl, null); };
 }
 // ou vont les bulles (ta phrase, l'attente) : dans l'exercice en cours, sinon dans le fil
-function zone(){ const r = scene?.isConnected ? scene.querySelector(".etape.on .reponses") : null; if (r) voirEtape(); return r || feed; }
+function zone(){ if (video?.qa) return video.qa; const r = scene?.isConnected ? scene.querySelector(".etape.on .reponses") : null; if (r) voirEtape(); return r || feed; }
 function quitterScene(){ scene = null; enTransition = false; feed.replaceChildren(); afficherEchanges(); }
 const ICO_RAPPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
 // l'etape en cours : des points (un par consigne), pas de titre

@@ -153,13 +153,22 @@ body.video .bar,body.video #voiceStatus{display:none}
 body.video #feed{padding:12px 20px 60px;gap:0}
 .vretour{position:absolute;z-index:2;left:8px;top:8px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center;padding:0}
 .vretour svg{width:18px;height:18px}
-/* sous-titres en direct : la ligne en cours en grand, les autres en retrait ; un toucher y ramene la video */
-.sous{display:flex;flex-direction:column;gap:2px;padding-bottom:30vh}
-.sl{display:block;width:100%;text-align:left;background:none;border:none;padding:9px 0;color:var(--muted);opacity:.5;font:inherit;font-size:1.05rem;font-weight:500;line-height:1.35;transition:opacity .3s,color .3s,font-size .3s var(--ease)}
-.sl.vu{opacity:.75}
-.sl.on{opacity:1;color:var(--ink);font-size:clamp(1.35rem,5.8vw,1.7rem);font-weight:700}
-.sl small{display:none;font-size:.95rem;font-weight:500;color:var(--muted);margin-top:3px}
-.sl.on small{display:block}
+/* sous-titres facon paroles : une seule langue, la phrase en cours au point fixe, les autres s'effacent avec la distance */
+body.video #feed{overflow:hidden}
+body.video #feed.defile{overflow-y:auto}
+.sousvue{position:relative;flex:1;min-height:0;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 16%,#000 62%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 16%,#000 62%,transparent 100%)}
+.sous{position:relative;display:flex;flex-direction:column;transition:transform .7s cubic-bezier(.22,.9,.24,1);will-change:transform}
+.sl{padding:10px 0;color:var(--ink);opacity:.16;font-size:1.25rem;font-weight:600;line-height:1.3;transform-origin:left center;transform:scale(.86);transition:opacity .5s ease,transform .6s cubic-bezier(.22,.9,.24,1);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sl.d1{opacity:.42}
+.sl.on{opacity:1;transform:none;font-weight:700}
+.sl .sd{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s var(--ease)}
+.sl .sd>div{overflow:hidden}
+.sl.ouverte .sd{grid-template-rows:1fr}
+.sl .sfr{margin:6px 0 10px;font-size:1rem;font-weight:500;color:var(--muted)}
+.sl .sact{display:flex;gap:8px;padding-bottom:4px}
+.sbtn{height:38px;min-width:38px;padding:0 12px;border-radius:999px;border:none;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:.85rem;font-weight:700}
+.sbtn svg{width:16px;height:16px}
+.sbtn.garde{background:var(--accent);color:var(--on-accent)}
 /* la derniere question et sa reponse restent en haut des sous-titres */
 .vqa{position:sticky;top:0;z-index:3;display:flex;flex-direction:column;gap:8px;margin:0 -6px 8px;padding:14px 14px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--card-line);box-shadow:0 10px 30px color-mix(in srgb,#2457C5 14%,transparent)}
 .vqa:empty{display:none}
@@ -765,7 +774,7 @@ $("lecteur").onclick = e => { if (e.target.closest(".vretour")) allerAccueil(); 
 function quitterVideo(){
   if (!video) { $("lecteur").hidden = true; return; }
   try { video.player?.destroy?.(); } catch {}
-  clearInterval(video.tick); video = null; document.body.classList.remove("video");
+  clearInterval(video.tick); video = null; document.body.classList.remove("video"); feed.classList.remove("defile");
   $("lecteur").hidden = true; $("lecteur").innerHTML = '<div id="ytp"></div>' + VRETOUR;
 }
 async function ouvrirVideo(id){
@@ -774,8 +783,8 @@ async function ouvrirVideo(id){
   setTheme(LIBRE); ouvrirFil(true); history = [];
   const v = video = {id, titre:"", player:null, questions:0, subs:[], blocs:new Map(), cur:-1, tick:0};
   document.body.classList.add("video");
-  v.qa = el("div", "vqa"); v.sous = el("div", "sous"); v.att = el("div", "dots"); v.att.append(el("i"), el("i"), el("i"));
-  feed.replaceChildren(v.qa, v.sous, v.att);
+  v.qa = el("div", "vqa"); v.sous = el("div", "sous"); v.vue = el("div", "sousvue"); v.vue.append(v.sous); v.att = el("div", "dots"); v.att.append(el("i"), el("i"), el("i"));
+  feed.classList.remove("defile"); feed.replaceChildren(v.qa, v.att, v.vue);
   mainsLibres = false; mlMaj(); boutonFin(true); majLeconChip(); mic.disabled = false; xpSession = 0;
   $("lecteur").hidden = false;
   await chargerYT(); if (video !== v) return;
@@ -807,21 +816,54 @@ If nobody speaks in the clip (music, silence), return an empty list. Never inven
     v.blocs.set(k, "ok"); dessinerSous(v);
   } catch (e) { console.error(e); if (video === v) { v.blocs.set(k, "ko"); setTimeout(() => { if (v.blocs.get(k) === "ko") v.blocs.delete(k); }, 8000); if (e?.code === "rate") setStatus("Limite gratuite atteinte : plus de sous-titres pour l'instant."); } }
 }
+const ICO_SIGNET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></svg>';
 function dessinerSous(v){
-  v.sous.replaceChildren(...v.subs.map((x, i) => { const b = el("button", "sl"); b.append(document.createTextNode(x.en)); if (x.fr) b.append(el("small", null, x.fr)); b.onclick = () => rejouerVideo(x.t + 1); return b; }));
-  v.cur = -1;
+  const ouvert = v.ouverte != null ? v.subs[v.ouverte]?.t : null;   // (les indices bougent quand une tranche arrive)
+  v.sous.replaceChildren(...v.subs.map((x, i) => {
+    const l = el("div", "sl"); l.append(el("span", "tx", x.en));
+    const d = el("div", "sd"), dd = el("div"), act = el("div", "sact");
+    const rejouer = el("button", "sbtn"); rejouer.innerHTML = PLAY; rejouer.setAttribute("aria-label", "Réécouter cette phrase");
+    rejouer.onclick = e => { e.stopPropagation(); jouerLigne(v, i, 1); };
+    const lent = el("button", "sbtn", "×0.75"); lent.setAttribute("aria-label", "Réécouter lentement");
+    lent.onclick = e => { e.stopPropagation(); jouerLigne(v, i, .75); };
+    const garder = el("button", "sbtn" + (x.garde ? " garde" : "")); garder.innerHTML = ICO_SIGNET; garder.setAttribute("aria-label", "Garder cette phrase");
+    garder.onclick = e => { e.stopPropagation(); if (!x.garde) { x.garde = true; ajouterRappel({type:"video", en:x.en}); garder.classList.add("garde"); vibre(10); envol(garder, "+1", "pts"); } };
+    act.append(rejouer, lent, garder); dd.append(el("p", "sfr", x.fr || ""), act); d.append(dd); l.append(d);
+    l.onclick = () => ouvrirLigne(v, i);
+    return l;
+  }));
+  v.cur = -2; v.ouverte = ouvert == null ? null : v.subs.findIndex(x => x.t === ouvert);
+  if (v.ouverte === -1) v.ouverte = null;
 }
-// suit la lecture : charge la tranche en cours (et la suivante un peu avant), met en avant la ligne dite
+// toucher une phrase : la video se met en pause, la phrase vient au point fixe et montre sa traduction
+function ouvrirLigne(v, i){
+  if (v.ouverte === i) { jouerLigne(v, i, 1); return; }   // la retoucher la rejoue
+  try { v.player.pauseVideo(); } catch {}
+  stopSpeak(); v.ouverte = i; v.cur = -2; placerSous(v);
+}
+function jouerLigne(v, i, vitesse){
+  v.ouverte = null; v.lent = vitesse < 1; v.cur = -2;
+  try { v.player.setPlaybackRate(vitesse); v.player.seekTo(Math.max(0, v.subs[i].t - .4), true); v.player.playVideo(); } catch {}
+}
+// met la phrase voulue au point fixe ; les autres s'effacent selon leur distance
+function placerSous(v){
+  const f = v.ouverte ?? v.cur, lignes = [...v.sous.children];
+  lignes.forEach((b, j) => { b.classList.toggle("on", j === f); b.classList.toggle("d1", Math.abs(j - f) === 1); b.classList.toggle("ouverte", j === v.ouverte); });
+  const cible = lignes[Math.max(0, f)];
+  v.sous.style.transform = "translateY(" + Math.round(cible ? v.vue.clientHeight * .2 - cible.offsetTop : 0) + "px)";
+}
+// suit la lecture : charge la tranche en cours (et la suivante un peu avant), amene la phrase dite au point fixe
 function suivreSous(v){
   if (video !== v || v.fini) return;
-  let t = 0; try { t = v.player.getCurrentTime() || 0; } catch { return; }
+  let t = 0, joue = false; try { t = v.player.getCurrentTime() || 0; joue = v.player.getPlayerState() === 1; } catch { return; }
   const k = Math.floor(t / TRANCHE);
   chargerSous(v, k); if (t - k * TRANCHE > TRANCHE - 25) chargerSous(v, k + 1);
-  const etat = v.blocs.get(k); v.att.hidden = etat !== "attente";
+  v.att.hidden = v.blocs.get(k) !== "attente";
+  if (joue && v.ouverte != null) { v.ouverte = null; v.cur = -2; }   // la lecture a repris : la traduction se referme
   let i = -1; for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .25) i = j; else break; }
-  if (i === v.cur) return; v.cur = i;
-  [...v.sous.children].forEach((b, j) => { b.classList.toggle("on", j === i); b.classList.toggle("vu", j < i); });
-  if (i >= 0 && !(enreg && enreg.state === "recording")) { const b = v.sous.children[i]; feed.scrollTo({top:Math.max(0, b.offsetTop - feed.clientHeight * .28), behavior:"smooth"}); }
+  if (i === v.cur) return;
+  if (v.lent && v.cur >= 0 && i > v.cur) { v.lent = false; try { v.player.setPlaybackRate(1); } catch {} }   // la phrase lente est finie
+  v.cur = i; placerSous(v);
 }
 const SCHEMA_VIDEO = {type:"OBJECT", properties:{
   heard:{type:"STRING"}, langue:{type:"STRING"}, reponse:{type:"STRING"}, citation:{type:"STRING"}, citation_fr:{type:"STRING"}, debut:{type:"NUMBER"},
@@ -857,8 +899,8 @@ ${texte ? `His question: """${texte}"""` : "The attached AUDIO is his spoken que
       const sec = d.debut >= d0 - 2 && d.debut <= d1 + 2 ? d.debut : d0;
       b.onclick = () => rejouerVideo(sec); box.append(b);
     }
-    const x = el("button", "vfermer", "×"); x.setAttribute("aria-label", "Fermer"); x.onclick = () => video?.qa.replaceChildren();
-    video.qa.replaceChildren(x, you, box); feed.scrollTo({top:0, behavior:"smooth"}); video.cur = -2;
+    const x = el("button", "vfermer", "×"); x.setAttribute("aria-label", "Fermer"); x.onclick = () => { if (video) { video.qa.replaceChildren(); video.cur = -2; } };
+    video.qa.replaceChildren(x, you, box); video.cur = -2;
     if (d.vocab?.en && d.vocab?.fr) { ajouterVocab(d.vocab); briller2($("vocBtn")); }
     video.questions++; gagner(5, you);
     await speak(d.reponse, null, null, d.langue === "fr" ? "fr" : undefined);
@@ -902,7 +944,7 @@ async function terminerVideo(){
   }
   if (d?.sujet) { const parler = el("button", "gros cfin"); parler.innerHTML = ICO_MIC; parler.append("En parler"); parler.onclick = () => { const su = (v.titre ? '"' + v.titre + '". ' : "") + d.sujet; quitterVideo(); commencerLibre("", su); }; c.append(parler); }
   const rentrer = el("button", "gros second cfin", "Terminer"); rentrer.onclick = () => { confettis(rentrer); ding(); setTimeout(allerAccueil, 650); }; c.append(rentrer);
-  v.fini = true; feed.replaceChildren(c); feed.scrollTop = 0; ding();
+  v.fini = true; feed.classList.add("defile"); feed.replaceChildren(c); feed.scrollTop = 0; ding();
 }
 // la feuille Watch : coller un lien, ou reprendre une video recente
 function afficherWatch(){

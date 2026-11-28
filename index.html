@@ -150,6 +150,10 @@ svg{width:24px;height:24px;flex:none}
 /* Watch with Talk : la video en haut, la discussion dessous */
 .lecteur{position:relative;z-index:1;flex:0 0 50%;min-height:0;background:#000;animation:entre .4s var(--ease) both}
 body.video .bar,body.video #voiceStatus{display:none}
+/* en video tout est noir, dans la continuite des bandes noires du lecteur */
+body.video{--bg:#000;--ink:#F3F5FA;--muted:#98A1B6;--accent:#8DB0FF;--on-accent:#000;--soft:#16181F;--line:#23262F;--card:rgba(255,255,255,.06);--card-line:rgba(255,255,255,.1);--pop:#F3F5FA;--on-pop:#000;--good:#7DD6A7;--bad:#F2877D;--warn:#F2B35C;--live:#F2877D;color-scheme:dark}
+body.video #stage{background:#000;border-radius:0}
+body.video .blobs,body.video .voix{display:none}
 body.video #feed{padding:12px 20px 60px;gap:0}
 .vretour{position:absolute;z-index:2;left:8px;top:8px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center;padding:0}
 .vretour svg{width:18px;height:18px}
@@ -174,18 +178,18 @@ body.video #feed.defile{overflow-y:auto}
 .sl.ouverte .tx{font-size:clamp(1.45rem,6.2vw,1.8rem);line-height:1.45}
 .sl.ouverte .sg{border-bottom:2px dotted color-mix(in srgb,var(--accent) 55%,transparent);border-radius:4px}
 .sl.ouverte .sg.sel{background:color-mix(in srgb,var(--accent) 16%,transparent)}
-/* les boutons restent toujours visibles en bas de la phrase ouverte ; une phrase longue retrecit, et defile si besoin */
-.sl .sact{display:none;gap:8px}
-.sl.ouverte .sact{display:flex;position:sticky;bottom:0;z-index:1;margin:0 -8px;padding:8px;border-radius:999px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+/* phrase ouverte : un petit signet en haut a droite garde ce moment ; une phrase longue retrecit, et defile si besoin */
+.sl{position:relative}
+.sgarde{display:none;position:absolute;top:6px;right:0;width:34px;height:34px;border-radius:50%;border:none;padding:0;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);place-items:center}
+.sgarde svg{width:16px;height:16px}
+.sgarde.garde{background:var(--accent);color:var(--on-accent)}
+.sl.ouverte .sgarde{display:grid}
+.sl.ouverte .tx{padding-right:44px}
 .sousvue.focus{touch-action:pan-y}
 .sl.ouverte{max-height:calc(var(--vh,300px) - 8px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;padding-top:4px;padding-bottom:0}
 .sl.ouverte::-webkit-scrollbar{display:none}
 .sl.ouverte.longue .tx{font-size:clamp(1.15rem,5vw,1.35rem);line-height:1.4}
 .sl.ouverte.longue .sfr{font-size:1.02rem;margin:10px 0 12px}
-.sbtn{height:38px;min-width:38px;padding:0 12px;border-radius:999px;border:none;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:.85rem;font-weight:700}
-.sbtn svg{width:16px;height:16px}
-.sbtn.garde{background:var(--accent);color:var(--on-accent)}
-.sbtn:disabled{opacity:.3}
 /* parcourir au doigt : le suivi se met en attente, toutes les phrases redeviennent lisibles, un bouton ramene au direct */
 .sousvue{touch-action:none}
 .sousvue.parcours .sl{opacity:.6;transform:none}
@@ -199,6 +203,34 @@ body.video #feed.defile{overflow-y:auto}
 .vqa:empty{display:none}
 .vqa .you{align-self:flex-end;font-size:1.05rem}
 .vqa .vfermer{position:absolute;right:6px;top:4px;width:32px;height:32px;border:none;background:none;color:var(--muted);font-size:1.3rem;line-height:1}
+/* discuter de la video : l'IA pose des questions sur la partie vue, montree par une barre */
+body.vdisc #feed>.sousvue,body.vdisc #feed>.dots{display:none}
+body.vdisc #feed{padding-bottom:10px}
+.vqa.disc{position:relative;flex:1;min-height:0;margin:0;padding:0;gap:0;border:none;border-radius:0;box-shadow:none;background:none}
+.dhaut2{display:flex;align-items:center;gap:12px;padding:2px 0 10px;border-bottom:1px solid var(--line)}
+.dplage{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.dplage .dlib{font-size:.8rem;font-weight:700;color:var(--muted)}
+.dplage .dlib b{color:var(--ink)}
+.dbarre{position:relative;height:8px;border-radius:4px;background:var(--soft);overflow:hidden}
+.dbarre i{position:absolute;top:0;bottom:0;background:var(--accent);border-radius:4px}
+.dbarre u{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);border-radius:1px}
+.dhaut2 .vfermer{position:static;flex:none}
+.dfil{position:relative;flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding:14px 0 10px;scrollbar-width:none}
+.dfil::-webkit-scrollbar{display:none}
+.dia{display:flex;flex-direction:column;gap:6px;max-width:94%}
+.dia p{margin:0}
+.dia .dreac{font-size:1.05rem;line-height:1.4}
+.dia .dq{font-size:1.25rem;font-weight:700;line-height:1.3;margin-top:4px}
+.dia .dfr{font-size:.92rem;color:var(--muted);line-height:1.35}
+.dsrc{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:4px}
+.dsrc span{font-size:.82rem;font-weight:700;color:var(--muted)}
+.dsrc button{height:32px;padding:0 12px;border-radius:999px;border:none;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:.85rem;font-weight:800}
+.dsrc button svg{width:13px;height:13px}
+.mainrow #discBtn{grid-column:3;justify-self:end;width:52px;height:52px;background:var(--soft);color:var(--accent)}
+.mainrow #discBtn svg{width:24px;height:24px}
+body.video:not(.vdisc) .mainrow #mic{display:none}
+body.vdisc .mainrow #discBtn{display:none}
+body.video.vdisc .mainrow #mic:not(.on):not(.prep):not(.refuse){background:var(--accent);color:var(--on-accent)}
 .lecteur iframe,.lecteur>div{width:100%;height:100%;border:0;display:block}
 .lecteur[hidden]{display:none}
 .wlien{display:flex;gap:10px;align-items:center;margin:10px 0 4px}
@@ -428,7 +460,6 @@ body.video .mainrow #mic{grid-column:3;justify-self:end;width:52px;height:52px}
 body.video .mainrow #mic svg{width:22px;height:22px}
 body.video .micreg{display:none}
 body.video .mainrow #mic:not(.on):not(.prep):not(.refuse){background:var(--soft);color:var(--accent)}
-.sact .espace{flex:1}
 .mainrow #gardeBtn{grid-column:1;justify-self:start;width:52px;height:52px;background:var(--soft);color:var(--accent)}
 .mainrow #gardeBtn svg{width:22px;height:22px}
 .mainrow #gardeBtn.brille{animation:brille .9s var(--ease)}
@@ -642,6 +673,7 @@ button:not(:disabled):active{transform:scale(.94)}
       <button class="round" id="mic" aria-label="Parler" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="stopico"></span></button>
       <button class="round" id="finBtn" aria-label="Terminer la conversation" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
       <button class="round" id="redoBtn" aria-label="Recommencer ce défi" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
+      <button class="round" id="discBtn" aria-label="Parler de la vidéo avec l’IA" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M9.5 9.6a2.6 2.6 0 1 1 3.4 2.5c-.6.2-.9.7-.9 1.3v.4"/><circle cx="12" cy="16.6" r=".6" fill="currentColor"/></svg></button>
       <button class="round" id="askBtn" aria-label="Poser une question en français">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><text x="12" y="14.6" text-anchor="middle" font-size="7.5" font-weight="800" font-family="Figtree,system-ui,sans-serif" fill="currentColor" stroke="none" letter-spacing=".3">FR</text></svg>
         </button>
@@ -812,11 +844,14 @@ function chargerYT(){
     if (!document.getElementById("ytapi")) { const sc = document.createElement("script"); sc.id = "ytapi"; sc.src = "https://www.youtube.com/iframe_api"; document.head.append(sc); }
   });
 }
+// la barre d'etat du telephone passe au noir avec la video
+function barreNoire(on){ document.querySelectorAll('meta[name="theme-color"]').forEach(m => { if (m.dataset.c == null) m.dataset.c = m.content; m.content = on ? "#000000" : m.dataset.c; }); }
 function videosVues(){ if (!Array.isArray(S.videos)) S.videos = []; return S.videos; }
 const VRETOUR = '<button class="vretour" aria-label="Retour à l’accueil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>';
 $("lecteur").onclick = e => { if (e.target.closest(".vretour")) allerAccueil(); };
 function quitterVideo(){
-  $("gardeBtn").hidden = true; $("playBtn").hidden = true;
+  $("gardeBtn").hidden = true; $("playBtn").hidden = true; $("discBtn").hidden = true;
+  document.body.classList.remove("vdisc"); barreNoire(false);
   if (!video) { $("lecteur").hidden = true; return; }
   try { video.player?.destroy?.(); } catch {}
   clearInterval(video.tick); video = null; document.body.classList.remove("video"); feed.classList.remove("defile");
@@ -826,12 +861,12 @@ async function ouvrirVideo(id){
   if (!S.key) { openSettings(); return; }
   if (!$("watch").hidden) fermer("watch");
   setTheme(LIBRE); ouvrirFil(true); history = [];
-  const v = video = {id, titre:"", player:null, questions:0, subs:[], blocs:new Map(), cur:-1, tick:0};
-  document.body.classList.add("video");
+  const v = video = {id, titre:"", player:null, questions:0, subs:[], blocs:new Map(), cur:-1, tick:0, vus:new Set(), disc:null};
+  document.body.classList.add("video"); document.body.classList.remove("vdisc"); barreNoire(true);
   v.qa = el("div", "vqa"); v.sous = el("div", "sous"); v.vue = el("div", "sousvue"); v.vue.append(v.sous); v.att = el("div", "dots"); v.att.append(el("i"), el("i"), el("i"));
   feed.classList.remove("defile"); feed.replaceChildren(v.qa, v.att, v.vue);
   parcourirSous(v);
-  mainsLibres = false; mlMaj(); boutonFin(false); $("askBtn").hidden = true; $("gardeBtn").hidden = false; $("playBtn").hidden = false; $("playBtn").innerHTML = PLAY; $("playBtn")._joue = false; majLeconChip(); mic.disabled = false; xpSession = 0;
+  mainsLibres = false; mlMaj(); boutonFin(false); $("askBtn").hidden = true; $("gardeBtn").hidden = false; $("playBtn").hidden = false; $("discBtn").hidden = false; $("playBtn").innerHTML = PLAY; $("playBtn")._joue = false; majLeconChip(); mic.disabled = false; xpSession = 0;
   $("lecteur").hidden = false;
   await chargerYT(); if (video !== v) return;
   v.player = new YT.Player("ytp", {videoId:id, playerVars:{playsinline:1, rel:0, modestbranding:1}, events:{
@@ -871,22 +906,27 @@ function dessinerSous(v){
     const groupes = Array.isArray(x.g) && x.g.length && x.g.every(q => q && q.en) ? x.g : x.en.split(/\s+/).map(m => ({en:m, fr:""}));
     groupes.forEach((q, n) => { const sp = el("span", "sg", q.en); sp.onclick = e => { if (v.ouverte !== i) return; e.stopPropagation(); showPop(sp, q.en, q.fr); }; tx.append(sp, n < groupes.length - 1 ? " " : ""); });
     l.append(tx);
-    const d = el("div", "sd"), dd = el("div"), act = el("div", "sact");
-    const rejouer = el("button", "sbtn"); rejouer.innerHTML = PLAY; rejouer.setAttribute("aria-label", "Réécouter cette phrase");
-    rejouer.onclick = e => { e.stopPropagation(); jouerLigne(v, i, 1); };
+    const d = el("div", "sd"), dd = el("div");
     if (x.garde == null) x.garde = passages().some(q => q.v === v.id && q.en === x.en);
-    const garder = el("button", "sbtn" + (x.garde ? " garde" : "")); garder.innerHTML = ICO_SIGNET; garder.setAttribute("aria-label", "Garder cette phrase");
+    // le signet garde ce moment de la video (la phrase et son temps)
+    const garder = el("button", "sgarde" + (x.garde ? " garde" : "")); garder.innerHTML = ICO_SIGNET; garder.setAttribute("aria-label", "Garder ce moment");
     garder.onclick = e => { e.stopPropagation(); if (!x.garde) { x.garde = true; passages().push({en:x.en, fr:x.fr || "", v:v.id, t:x.t, titre:v.titre, d:Date.now()}); S.passages = S.passages.slice(-60); ajouterRappel({type:"video", en:x.en}); noterJour(); garder.classList.add("garde"); vibre(10); briller2($("gardeBtn")); } };
-    const fl = (sens, d) => { const b = el("button", "sbtn"); b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg>'; b.setAttribute("aria-label", sens < 0 ? "Phrase précédente" : "Phrase suivante"); b.disabled = !v.subs[i + sens]; b.onclick = e => { e.stopPropagation(); if (v.subs[i + sens]) ouvrirLigne(v, i + sens); }; return b; };
-    act.append(rejouer, garder, el("span", "espace"), fl(-1, "M15 5l-7 7 7 7"), fl(1, "M9 5l7 7-7 7")); dd.append(el("p", "sfr", x.fr || "")); d.append(dd); l.append(d, act);
+    dd.append(el("p", "sfr", x.fr || "")); d.append(dd); l.append(garder, d);
     if (x.en.length > 70) l.classList.add("longue");
-    l.onclick = () => { if (Date.now() - (v.glisseT || 0) < 300) return; ouvrirLigne(v, i); };
+    l.onclick = () => { if (Date.now() - (v.glisseT || 0) < 300) return; toucherLigne(v, i); };
     return l;
   }));
   v.cur = -2; v.ouverte = ouvert == null ? null : v.subs.findIndex(x => x.t === ouvert);
   if (v.ouverte === -1) v.ouverte = null;
 }
-// toucher une phrase : la video se met en pause, la phrase vient au point fixe et montre sa traduction
+// toucher la phrase en cours : elle s'ouvre (traduction, mots touchables) ; toucher une autre phrase (passee
+// en remontant, ou a venir) ne l'ouvre pas : la video repart simplement de cette phrase
+function toucherLigne(v, i){
+  if (v.ouverte === i) { hidePop(); return; }   // deja ouverte : un toucher ne fait que fermer la bulle d'un mot
+  if (v.ouverte == null && i === v.cur) { ouvrirLigne(v, i); return; }
+  stopSpeak(); finParcours(v); jouerLigne(v, i, 1);
+}
+// la phrase en cours s'ouvre : la video se met en pause, la phrase vient au point fixe et montre sa traduction
 function ouvrirLigne(v, i){
   if (v.ouverte === i) { hidePop(); return; }   // deja ouverte : un toucher ne fait que fermer la bulle d'un mot
   try { v.player.pauseVideo(); } catch {}
@@ -930,6 +970,7 @@ function parcourirSous(v){
 function suivreSous(v){
   if (video !== v || v.fini) return;
   let t = 0, joue = false; try { t = v.player.getCurrentTime() || 0; joue = v.player.getPlayerState() === 1; } catch { return; }
+  if (joue) v.vus.add(Math.floor(t));
   const k = Math.floor(t / TRANCHE);
   chargerSous(v, k); if (t - k * TRANCHE > TRANCHE - 25) chargerSous(v, k + 1);
   v.att.hidden = v.blocs.get(k) !== "attente";
@@ -941,50 +982,104 @@ function suivreSous(v){
   if (v.lent && v.cur >= 0 && i > v.cur) { v.lent = false; try { v.player.setPlaybackRate(1); } catch {} }   // la phrase lente est finie
   v.cur = i; placerSous(v);
 }
-const SCHEMA_VIDEO = {type:"OBJECT", properties:{
-  heard:{type:"STRING"}, langue:{type:"STRING"}, reponse:{type:"STRING"}, citation:{type:"STRING"}, citation_fr:{type:"STRING"}, debut:{type:"NUMBER"},
-  vocab:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}, lies:{type:"ARRAY", items:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}}, required:["fr","en"], propertyOrdering:["fr","en"]}}}, required:["fr","en","lies"], propertyOrdering:["fr","en","lies"]}
-}, required:["heard","langue","reponse","citation","citation_fr","debut","vocab"], propertyOrdering:["heard","langue","reponse","citation","citation_fr","debut","vocab"]};
 function rejouerVideo(sec){ stopSpeak(); try { video.player.seekTo(Math.max(0, sec - 1), true); video.player.playVideo(); } catch {} }
-// une question sur ce qu'on vient de voir (au micro ; "texte" sert aux essais sans micro)
-async function demanderVideo(you, aud, texte){
-  if (busy || !video) return;
+/* ---------- Discuter de la video avec l'IA ----------
+   L'IA ouvre par une question precise sur la partie VUE (les secondes reellement regardees, montrees par une barre).
+   On repond au micro, ou on parle d'autre chose : elle suit ce qu'on dit, puis repose une question sur ce qu'on a vu.
+   Si on ne sait pas repondre, elle donne la reponse et les moments de la video ou on l'entend. */
+const mmss = s => { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+// les morceaux regardes, fusionnes : [[debut, fin], ...] en secondes
+function plagesVues(v){
+  const l = [...v.vus].sort((a, b) => a - b), r = [];
+  for (const s of l) { const d = r[r.length - 1]; if (d && s - d[1] <= 3) d[1] = s + 1; else r.push([s, s + 1]); }
+  return r;
+}
+const ligneVue = (v, x) => { const s = Math.floor(x.t); return v.vus.has(s) || v.vus.has(s + 1) || v.vus.has(s + 2); };
+function barrePlage(v, plages){
+  let duree = 0; try { duree = v.player.getDuration() || 0; } catch {}
+  const fin = Math.max(duree, ...plages.map(p => p[1]), 1);
+  const box = el("div", "dplage"), lib = el("div", "dlib"), barre = el("div", "dbarre");
+  lib.append("L’IA parle de ", el("b", null, mmss(plages[0][0])), " à ", el("b", null, mmss(plages[plages.length - 1][1])), plages.length > 1 ? " (passages vus)" : "");
+  plages.forEach(([a, b]) => { const i = el("i"); i.style.left = (a / fin * 100) + "%"; i.style.width = Math.max(1.5, (b - a) / fin * 100) + "%"; barre.append(i); });
+  let t = 0; try { t = v.player.getCurrentTime() || 0; } catch {}
+  const u = el("u"); u.style.left = Math.min(99.5, t / fin * 100) + "%"; barre.append(u);
+  box.append(lib, barre); box.title = "0:00 — " + mmss(fin); return box;
+}
+function lancerDiscussion(){
+  const v = video; if (!v || busy || v.disc) return;
+  try { v.player.pauseVideo(); } catch {}
+  hidePop(); stopSpeak(); finParcours(v, true); v.ouverte = null;
+  const lignes = v.subs.filter(x => ligneVue(v, x)), plages = plagesVues(v);
+  if (!lignes.length || !plages.length) { setStatus("Regarde un peu la vidéo : l’IA te posera des questions sur ce que tu as vu."); return; }
+  setStatus("");
+  const x = el("button", "vfermer", "×"); x.setAttribute("aria-label", "Fermer la discussion"); x.onclick = () => fermerDiscussion(v);
+  const haut = el("div", "dhaut2"), fil = el("div", "dfil"); haut.append(barrePlage(v, plages), x);
+  v.disc = {fil, tours:[], lignes:lignes.slice(-250)};
+  v.qa.className = "vqa disc"; v.qa.replaceChildren(haut, fil);
+  document.body.classList.add("vdisc");
+  tourDiscussion(null, null);
+}
+function fermerDiscussion(v){
+  if (!v?.disc) return;
+  if (enreg && enreg.state === "recording") { jeterEnreg = "quitte"; enreg.stop(); }
+  stopSpeak(); v.disc = null; v.qa.className = "vqa"; v.qa.replaceChildren();
+  document.body.classList.remove("vdisc"); v.cur = -2;
+}
+const SCHEMA_DISC = {type:"OBJECT", properties:{
+  heard:{type:"STRING"}, cas:{type:"STRING"}, reaction:{type:"STRING"}, reaction_fr:{type:"STRING"},
+  sources:{type:"ARRAY", items:{type:"NUMBER"}}, question:{type:"STRING"}, question_fr:{type:"STRING"}
+}, required:["heard","cas","reaction","reaction_fr","sources","question","question_fr"], propertyOrdering:["heard","cas","reaction","reaction_fr","sources","question","question_fr"]};
+// un tour : you = null pour la premiere question de l'IA, sinon la reponse enregistree de l'apprenant
+async function tourDiscussion(you, aud){
+  const v = video, D = v?.disc; if (!D || busy) return;
   busy = true; mic.disabled = true; setStatus("");
-  const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); video.qa.append(dots);
-  let t = 0; try { t = Math.floor(video.player?.getCurrentTime?.() || 0); } catch {}
-  const d0 = Math.max(0, t - 45), d1 = t + 3;
+  const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); D.fil.append(dots); D.fil.scrollTop = D.fil.scrollHeight;
+  const transcript = D.lignes.map(x => `[${Math.round(x.t)}] ${x.en}`).join("\n");
+  const fil = D.tours.map(x => (x.r === "ia" ? "TUTOR: " : "LEARNER: ") + x.t).join("\n");
   try {
-    const d = await llm(`You are an AI English tutor watching a YouTube video WITH a French-speaking learner (level A2/B1). The attached VIDEO clip (from ${d0}s to ${d1}s of the full video) is what he has just watched: he paused at the end of it to ask you something.
-${texte ? `His question: """${texte}"""` : "The attached AUDIO is his spoken question, in French or in English."}
-- "heard": ${texte ? "copy his question." : `his question, word for word. If the audio is silent or not intelligible, write "" and leave everything else empty: never guess.`}
-- "langue": "fr" if he asked in French, "en" if he asked in English.
-- "reponse": your answer IN THE SAME LANGUAGE as his question (with « tu » in French; simple English otherwise), spoken style, 2 to 4 short sentences, concrete: what was said, what it means, why it is said that way. No markdown, no lists. Never invent what is not in the clip: if the answer is not in it, say so.
-- "citation": the exact English words spoken in the video that his question is about (one sentence at most, as spoken). "" if none.
-- "citation_fr": its French translation. "debut": the time, in seconds from the START OF THE FULL VIDEO, when the citation begins (between ${d0} and ${d1}); 0 if no citation.
-- "vocab": ONLY if a word or expression from the video is worth remembering: "fr" = the French meaning, "en" = the English word or expression, "lies" = 3 related words {fr, en}. Otherwise fr "", en "", lies [].`, SCHEMA_VIDEO, {...(aud || {}), video:{uri:"https://www.youtube.com/watch?v=" + video.id, debut:d0, fin:d1}});
-    dots.remove();
-    const h = String(d.heard || "").trim();
-    if (!h) { montrerBas(you, "Pas compris"); return; }
-    you.className = "you"; you.textContent = h;
-    const box = el("div", "qar vrep");
-    String(d.reponse || "").split(/\n+/).filter(Boolean).forEach(x => box.append(el("p", null, x)));
-    if (d.citation) {
-      // la phrase de la video : un toucher la rejoue dans la video
-      const b = el("button", "ex"), tx = el("span", "extxt"), ic = el("span", "explay"); ic.innerHTML = PLAY;
-      tx.append(el("span", "exen", d.citation), el("span", "exfr", d.citation_fr || "")); b.append(tx, ic);
-      const sec = d.debut >= d0 - 2 && d.debut <= d1 + 2 ? d.debut : d0;
-      b.onclick = () => rejouerVideo(sec); box.append(b);
+    const d = await llm(`You are an English tutor talking with a French-speaking learner (level A2/B1) about a YouTube video${v.titre ? ` ("${v.titre}")` : ""} he is watching.
+Here is the transcript of the parts of the video HE HAS WATCHED so far (each line starts with its time in seconds from the start of the video). Only this exists for you: never mention, ask about or spoil anything that is not in it.
+TRANSCRIPT:
+${transcript}
+${fil ? `CONVERSATION SO FAR:\n${fil}\n` : ""}
+${you ? `The attached AUDIO is his spoken answer to your last question, in English or in French.` : `Open the conversation with your first question.`}
+- "heard": ${you ? `his words, word for word. If the audio is silent or not intelligible, write "" and leave everything else empty: never guess.` : `""`}
+- "cas": ${you ? `"juste" (right answer), "partiel" (partly right), "faux" (wrong), "sais_pas" (he does not know, cannot find the words, or only manages a few words in French), or "autre" (he talks about something else or asks his own question).` : `"debut"`}
+- "reaction": ${you ? `in simple spoken English, 1 to 3 short sentences. "juste"/"partiel": confirm warmly and complete what is missing. "faux"/"sais_pas": give the right answer clearly, with the key English words he was missing. "autre": answer what he said naturally (if he asks about the video, answer only from the transcript, and say so if it is not in it). No markdown, do not write any time in it.` : `""`}
+- "reaction_fr": its French translation ("" if none).
+- "sources": the times (taken from the line times of the transcript) where the answer to your LAST question can be heard: 1 to 3 times for "faux", "sais_pas" and "partiel", otherwise []. ${you ? "" : "Here: []."}
+- "question": ONE new precise question in simple English about what he has watched, like "What is his plan for ...?", "When did he go to China?", "Why does she say ...?": facts, plans, reasons, numbers, places, opinions. It must be answerable from the transcript, never a yes/no question, never one you already asked. Favour the most recent part, but you may go back to earlier parts. If he talked about something else, link your question to it when you can.
+- "question_fr": its French translation.`, SCHEMA_DISC, aud);
+    dots.remove(); if (video !== v || v.disc !== D) return;
+    if (you) {
+      const h = String(d.heard || "").trim();
+      if (!h) { montrerBas(you, "Pas compris"); return; }
+      you.className = "you"; you.textContent = h; D.tours.push({r:"moi", t:h});
+      v.questions++; gagner(d.cas === "juste" ? 10 : 5, you); noterJour();
     }
-    const x = el("button", "vfermer", "×"); x.setAttribute("aria-label", "Fermer"); x.onclick = () => { if (video) { video.qa.replaceChildren(); video.cur = -2; } };
-    video.qa.replaceChildren(x, you, box); video.cur = -2;
-    if (d.vocab?.en && d.vocab?.fr) { ajouterVocab(d.vocab); briller2($("vocBtn")); }
-    video.questions++; gagner(5, you); noterJour();
-    await speak(d.reponse, null, null, d.langue === "fr" ? "fr" : undefined);
+    const box = el("div", "dia");
+    if (d.reaction) {
+      box.append(el("p", "dreac", d.reaction));
+      if (d.reaction_fr) box.append(el("p", "dfr", d.reaction_fr));
+      // les moments de la video ou se trouve la reponse : un toucher y ramene la video
+      const tps = [...new Set((d.sources || []).filter(n => isFinite(n) && n >= 0).map(n => Math.round(n)))].slice(0, 3);
+      if (tps.length) {
+        const src = el("div", "dsrc"); src.append(el("span", null, "La réponse est à"));
+        tps.forEach(n => { const b = el("button"); b.innerHTML = PLAY; b.append(mmss(n)); b.setAttribute("aria-label", "Revoir à " + mmss(n)); b.onclick = () => rejouerVideo(n); src.append(b); });
+        box.append(src);
+      }
+    }
+    if (d.question) { box.append(el("p", "dq", d.question)); if (d.question_fr) box.append(el("p", "dfr", d.question_fr)); }
+    D.fil.append(box); D.fil.scrollTop = Math.max(0, (you || box).offsetTop - 8);   // le tour se lit depuis son debut
+    D.tours.push({r:"ia", t:[d.reaction, d.question].filter(Boolean).join(" ")});
+    await speak([d.reaction, d.question].filter(Boolean).join(" "));
   } catch (e) {
     dots.remove(); console.error(e); you?.remove();
     setStatus(e?.code === "rate" ? "Limite gratuite atteinte, réessaie plus tard." : e?.code === "net" ? "Pas de réseau." : "Pas de réponse, réessaie.");
+    if (!D.tours.length) fermerDiscussion(v);
   } finally { busy = false; mic.disabled = !started; }
 }
+$("discBtn").onclick = () => { unlockAudio(); lancerDiscussion(); };
 // les passages gardes : ceux de cette video rejouent dans la video, les autres sont lus
 function passages(){ if (!Array.isArray(S.passages)) S.passages = []; return S.passages; }
 function afficherPassages(){
@@ -1002,6 +1097,7 @@ $("playBtn").onclick = () => {
   const v = video; if (!v?.player?.playVideo) return; hidePop(); stopSpeak();
   let joue = false; try { joue = v.player.getPlayerState() === 1; } catch {}
   if (joue) { v.player.pauseVideo(); return; }
+  if (v.disc) fermerDiscussion(v);
   let ici = -1, t = 0; try { t = v.player.getCurrentTime() || 0; } catch {}
   for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .25) ici = j; else break; }
   if (v.ouverte != null && v.ouverte !== ici) { jouerLigne(v, v.ouverte, 1); return; }   // on a navigue vers une autre phrase : on repart de la
@@ -1480,7 +1576,7 @@ async function basculerEnreg(opts = {}){
     setStatus("");
     you._rec = blob; you.dataset.rec = "1";   // pour reecouter sa propre prononciation (le passage corrige)
     const aud = {data: await blobB64(blob), mime:type, faible: analyse ? (q.pic < 12 || q.voix < 12) : false};
-    if (video) demanderVideo(you, aud); else ask(null, you, {audio:aud});
+    if (video) { if (video.disc) tourDiscussion(you, aud); else you?.remove(); } else ask(null, you, {audio:aud});
   };
   // Niveau de la voix en direct : le halo du micro et les barres de ta bulle bougent avec toi.
   let analyse = null, source = null, raf = 0;
@@ -2512,7 +2608,7 @@ function poserRepere(c){
   c.onclick = () => { unlockAudio(); speak([...c.querySelectorAll(".cex b")].map(b => b.textContent).join(" "), pl, null); };
 }
 // ou vont les bulles (ta phrase, l'attente) : dans l'exercice en cours, sinon dans le fil
-function zone(){ if (video?.qa) return video.qa; const r = scene?.isConnected ? scene.querySelector(".etape.on .reponses") : null; if (r) voirEtape(); return r || feed; }
+function zone(){ if (video?.disc) return video.disc.fil; if (video?.qa) return video.qa; const r = scene?.isConnected ? scene.querySelector(".etape.on .reponses") : null; if (r) voirEtape(); return r || feed; }
 function quitterScene(){ scene = null; enTransition = false; feed.replaceChildren(); afficherEchanges(); }
 const ICO_RAPPEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
 // l'etape en cours : des points (un par consigne), pas de titre

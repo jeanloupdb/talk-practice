@@ -171,7 +171,9 @@ body.video #feed.defile{overflow-y:auto}
 .sousvue.focus .sl{opacity:0;pointer-events:none}
 .sousvue.focus .sl.ouverte{opacity:1;pointer-events:auto}
 .sl .tx{display:block;transition:font-size .45s cubic-bezier(.22,.9,.24,1)}
-.sl.ouverte .tx{font-size:clamp(1.45rem,6.2vw,1.8rem);line-height:1.25}
+.sl.ouverte .tx{font-size:clamp(1.45rem,6.2vw,1.8rem);line-height:1.45}
+.sl.ouverte .sg{border-bottom:2px dotted color-mix(in srgb,var(--accent) 55%,transparent);border-radius:4px}
+.sl.ouverte .sg.sel{background:color-mix(in srgb,var(--accent) 16%,transparent)}
 .sl .sact{display:flex;gap:8px;padding-bottom:4px}
 .sbtn{height:38px;min-width:38px;padding:0 12px;border-radius:999px;border:none;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:.85rem;font-weight:700}
 .sbtn svg{width:16px;height:16px}
@@ -403,6 +405,9 @@ body.home .micreg{display:none}
 .cfait.ecoute{width:100%;background:none;border:none;color:var(--ink);text-align:left;font-size:1rem;align-items:center}
 .cfait.ecoute .rcplay{color:var(--good)}
 .bmots{margin-top:10px}
+.mainrow #gardeBtn{grid-column:1;justify-self:start;width:52px;height:52px;background:var(--soft);color:var(--accent)}
+.mainrow #gardeBtn svg{width:22px;height:22px}
+.mainrow #gardeBtn.brille{animation:brille .9s var(--ease)}
 .mainrow #mlBtn{grid-column:1;justify-self:start;width:52px;height:52px;background:var(--soft);color:var(--accent);transition:background .25s,color .25s,box-shadow .25s}
 .mainrow #mlBtn svg{width:24px;height:24px}
 .mainrow #mlBtn.actif{background:var(--accent);color:var(--on-accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 22%,transparent)}
@@ -604,6 +609,7 @@ button:not(:disabled):active{transform:scale(.94)}
   <footer>
     <p class="status" id="status"></p>
     <div class="row mainrow">
+      <button class="round" id="gardeBtn" aria-label="Mes passages gardés" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></svg></button>
       <button class="round" id="mlBtn" aria-label="Mode mains libres" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9.5" y="4" width="5" height="9" rx="2.5"/><path d="M7.5 11a4.5 4.5 0 0 0 9 0M12 15.5V19"/><path d="M4 8.5a7.5 7.5 0 0 0 0 6M20 8.5a7.5 7.5 0 0 1 0 6"/></svg>
       </button>
@@ -643,6 +649,12 @@ button:not(:disabled):active{transform:scale(.94)}
     <div class="wlien"><input id="watchUrl" type="url" inputmode="url" placeholder="Lien YouTube" autocomplete="off" aria-label="Lien YouTube"><button class="round" id="watchPaste" aria-label="Coller le lien"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="12" height="16" rx="3"/><path d="M9 5a3 3 0 0 1 6 0"/></svg></button></div>
     <p class="tip">Depuis YouTube : Partager, puis Talk Practice.</p>
     <div id="watchList"></div>
+  </div>
+</div>
+<div class="sheetwrap" id="passages" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="passagesTitle">
+    <div class="mothead"><h2 id="passagesTitle">Passages</h2><button class="iconbtn" id="passagesClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div id="passagesList"></div>
   </div>
 </div>
 <div class="sheetwrap" id="vocab" hidden>
@@ -719,7 +731,7 @@ function setStatus(t){ statusEl.textContent = t || ""; homeNote.textContent = t 
 /* Bouton retour du telephone (historique du navigateur) : une seule entree "dedans" posee des qu'on entre
    dans une conversation ou qu'on ouvre une fenetre. Retour = fermer la fenetre ouverte, sinon revenir a
    l'accueil ; on ne quitte l'appli qu'en faisant retour depuis l'accueil. */
-const FENETRES = ["settings", "mot", "roles", "qa", "vocab", "micro", "watch"];
+const FENETRES = ["settings", "mot", "roles", "qa", "vocab", "micro", "watch", "passages"];
 function navDedans(){ if (window.history.state?.tp !== "in") window.history.pushState({tp:"in"}, ""); }
 function ouvrir(id){ navDedans(); $(id).hidden = false; }
 window.addEventListener("popstate", () => {
@@ -779,6 +791,7 @@ function videosVues(){ if (!Array.isArray(S.videos)) S.videos = []; return S.vid
 const VRETOUR = '<button class="vretour" aria-label="Retour à l’accueil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>';
 $("lecteur").onclick = e => { if (e.target.closest(".vretour")) allerAccueil(); };
 function quitterVideo(){
+  $("gardeBtn").hidden = true;
   if (!video) { $("lecteur").hidden = true; return; }
   try { video.player?.destroy?.(); } catch {}
   clearInterval(video.tick); video = null; document.body.classList.remove("video"); feed.classList.remove("defile");
@@ -792,7 +805,7 @@ async function ouvrirVideo(id){
   document.body.classList.add("video");
   v.qa = el("div", "vqa"); v.sous = el("div", "sous"); v.vue = el("div", "sousvue"); v.vue.append(v.sous); v.att = el("div", "dots"); v.att.append(el("i"), el("i"), el("i"));
   feed.classList.remove("defile"); feed.replaceChildren(v.qa, v.att, v.vue);
-  mainsLibres = false; mlMaj(); boutonFin(true); majLeconChip(); mic.disabled = false; xpSession = 0;
+  mainsLibres = false; mlMaj(); boutonFin(false); $("askBtn").hidden = true; $("gardeBtn").hidden = false; majLeconChip(); mic.disabled = false; xpSession = 0;
   $("lecteur").hidden = false;
   await chargerYT(); if (video !== v) return;
   v.player = new YT.Player("ytp", {videoId:id, playerVars:{playsinline:1, rel:0, modestbranding:1}, events:{
@@ -804,7 +817,7 @@ async function ouvrirVideo(id){
     }
   }});
 }
-const SCHEMA_SOUS = {type:"OBJECT", properties:{lignes:{type:"ARRAY", items:{type:"OBJECT", properties:{t:{type:"NUMBER"}, en:{type:"STRING"}, fr:{type:"STRING"}}, required:["t","en","fr"], propertyOrdering:["t","en","fr"]}}}, required:["lignes"], propertyOrdering:["lignes"]};
+const SCHEMA_SOUS = {type:"OBJECT", properties:{lignes:{type:"ARRAY", items:{type:"OBJECT", properties:{t:{type:"NUMBER"}, en:{type:"STRING"}, fr:{type:"STRING"}, g:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}}, required:["t","en","fr","g"], propertyOrdering:["t","en","fr","g"]}}}, required:["lignes"], propertyOrdering:["lignes"]};
 const TRANCHE = 60;
 async function chargerSous(v, k){
   if (v.blocs.has(k)) return; v.blocs.set(k, "attente");
@@ -813,7 +826,7 @@ async function chargerSous(v, k){
   const b = duree ? Math.min(duree, a + TRANCHE) : a + TRANCHE;
   try {
     const d = await llm(`Transcribe exactly what is SPOKEN in this video clip, which goes from ${a}s to ${Math.round(b)}s of the full video.
-- "lignes": short subtitle lines in order (12 words at most each, cut at natural pauses). For each: "t" = when the line starts, in seconds counted from the START OF THE FULL VIDEO (so between ${a} and ${Math.round(b)}), as precise as you can; "en" = the exact words spoken (keep them in their original language); "fr" = a natural French translation.
+- "lignes": short subtitle lines in order (12 words at most each, cut at natural pauses). For each: "t" = when the line starts, in seconds counted from the START OF THE FULL VIDEO (so between ${a} and ${Math.round(b)}), as precise as you can; "en" = the exact words spoken (keep them in their original language); "fr" = a natural French translation; "g" = the line cut into consecutive groups of 1 to 4 words that belong together (joined with spaces they give "en" exactly; keep phrasal verbs and set expressions in one group), each with "fr" = the French meaning of THAT group in this sentence.
 If nobody speaks in the clip (music, silence), return an empty list. Never invent words.`, SCHEMA_SOUS, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, debut:a, fin:Math.round(b)}});
     if (video !== v) return;
     let l = (d.lignes || []).filter(x => x && x.en && isFinite(x.t));
@@ -827,15 +840,18 @@ const ICO_SIGNET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 function dessinerSous(v){
   const ouvert = v.ouverte != null ? v.subs[v.ouverte]?.t : null;   // (les indices bougent quand une tranche arrive)
   v.sous.replaceChildren(...v.subs.map((x, i) => {
-    const l = el("div", "sl"); l.append(el("span", "tx", x.en));
+    const l = el("div", "sl"), tx = el("span", "tx");
+    // chaque groupe de mots se touche (phrase ouverte) pour avoir sa traduction exacte
+    const groupes = Array.isArray(x.g) && x.g.length && x.g.every(q => q && q.en) ? x.g : x.en.split(/\s+/).map(m => ({en:m, fr:""}));
+    groupes.forEach((q, n) => { const sp = el("span", "sg", q.en); sp.onclick = e => { if (v.ouverte !== i) return; e.stopPropagation(); showPop(sp, q.en, q.fr); }; tx.append(sp, n < groupes.length - 1 ? " " : ""); });
+    l.append(tx);
     const d = el("div", "sd"), dd = el("div"), act = el("div", "sact");
     const rejouer = el("button", "sbtn"); rejouer.innerHTML = PLAY; rejouer.setAttribute("aria-label", "Réécouter cette phrase");
     rejouer.onclick = e => { e.stopPropagation(); jouerLigne(v, i, 1); };
-    const lent = el("button", "sbtn", "×0.75"); lent.setAttribute("aria-label", "Réécouter lentement");
-    lent.onclick = e => { e.stopPropagation(); jouerLigne(v, i, .75); };
+    if (x.garde == null) x.garde = passages().some(q => q.v === v.id && q.en === x.en);
     const garder = el("button", "sbtn" + (x.garde ? " garde" : "")); garder.innerHTML = ICO_SIGNET; garder.setAttribute("aria-label", "Garder cette phrase");
-    garder.onclick = e => { e.stopPropagation(); if (!x.garde) { x.garde = true; ajouterRappel({type:"video", en:x.en}); garder.classList.add("garde"); vibre(10); envol(garder, "+1", "pts"); } };
-    act.append(rejouer, lent, garder); dd.append(el("p", "sfr", x.fr || ""), act); d.append(dd); l.append(d);
+    garder.onclick = e => { e.stopPropagation(); if (!x.garde) { x.garde = true; passages().push({en:x.en, fr:x.fr || "", v:v.id, t:x.t, titre:v.titre, d:Date.now()}); S.passages = S.passages.slice(-60); ajouterRappel({type:"video", en:x.en}); noterJour(); garder.classList.add("garde"); vibre(10); briller2($("gardeBtn")); } };
+    act.append(rejouer, garder); dd.append(el("p", "sfr", x.fr || ""), act); d.append(dd); l.append(d);
     l.onclick = () => ouvrirLigne(v, i);
     return l;
   }));
@@ -846,9 +862,10 @@ function dessinerSous(v){
 function ouvrirLigne(v, i){
   if (v.ouverte === i) { jouerLigne(v, i, 1); return; }   // la retoucher la rejoue
   try { v.player.pauseVideo(); } catch {}
-  stopSpeak(); v.ouverte = i; v.cur = -2; placerSous(v);
+  stopSpeak(); hidePop(); v.ouverte = i; v.cur = -2; placerSous(v);
 }
 function jouerLigne(v, i, vitesse){
+  hidePop();
   v.ouverte = null; v.lent = vitesse < 1; v.cur = -2;
   try { v.player.setPlaybackRate(vitesse); v.player.seekTo(Math.max(0, v.subs[i].t - .4), true); v.player.playVideo(); } catch {}
 }
@@ -867,7 +884,7 @@ function suivreSous(v){
   const k = Math.floor(t / TRANCHE);
   chargerSous(v, k); if (t - k * TRANCHE > TRANCHE - 25) chargerSous(v, k + 1);
   v.att.hidden = v.blocs.get(k) !== "attente";
-  if (joue && v.ouverte != null) { v.ouverte = null; v.cur = -2; }   // la lecture a repris : la traduction se referme
+  if (joue && v.ouverte != null) { v.ouverte = null; v.cur = -2; hidePop(); }   // la lecture a repris : la traduction se referme
   let i = -1; for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .25) i = j; else break; }
   if (i === v.cur) return;
   if (v.lent && v.cur >= 0 && i > v.cur) { v.lent = false; try { v.player.setPlaybackRate(1); } catch {} }   // la phrase lente est finie
@@ -910,50 +927,27 @@ ${texte ? `His question: """${texte}"""` : "The attached AUDIO is his spoken que
     const x = el("button", "vfermer", "×"); x.setAttribute("aria-label", "Fermer"); x.onclick = () => { if (video) { video.qa.replaceChildren(); video.cur = -2; } };
     video.qa.replaceChildren(x, you, box); video.cur = -2;
     if (d.vocab?.en && d.vocab?.fr) { ajouterVocab(d.vocab); briller2($("vocBtn")); }
-    video.questions++; gagner(5, you);
+    video.questions++; gagner(5, you); noterJour();
     await speak(d.reponse, null, null, d.langue === "fr" ? "fr" : undefined);
   } catch (e) {
     dots.remove(); console.error(e); you?.remove();
     setStatus(e?.code === "rate" ? "Limite gratuite atteinte, réessaie plus tard." : e?.code === "net" ? "Pas de réseau." : "Pas de réponse, réessaie.");
   } finally { busy = false; mic.disabled = !started; }
 }
-// Terminer : les phrases a garder de la video, puis en parler ou rentrer
-const SCHEMA_VIDEO_FIN = {type:"OBJECT", properties:{sujet:{type:"STRING"}, phrases:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}}, required:["sujet","phrases"], propertyOrdering:["sujet","phrases"]};
-async function terminerVideo(){
-  if (busy || !video) return;
-  const v = video; let fin = 0; try { v.player?.pauseVideo?.(); fin = Math.floor(v.player?.getCurrentTime?.() || 0); } catch {}
-  if (fin < 20 && !v.questions) { allerAccueil(); return; }   // rien regarde : on rentre simplement
-  busy = true; mic.disabled = true; boutonFin(false); $("askBtn").hidden = true; stopSpeak();
-  const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); feed.append(dots); scrollDown();
-  let d = null;
-  try {
-    d = await llm(`A French-speaking learner of English (level A2/B1) has just watched this part of a YouTube video. From what is actually SAID in it:
-- "phrases": the 3 most useful everyday sentences or expressions for him to reuse (as spoken, 12 words max each, no proper nouns if possible), each with its French translation.
-- "sujet": what the video is about, in English, in 2 short sentences.`, SCHEMA_VIDEO_FIN, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, debut:0, fin:Math.min(Math.max(fin, 30), 480)}});
-  } catch (e) { console.error(e); }
-  dots.remove(); busy = false;
-  if (video !== v) return;
-  noterJour();
-  const c = carte("bilan", []);
-  const n = serieJours();
-  const tuile = (ico, cls, val, lib) => { const t = el("div", "btuile " + cls); const i = el("span", "bico"); i.innerHTML = ico; t.append(i, el("b", null, String(val)), el("span", null, lib)); return t; };
-  const tuiles = el("div", "btuiles"); tuiles.style.gridTemplateColumns = "1fr 1fr";
-  tuiles.append(tuile(ICO_FLAMME, "flamme", n, n > 1 ? "jours d'affilée" : "jour"), tuile(ICO_ECLAIR, "pts", "+" + xpSession, "points"));
-  c.append(tuiles);
-  const phrases = (d?.phrases || []).filter(x => x.en).slice(0, 3);
-  if (phrases.length) {
-    const ul = el("div", "cfaits");
-    for (const f of phrases) {
-      ajouterRappel({type:"video", en:f.en});
-      const l = el("button", "ex"), tx = el("span", "extxt"), ic = el("span", "explay"); ic.innerHTML = PLAY;
-      tx.append(el("span", "exen", f.en), el("span", "exfr", f.fr || "")); l.append(tx, ic); l.onclick = () => { unlockAudio(); speak(f.en, l, null); }; ul.append(l);
-    }
-    c.append(ul);
-  }
-  if (d?.sujet) { const parler = el("button", "gros cfin"); parler.innerHTML = ICO_MIC; parler.append("En parler"); parler.onclick = () => { const su = (v.titre ? '"' + v.titre + '". ' : "") + d.sujet; quitterVideo(); commencerLibre("", su); }; c.append(parler); }
-  const rentrer = el("button", "gros second cfin", "Terminer"); rentrer.onclick = () => { confettis(rentrer); ding(); setTimeout(allerAccueil, 650); }; c.append(rentrer);
-  v.fini = true; feed.classList.add("defile"); feed.replaceChildren(c); feed.scrollTop = 0; ding();
+// les passages gardes : ceux de cette video rejouent dans la video, les autres sont lus
+function passages(){ if (!Array.isArray(S.passages)) S.passages = []; return S.passages; }
+function afficherPassages(){
+  const l = [...passages()].reverse();
+  $("passagesList").replaceChildren(...(l.length ? l.map(q => {
+    const b = el("button", "ex"), tx = el("span", "extxt"), ic = el("span", "explay"); ic.innerHTML = PLAY;
+    tx.append(el("span", "exen", q.en), el("span", "exfr", q.fr)); b.append(tx, ic);
+    b.onclick = () => { if (video && video.id === q.v) { fermer("passages"); video.ouverte = null; rejouerVideo(q.t + .6); } else { unlockAudio(); speak(q.en, b, null); } };
+    return b;
+  }) : [el("p", "tip", "Touche une phrase, puis le signet, pour la garder ici.")]));
+  ouvrir("passages");
 }
+$("gardeBtn").onclick = () => { if (busy) return; try { video?.player?.pauseVideo?.(); } catch {} hidePop(); afficherPassages(); };
+$("passages").onclick = e => { if (e.target.id === "passages" || e.target.closest("#passagesClose")) { fermer("passages"); stopSpeak(); } };
 // la feuille Watch : coller un lien, ou reprendre une video recente
 function afficherWatch(){
   $("watchUrl").value = ""; $("watchUrl").classList.remove("non");
@@ -1562,7 +1556,7 @@ function showPop(span, en, fr){
   hidePop(); selChunk = span; span.classList.add("sel");
   if (!fr) {
     // morceau sans traduction (ancienne conversation) : on la demande, puis on remontre la bulle
-    const phrase = span.closest(".msg")?.textContent || "";
+    const phrase = span.closest(".msg, .tx")?.textContent || "";
     traduireMorceau(en, phrase).then(t => { if (selChunk === span) showPop(span, en, t); }).catch(() => { if (selChunk === span) showPop(span, en, "—"); });
     fr = "…";
   }
@@ -1775,7 +1769,7 @@ function afficherDefi(d){
 function prendreDefi(d, points){ if (!S.leconSuspendue) S.leconSuspendue = S.lecon; S.lecon = {cible:cibleDe(d.id), points, tours:0, sansUsage:0, debut:Date.now()}; saveS(); }
 function boutonDefi(on){ $("redoBtn").hidden = !on; $("askBtn").hidden = !!on; $("finBtn").hidden = true; }
 function boutonFin(on){ $("finBtn").hidden = !on; if (on) { $("askBtn").hidden = true; $("redoBtn").hidden = true; } }
-$("finBtn").onclick = () => video ? terminerVideo() : terminerLibre();
+$("finBtn").onclick = () => terminerLibre();
 $("redoBtn").onclick = () => {
   if (busy || enTransition) return;
   if (entrainement) { const d = entrainement; recommencerDefi(d); return; }

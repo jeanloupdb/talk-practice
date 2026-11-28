@@ -244,6 +244,9 @@ body.vdisc #playBtn,body.vdisc #gardeBtn,body.vdet #playBtn,body.vdet #gardeBtn{
 /* nos commandes : l'image ne reagit qu'a nous, le curseur se fait oublier tant qu'on ne le touche pas */
 .lecteur iframe{pointer-events:none}
 .vvocbtn{left:auto;right:8px}
+.vvocbtn.charge{cursor:default}
+.vvocbtn.charge svg{animation:vvpulse 1.4s ease-in-out infinite}
+@keyframes vvpulse{0%,100%{opacity:.18}50%{opacity:.45}}
 /* la page du vocabulaire : plein ecran, un retour, une liste */
 .vpage{background:none}
 .vpage .sheet{max-width:620px;height:100%;max-height:100%;border-radius:0;padding:calc(10px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px))}
@@ -926,7 +929,7 @@ function memoVideo(v, t){
 function reprise(e){ return e?.pos > 8 && !(e.duree && e.pos > e.duree - 15) ? e.pos : 0; }
 const VRETOUR = '<button class="vretour" aria-label="Retour à l’accueil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>'
   + '<button class="vretour vvocbtn" aria-label="Vocabulaire de la vidéo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg></button>';
-$("lecteur").onclick = e => { if (e.target.closest(".vvocbtn")) { afficherVocVideo(); return; } if (e.target.closest(".vretour")) allerAccueil(); };
+$("lecteur").onclick = e => { const vb = e.target.closest(".vvocbtn"); if (vb) { if (!vb.classList.contains("charge")) afficherVocVideo(); return; } if (e.target.closest(".vretour")) allerAccueil(); };
 function quitterVideo(){
   $("gardeBtn").hidden = true; $("playBtn").hidden = true; $("discBtn").hidden = true;
   document.body.classList.remove("vdisc", "vdet"); barreNoire(false);
@@ -952,7 +955,7 @@ async function ouvrirVideo(id){
   v.depart = reprise(videosVues().find(x => x.id === id));   // on reprend ou on s'etait arrete
   v.player = new YT.Player("ytp", {videoId:id, playerVars:{start:Math.max(0, v.depart - 2), autoplay:1, playsinline:1, rel:0, modestbranding:1, controls:0, disablekb:1, fs:0, iv_load_policy:3, cc_load_policy:0}, events:{
     onStateChange: e => { if (e.data === 1) { try { v.player.unloadModule("captions"); v.player.unloadModule("cc"); } catch {} } },
-    onReady: () => { v.tick = setInterval(() => suivreSous(v), 300); try { v.player.playVideo(); } catch {}   // la video part toute seule try { v.titre = v.player.getVideoData().title || ""; } catch {} const avant = videosVues().find(x => x.id === id) || {}, l = videosVues().filter(x => x.id !== id); l.push({...avant, id, titre:v.titre || avant.titre || "", t:Date.now()}); S.videos = l.slice(-8); saveS();
+    onReady: () => { v.tick = setInterval(() => suivreSous(v), 300); try { v.player.playVideo(); } catch {}   /* la video part toute seule */ preparerVoc(v); try { v.titre = v.player.getVideoData().title || ""; } catch {} const avant = videosVues().find(x => x.id === id) || {}, l = videosVues().filter(x => x.id !== id); l.push({...avant, id, titre:v.titre || avant.titre || "", t:Date.now()}); S.videos = l.slice(-8); saveS();
       if (v.depart) { const d = v.player.getDuration?.() || 0; if (d && v.seek) v.seek.style.setProperty("--p", v.depart / d); } },
     onError: () => {
       // certaines videos refusent d'etre lues hors de YouTube
@@ -1336,16 +1339,19 @@ const SCHEMA_VOCV = {type:"OBJECT", properties:{items:{type:"ARRAY", items:{type
 function vocsVideos(){ if (!S.vidVoc || typeof S.vidVoc !== "object") S.vidVoc = {}; return S.vidVoc; }
 const vocEnCours = new Map();   // id -> promesse (une seule generation a la fois par video)
 function vocVideo(v){
-  const deja = vocsVideos()[v.id]; if (deja?.items?.length) return Promise.resolve(deja.items);
+  const deja = vocsVideos()[v.id]; if (deja?.items?.length && deja.v === 2) return Promise.resolve(deja.items);   // (v2 : listes sans mots trop faciles)
   if (vocEnCours.has(v.id)) return vocEnCours.get(v.id);
   let duree = 0; try { duree = v.player.getDuration() || 0; } catch {}
   const fin = duree > 2700 ? 2700 : null;   // au-dela de 45 min, on s'en tient au debut
-  const p = llm(`Watch this YouTube video${v.titre ? ` ("${v.titre}")` : ""}. A French-speaking learner of English (level A2/B1) is watching it and wants to understand it better.
-- "items": the vocabulary he needs to follow it, in the order it appears: single words, expressions, idioms, phrasal verbs and useful sentence patterns, as they are used in the video. Give AT LEAST 20 items (up to 40 for a long video), spread over the WHOLE video from start to end, never trivial words. For each: "en" = the word or expression (short, as said in the video), "fr" = its French translation in this context (short, natural, correct French spelling with all accents: é, è, à, ç...), "t" = the time in seconds when it is first said.`, SCHEMA_VOCV, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, ...(fin ? {debut:0, fin} : {}), basse:true}})
+  const demande = modele => llm(`Watch this YouTube video${v.titre ? ` ("${v.titre}")` : ""}. A French-speaking learner of English (level A2/B1) is watching it and wants to understand it better.
+He already knows everyday English up to B1 (building, car, company, to grow, to build, important...) and every word that looks like French (laser, technology, rocket, economy, idea...): NEVER list those, nor numbers, names or brands.
+- "items": the vocabulary that would really stop him, in the order it appears: less common words (milestone, leverage, bottleneck...), idioms, phrasal verbs (figure out, ramp up...), collocations and sentence patterns that a French speaker would not guess, as they are used in the video. Prefer 15 to 30 items spread over the WHOLE video from start to end; fewer is fine if the video is simple, but never fill the list with easy words. For each: "en" = the word or expression (short, as said in the video), "fr" = its French translation in this context (short, natural, correct French spelling with all accents: é, è, à, ç...), "t" = the time in seconds when it is first said.`, SCHEMA_VOCV, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, ...(fin ? {debut:0, fin} : {}), basse:true}, modele});
+  // Flash traduit bien mieux que Lite (Lite invente des sens et perd les accents) ; Lite seulement si Flash ne repond pas
+  const p = demande("gemini-flash-latest").catch(e => { if (e?.code === "key") throw e; return demande(MODELE_SECOURS); })
     .then(d => {
       const vus = new Set(), items = (d.items || []).filter(x => x && x.en && x.fr && !vus.has(x.en.toLowerCase()) && vus.add(x.en.toLowerCase())).map(x => ({en:x.en.trim(), fr:x.fr.trim(), t:isFinite(x.t) ? Math.round(x.t) : 0}));
       if (items.length) {
-        const m = vocsVideos(); m[v.id] = {items, d:Date.now()};
+        const m = vocsVideos(); m[v.id] = {items, d:Date.now(), v:2};
         const garder = new Set(videosVues().map(x => x.id)); garder.add(v.id);   // on ne garde que les videos de la liste
         for (const k of Object.keys(m)) if (!garder.has(k)) delete m[k];
         saveS();
@@ -1355,17 +1361,23 @@ function vocVideo(v){
     .finally(() => vocEnCours.delete(v.id));
   vocEnCours.set(v.id, p); return p;
 }
-async function afficherVocVideo(){
+function afficherVocVideo(){
   const v = video; if (!v) return;
   try { v.player.pauseVideo(); } catch {}
   stopSpeak(); hidePop();
-  const box = $("vvocListe"), dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i"));
-  const deja = vocsVideos()[v.id]?.items;
-  box.replaceChildren(deja?.length ? listeVoc(deja) : dots);
+  const box = $("vvocListe");
+  const g = vocsVideos()[v.id], deja = g?.v === 2 ? g.items : null;
+  if (!deja?.length) { preparerVoc(v); return; }   // pas encore prete : l'icone charge, la page ne s'ouvre pas
+  box.replaceChildren(listeVoc(deja));
   ouvrir("vvoc"); $("vvoc").querySelector(".sheet").scrollTop = 0;
-  if (deja?.length) return;
-  try { const items = await vocVideo(v); if (video !== v) return; box.replaceChildren(items.length ? listeVoc(items) : el("p", "tip", "Pas de vocabulaire trouvé dans cette vidéo.")); }
-  catch (e) { console.error(e); if (video === v) box.replaceChildren(el("p", "tip", e?.code === "rate" ? "Limite gratuite atteinte, réessaie plus tard." : e?.code === "net" ? "Pas de réseau." : "Pas de réponse, réessaie.")); }
+}
+// 2. la liste se prepare des l'ouverture de la video, en arriere-plan ; l'icone pulse doucement en attendant
+function preparerVoc(v){
+  const b = () => $("lecteur").querySelector(".vvocbtn");
+  const g = vocsVideos()[v.id]; if (g?.v === 2 && g.items?.length) { b()?.classList.remove("charge"); return; }
+  b()?.classList.add("charge");
+  vocVideo(v).then(items => { if (video === v) { b()?.classList.toggle("charge", false); if (!items.length) b()?.remove(); } })
+    .catch(e => { console.error(e); if (video === v) { b()?.classList.remove("charge"); setStatus(e?.code === "rate" ? "Vocabulaire : limite gratuite atteinte, réessaie plus tard." : "Vocabulaire indisponible, touche l’icône pour réessayer."); } });
 }
 // une liste simple : l'anglais, sa traduction dessous ; toucher une ligne la fait entendre
 function listeVoc(items){
@@ -2487,6 +2499,7 @@ async function appelGemini(model, prompt, schema, audio){
   } catch (e) { throw {code:"net", detail:String(e)}; }
 }
 
+let modeleKO = {m:null, jusqu:0};   // modele impose (Flash) sature ou coupe recemment
 let modeleEpuise = null; // modele dont le quota gratuit du jour est epuise (retenu pour la session)
 async function llm(prompt, schema = SCHEMA, audio = null){
   // Google renvoie souvent 503 ("modele tres demande") sur le niveau gratuit : on retente
@@ -2494,7 +2507,8 @@ async function llm(prompt, schema = SCHEMA, audio = null){
   // Un 429 "par jour" = quota du jour epuise sur ce modele : on passe au secours direct.
   const principal = audio?.modele || S.model;   // (un appel peut imposer son modele)
   const secours = principal === MODELE_SECOURS ? "gemini-3.5-flash-lite" : MODELE_SECOURS;
-  const essais = modeleEpuise === principal
+  const flashKO = audio?.modele && modeleKO.m === principal && Date.now() < modeleKO.jusqu;   // un modele impose qui vient d'echouer : 2 min sur le secours
+  const essais = modeleEpuise === principal || flashKO
     ? [{model:secours, attente:0}, {model:secours, attente:2000}]
     : [{model:principal, attente:0}, {model:principal, attente:1500}, {model:principal, attente:3000}, {model:secours, attente:1000}];
   let r;
@@ -2502,8 +2516,10 @@ async function llm(prompt, schema = SCHEMA, audio = null){
     const {model, attente} = essais[i];
     const dernier = i === essais.length - 1;
     if (attente) { setStatus(model === principal ? "Google est saturé, nouvel essai…" : "Toujours saturé, j’essaie le modèle de secours…"); await pause(attente); }
-    r = await appelGemini(model, prompt, schema, audio);
+    try { r = await appelGemini(model, prompt, schema, audio); }
+    catch (e) { if (audio?.modele && model === principal && !dernier) { modeleKO = {m:principal, jusqu:Date.now() + 120000}; i = essais.findIndex(x => x.model === secours) - 1; continue; } throw e; }   // connexion coupee sur un modele impose : on passe au secours
     if (r.ok) break;
+    if (r.status === 503 && audio?.modele && model === principal) modeleKO = {m:principal, jusqu:Date.now() + 120000};
     if (r.status === 503 && !dernier) continue;
     if (r.status === 429) {
       const detail = await r.text().catch(() => "");

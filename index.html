@@ -923,6 +923,20 @@ function chargerYT(){
 }
 // la barre d'etat du telephone passe au noir avec la video
 function barreNoire(on){ document.querySelectorAll('meta[name="theme-color"]').forEach(m => { if (m.dataset.c == null) m.dataset.c = m.content; m.content = on ? "#000000" : m.dataset.c; }); }
+/* Les sous-titres d'une video sont gardes dans le telephone (une cle par video, a part des reglages) : en revenant
+   sur la video, meme apres avoir quitte l'appli, les tranches deja transcrites ne sont pas redemandees a Gemini.
+   On ne garde que les videos de la liste des recentes. */
+const CLE_SOUS = id => "tp-sous-" + id;
+function lireSous(id){ try { const d = JSON.parse(localStorage.getItem(CLE_SOUS(id)) || "null"); if (d?.v === 1 && Array.isArray(d.subs)) return d; } catch {} return null; }
+function purgerSous(garder){
+  const ids = new Set(videosVues().map(x => x.id)); if (garder) ids.add(garder);
+  for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k?.startsWith("tp-sous-") && !ids.has(k.slice(8))) localStorage.removeItem(k); }
+}
+function ecrireSous(v){
+  const d = JSON.stringify({v:1, blocs:Object.fromEntries([...v.blocs].filter(([, e]) => e === "ok" || e === "fin")), subs:v.subs.map(({t, en, fr, g, k}) => ({t, en, fr, g, k}))});
+  try { localStorage.setItem(CLE_SOUS(v.id), d); }
+  catch { try { purgerSous(v.id); localStorage.setItem(CLE_SOUS(v.id), d); } catch {} }   // plein : on retire les videos hors liste
+}
 function videosVues(){ if (!Array.isArray(S.videos)) S.videos = []; return S.videos; }
 // ou on en est dans une video : pour la reprendre au bon moment (sauvegarde toutes les 5 s et en sortant)
 function memoVideo(v, t){
@@ -952,6 +966,8 @@ async function ouvrirVideo(id){
   v.qa = el("div", "vqa"); v.sous = el("div", "sous"); v.vue = el("div", "sousvue"); v.vue.append(v.sous); v.att = el("div", "dots"); v.att.append(el("i"), el("i"), el("i"));
   feed.classList.remove("defile"); feed.replaceChildren(v.qa, v.att, v.vue);
   parcourirSous(v);
+  const garde = lireSous(id);   // sous-titres deja transcrits pour cette video
+  if (garde) { v.subs = garde.subs; for (const [k, e] of Object.entries(garde.blocs || {})) v.blocs.set(+k, e); dessinerSous(v); }
   mainsLibres = false; mlMaj(); boutonFin(false); $("askBtn").hidden = true; $("gardeBtn").hidden = false; $("playBtn").hidden = false; $("discBtn").hidden = false; $("playBtn").innerHTML = PLAY; $("playBtn")._joue = false; majLeconChip(); mic.disabled = false; xpSession = 0;
   $("lecteur").innerHTML = '<div id="ytp"></div>' + VRETOUR; $("lecteur").hidden = false; commandesVideo(v);
   v.veutJouer = true; pb_charge(true);   // la video va partir seule : chargement jusqu'a ce qu'elle joue vraiment
@@ -959,7 +975,7 @@ async function ouvrirVideo(id){
   v.depart = reprise(videosVues().find(x => x.id === id));   // on reprend ou on s'etait arrete
   v.player = new YT.Player("ytp", {videoId:id, playerVars:{start:Math.max(0, v.depart - 2), autoplay:1, playsinline:1, rel:0, modestbranding:1, controls:0, disablekb:1, fs:0, iv_load_policy:3, cc_load_policy:0}, events:{
     onStateChange: e => { if (e.data === 1) { try { v.player.unloadModule("captions"); v.player.unloadModule("cc"); } catch {} } },
-    onReady: () => { v.tick = setInterval(() => suivreSous(v), 300); try { v.player.playVideo(); } catch {}   /* la video part toute seule */ preparerVoc(v); try { v.titre = v.player.getVideoData().title || ""; } catch {} const avant = videosVues().find(x => x.id === id) || {}, l = videosVues().filter(x => x.id !== id); l.push({...avant, id, titre:v.titre || avant.titre || "", t:Date.now()}); S.videos = l.slice(-8); saveS();
+    onReady: () => { v.tick = setInterval(() => suivreSous(v), 300); try { v.player.playVideo(); } catch {}   /* la video part toute seule */ preparerVoc(v); try { v.titre = v.player.getVideoData().title || ""; } catch {} const avant = videosVues().find(x => x.id === id) || {}, l = videosVues().filter(x => x.id !== id); l.push({...avant, id, titre:v.titre || avant.titre || "", t:Date.now()}); S.videos = l.slice(-8); saveS(); purgerSous(id);
       if (v.depart) { const d = v.player.getDuration?.() || 0; if (d && v.seek) v.seek.style.setProperty("--p", v.depart / d); } },
     onError: () => {
       // certaines videos refusent d'etre lues hors de YouTube
@@ -1006,7 +1022,7 @@ const TRANCHE = 60;
 async function chargerSous(v, k){
   if (v.blocs.has(k)) return; v.blocs.set(k, "attente");
   const a = k * TRANCHE; let duree = 0; try { duree = v.player.getDuration() || 0; } catch {}
-  if (duree && a >= duree) { v.blocs.set(k, "fin"); return; }
+  if (duree && a >= duree) { v.blocs.set(k, "fin"); ecrireSous(v); return; }
   const b = duree ? Math.min(duree, a + TRANCHE) : a + TRANCHE;
   try {
     const d = await llm(`Transcribe exactly what is SPOKEN in this video clip, which goes from ${a}s to ${Math.round(b)}s of the full video.
@@ -1019,7 +1035,7 @@ If nobody speaks in the clip (music, silence), return an empty list. Never inven
     if (a > 0) l = l.map(x => ({...x, t: x.t >= a - 2 && x.t <= b + 2 ? x.t : x.t + a}));
     l = l.filter(x => x.t >= a - 2 && x.t <= b + 2).sort((x, y) => x.t - y.t);
     v.subs = v.subs.filter(x => x.k !== k).concat(l.map(x => ({...x, k}))).sort((x, y) => x.t - y.t);
-    v.blocs.set(k, "ok"); dessinerSous(v);
+    v.blocs.set(k, "ok"); dessinerSous(v); ecrireSous(v);
   } catch (e) { console.error(e); if (video === v) { v.blocs.set(k, "ko"); setTimeout(() => { if (v.blocs.get(k) === "ko") v.blocs.delete(k); }, 8000); if (e?.code === "rate") setStatus("Limite gratuite atteinte : plus de sous-titres pour l'instant."); } }
 }
 const ICO_SIGNET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z"/></svg>';

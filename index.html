@@ -199,6 +199,8 @@ body.video #feed.defile{overflow-y:auto}
 .sousvue.parcours .sl{opacity:.6;transform:none}
 .sousvue.parcours .sl.on{opacity:1}
 .sousvue.glisse .sous{transition:none}
+.sousvue.vite .sous{transition-duration:.32s}
+.sousvue.vite .sl{transition-duration:.25s}
 .suivre{position:absolute;z-index:2;left:50%;bottom:10px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;height:36px;padding:0 14px;border-radius:999px;border:none;background:var(--accent);color:var(--on-accent);display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 35%,transparent);transition:opacity .3s,transform .4s var(--ease)}
 .suivre svg{width:16px;height:16px}
 .sousvue.parcours .suivre{opacity:1;pointer-events:auto;transform:translateX(-50%)}
@@ -977,12 +979,14 @@ async function chargerSous(v, k){
   const b = duree ? Math.min(duree, a + TRANCHE) : a + TRANCHE;
   try {
     const d = await llm(`Transcribe exactly what is SPOKEN in this video clip, which goes from ${a}s to ${Math.round(b)}s of the full video.
-- "lignes": short subtitle lines in order (12 words at most each, cut at natural pauses). For each: "t" = when the line starts, in seconds counted from the START OF THE FULL VIDEO (so between ${a} and ${Math.round(b)}), as precise as you can; "en" = the exact words spoken (keep them in their original language); "fr" = a natural French translation; "g" = the line cut into consecutive groups of 1 to 4 words that belong together (joined with spaces they give "en" exactly; keep phrasal verbs and set expressions in one group), each with "fr" = the French meaning of THAT group in this sentence.
+- "lignes": short subtitle lines in order (12 words at most each, cut at natural pauses). For each: "t" = when the line starts, in seconds counted from the START OF THIS CLIP (the clip lasts ${Math.round(b - a)} s, so between 0 and ${Math.round(b - a)}), with tenths of a second, as precise as you can; "en" = the exact words spoken (keep them in their original language); "fr" = a natural French translation; "g" = the line cut into consecutive groups of 1 to 4 words that belong together (joined with spaces they give "en" exactly; keep phrasal verbs and set expressions in one group), each with "fr" = the French meaning of THAT group in this sentence.
 If nobody speaks in the clip (music, silence), return an empty list. Never invent words.`, SCHEMA_SOUS, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, debut:a, fin:Math.round(b)}});
     if (video !== v) return;
     let l = (d.lignes || []).filter(x => x && x.en && isFinite(x.t));
-    if (a > 0 && l.length && l.every(x => x.t < a - 2)) l = l.map(x => ({...x, t:x.t + a}));   // temps donnes depuis le debut de l'extrait
-    l = l.filter(x => x.t >= a - 2 && x.t <= b + 2);
+    // Gemini compte en principe depuis le debut de l'extrait, mais renvoie parfois des temps absolus, voire un melange :
+    // chaque ligne est ramenee au temps de la video entiere (un temps deja dans [a, b] est garde tel quel)
+    if (a > 0) l = l.map(x => ({...x, t: x.t >= a - 2 && x.t <= b + 2 ? x.t : x.t + a}));
+    l = l.filter(x => x.t >= a - 2 && x.t <= b + 2).sort((x, y) => x.t - y.t);
     v.subs = v.subs.filter(x => x.k !== k).concat(l.map(x => ({...x, k}))).sort((x, y) => x.t - y.t);
     v.blocs.set(k, "ok"); dessinerSous(v);
   } catch (e) { console.error(e); if (video === v) { v.blocs.set(k, "ko"); setTimeout(() => { if (v.blocs.get(k) === "ko") v.blocs.delete(k); }, 8000); if (e?.code === "rate") setStatus("Limite gratuite atteinte : plus de sous-titres pour l'instant."); } }
@@ -1024,6 +1028,7 @@ function toucherLigne(v, i){
   if (v.ouverte == null && i === v.cur && !joue) { ouvrirLigne(v, i); return; }
   stopSpeak(); hidePop(); finParcours(v);
   v.ouverte = null; v.lent = false; v.cur = -2;
+  viserLigne(v, i);
   try { v.player.setPlaybackRate(1); v.player.seekTo(Math.max(0, v.subs[i].t - .15), true); v.player.pauseVideo(); } catch {}
   suivreSous(v);
 }
@@ -1038,8 +1043,10 @@ function fermerLigne(v){
   if (enreg && enreg.state === "recording") { jeterEnreg = "quitte"; enreg.stop(); }
   stopSpeak(); hidePop(); v.ouverte = null; v.cur = -2; document.body.classList.remove("vdet"); suivreSous(v);
 }
+// la liste va droit a la phrase visee, vite, sans repasser par l'ancienne position
+function viserLigne(v, i){ v.cible = {i, t:v.subs[i]?.t, jusqu:Date.now() + 1500}; v.vue.classList.add("vite"); clearTimeout(v.viteT); v.viteT = setTimeout(() => v.vue.classList.remove("vite"), 450); }
 function jouerLigne(v, i, vitesse){
-  hidePop();
+  hidePop(); viserLigne(v, i);
   v.ouverte = null; v.lent = vitesse < 1; v.cur = -2;
   try { v.player.setPlaybackRate(vitesse); v.player.seekTo(Math.max(0, v.subs[i].t - .4), true); v.player.playVideo(); } catch {}
 }
@@ -1113,6 +1120,10 @@ function suivreSous(v){
   document.body.classList.toggle("vdet", v.ouverte != null && !v.disc);
   if (v.ouverte != null) v.vue.style.setProperty("--vh", v.vue.clientHeight + "px");   // la phrase ouverte prend toute la hauteur dispo   // la lecture a repris : la traduction se referme
   let i = -1; for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .25) i = j; else break; }
+  if (v.cible) {   // juste apres un saut : on garde la phrase visee tant que YouTube n'a pas rattrape
+    const ci = v.subs.findIndex(x => x.t === v.cible.t);
+    if (ci < 0 || i === ci || Date.now() > v.cible.jusqu) v.cible = null; else i = ci;
+  }
   if (v.libre && joue && Date.now() - (v.libreT || 0) > 5000 && !v.vue.classList.contains("glisse")) { finParcours(v); }
   if (i === v.cur) return;
   if (v.lent && v.cur >= 0 && i > v.cur) { v.lent = false; try { v.player.setPlaybackRate(1); } catch {} }   // la phrase lente est finie

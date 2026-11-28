@@ -148,8 +148,25 @@ svg{width:24px;height:24px;flex:none}
 .portes .gros{padding:16px 14px;white-space:nowrap}
 .portes #watchHome{grid-column:1/-1}
 /* Watch with Talk : la video en haut, la discussion dessous */
-.lecteur{position:relative;z-index:1;flex:none;margin:4px 14px 0;aspect-ratio:16/9;border-radius:22px;overflow:hidden;background:#0B0F1E;box-shadow:0 12px 34px color-mix(in srgb,#2457C5 22%,transparent);animation:entre .4s var(--ease) both}
+.lecteur{position:relative;z-index:1;flex:0 0 50%;min-height:0;background:#000;animation:entre .4s var(--ease) both}
+body.video .bar,body.video #voiceStatus{display:none}
+body.video #feed{padding:12px 20px 60px;gap:0}
+.vretour{position:absolute;z-index:2;left:8px;top:8px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center;padding:0}
+.vretour svg{width:18px;height:18px}
+/* sous-titres en direct : la ligne en cours en grand, les autres en retrait ; un toucher y ramene la video */
+.sous{display:flex;flex-direction:column;gap:2px;padding-bottom:30vh}
+.sl{display:block;width:100%;text-align:left;background:none;border:none;padding:9px 0;color:var(--muted);opacity:.5;font:inherit;font-size:1.05rem;font-weight:500;line-height:1.35;transition:opacity .3s,color .3s,font-size .3s var(--ease)}
+.sl.vu{opacity:.75}
+.sl.on{opacity:1;color:var(--ink);font-size:clamp(1.35rem,5.8vw,1.7rem);font-weight:700}
+.sl small{display:none;font-size:.95rem;font-weight:500;color:var(--muted);margin-top:3px}
+.sl.on small{display:block}
+/* la derniere question et sa reponse restent en haut des sous-titres */
+.vqa{position:sticky;top:0;z-index:3;display:flex;flex-direction:column;gap:8px;margin:0 -6px 8px;padding:14px 14px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--card-line);box-shadow:0 10px 30px color-mix(in srgb,#2457C5 14%,transparent)}
+.vqa:empty{display:none}
+.vqa .you{align-self:flex-end;font-size:1.05rem}
+.vqa .vfermer{position:absolute;right:6px;top:4px;width:32px;height:32px;border:none;background:none;color:var(--muted);font-size:1.3rem;line-height:1}
 .lecteur iframe,.lecteur>div{width:100%;height:100%;border:0;display:block}
+.lecteur[hidden]{display:none}
 .wlien{display:flex;gap:10px;align-items:center;margin:10px 0 4px}
 .wlien input{flex:1;border-radius:999px;padding:14px 18px;background:var(--soft);border:none}
 .wlien input.non{animation:secoue .4s ease}
@@ -544,7 +561,7 @@ button:not(:disabled):active{transform:scale(.94)}
         </button>
       </div>
     </div>
-    <div id="lecteur" class="lecteur" hidden><div id="ytp"></div></div>
+    <div id="lecteur" class="lecteur" hidden><div id="ytp"></div><button class="vretour" aria-label="Retour à l’accueil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button></div>
     <p id="voiceStatus"></p>
     <div id="feed" aria-live="polite">
       <div class="empty" id="empty">
@@ -743,27 +760,68 @@ function chargerYT(){
   });
 }
 function videosVues(){ if (!Array.isArray(S.videos)) S.videos = []; return S.videos; }
+const VRETOUR = '<button class="vretour" aria-label="Retour à l’accueil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>';
+$("lecteur").onclick = e => { if (e.target.closest(".vretour")) allerAccueil(); };
 function quitterVideo(){
   if (!video) { $("lecteur").hidden = true; return; }
   try { video.player?.destroy?.(); } catch {}
-  video = null; $("lecteur").hidden = true; $("lecteur").innerHTML = '<div id="ytp"></div>';
+  clearInterval(video.tick); video = null; document.body.classList.remove("video");
+  $("lecteur").hidden = true; $("lecteur").innerHTML = '<div id="ytp"></div>' + VRETOUR;
 }
 async function ouvrirVideo(id){
   if (!S.key) { openSettings(); return; }
   if (!$("watch").hidden) fermer("watch");
   setTheme(LIBRE); ouvrirFil(true); history = [];
-  const v = video = {id, titre:"", player:null, questions:0};
+  const v = video = {id, titre:"", player:null, questions:0, subs:[], blocs:new Map(), cur:-1, tick:0};
+  document.body.classList.add("video");
+  v.qa = el("div", "vqa"); v.sous = el("div", "sous"); v.att = el("div", "dots"); v.att.append(el("i"), el("i"), el("i"));
+  feed.replaceChildren(v.qa, v.sous, v.att);
   mainsLibres = false; mlMaj(); boutonFin(true); majLeconChip(); mic.disabled = false; xpSession = 0;
   $("lecteur").hidden = false;
   await chargerYT(); if (video !== v) return;
   v.player = new YT.Player("ytp", {videoId:id, playerVars:{playsinline:1, rel:0, modestbranding:1}, events:{
-    onReady: () => { try { v.titre = v.player.getVideoData().title || ""; } catch {} const l = videosVues().filter(x => x.id !== id); l.push({id, titre:v.titre, t:Date.now()}); S.videos = l.slice(-8); saveS(); },
+    onReady: () => { v.tick = setInterval(() => suivreSous(v), 300); try { v.titre = v.player.getVideoData().title || ""; } catch {} const l = videosVues().filter(x => x.id !== id); l.push({id, titre:v.titre, t:Date.now()}); S.videos = l.slice(-8); saveS(); },
     onError: () => {
       // certaines videos refusent d'etre lues hors de YouTube
       const b = el("div", "qar vrep"); b.append(el("p", null, "Cette vidéo ne peut pas être lue ici."));
-      const o = el("a", "gros second vouvrir", "Ouvrir dans YouTube"); o.href = "https://www.youtube.com/watch?v=" + id; o.target = "_blank"; o.rel = "noopener"; b.append(o); feed.append(b);
+      const o = el("a", "gros second vouvrir", "Ouvrir dans YouTube"); o.href = "https://www.youtube.com/watch?v=" + id; o.target = "_blank"; o.rel = "noopener"; b.append(o); v.qa.replaceChildren(b);
     }
   }});
+}
+const SCHEMA_SOUS = {type:"OBJECT", properties:{lignes:{type:"ARRAY", items:{type:"OBJECT", properties:{t:{type:"NUMBER"}, en:{type:"STRING"}, fr:{type:"STRING"}}, required:["t","en","fr"], propertyOrdering:["t","en","fr"]}}}, required:["lignes"], propertyOrdering:["lignes"]};
+const TRANCHE = 60;
+async function chargerSous(v, k){
+  if (v.blocs.has(k)) return; v.blocs.set(k, "attente");
+  const a = k * TRANCHE; let duree = 0; try { duree = v.player.getDuration() || 0; } catch {}
+  if (duree && a >= duree) { v.blocs.set(k, "fin"); return; }
+  const b = duree ? Math.min(duree, a + TRANCHE) : a + TRANCHE;
+  try {
+    const d = await llm(`Transcribe exactly what is SPOKEN in this video clip, which goes from ${a}s to ${Math.round(b)}s of the full video.
+- "lignes": short subtitle lines in order (12 words at most each, cut at natural pauses). For each: "t" = when the line starts, in seconds counted from the START OF THE FULL VIDEO (so between ${a} and ${Math.round(b)}), as precise as you can; "en" = the exact words spoken (keep them in their original language); "fr" = a natural French translation.
+If nobody speaks in the clip (music, silence), return an empty list. Never invent words.`, SCHEMA_SOUS, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, debut:a, fin:Math.round(b)}});
+    if (video !== v) return;
+    let l = (d.lignes || []).filter(x => x && x.en && isFinite(x.t));
+    if (a > 0 && l.length && l.every(x => x.t < a - 2)) l = l.map(x => ({...x, t:x.t + a}));   // temps donnes depuis le debut de l'extrait
+    l = l.filter(x => x.t >= a - 2 && x.t <= b + 2);
+    v.subs = v.subs.filter(x => x.k !== k).concat(l.map(x => ({...x, k}))).sort((x, y) => x.t - y.t);
+    v.blocs.set(k, "ok"); dessinerSous(v);
+  } catch (e) { console.error(e); if (video === v) { v.blocs.set(k, "ko"); setTimeout(() => { if (v.blocs.get(k) === "ko") v.blocs.delete(k); }, 8000); if (e?.code === "rate") setStatus("Limite gratuite atteinte : plus de sous-titres pour l'instant."); } }
+}
+function dessinerSous(v){
+  v.sous.replaceChildren(...v.subs.map((x, i) => { const b = el("button", "sl"); b.append(document.createTextNode(x.en)); if (x.fr) b.append(el("small", null, x.fr)); b.onclick = () => rejouerVideo(x.t + 1); return b; }));
+  v.cur = -1;
+}
+// suit la lecture : charge la tranche en cours (et la suivante un peu avant), met en avant la ligne dite
+function suivreSous(v){
+  if (video !== v || v.fini) return;
+  let t = 0; try { t = v.player.getCurrentTime() || 0; } catch { return; }
+  const k = Math.floor(t / TRANCHE);
+  chargerSous(v, k); if (t - k * TRANCHE > TRANCHE - 25) chargerSous(v, k + 1);
+  const etat = v.blocs.get(k); v.att.hidden = etat !== "attente";
+  let i = -1; for (let j = 0; j < v.subs.length; j++) { if (v.subs[j].t <= t + .25) i = j; else break; }
+  if (i === v.cur) return; v.cur = i;
+  [...v.sous.children].forEach((b, j) => { b.classList.toggle("on", j === i); b.classList.toggle("vu", j < i); });
+  if (i >= 0 && !(enreg && enreg.state === "recording")) { const b = v.sous.children[i]; feed.scrollTo({top:Math.max(0, b.offsetTop - feed.clientHeight * .28), behavior:"smooth"}); }
 }
 const SCHEMA_VIDEO = {type:"OBJECT", properties:{
   heard:{type:"STRING"}, langue:{type:"STRING"}, reponse:{type:"STRING"}, citation:{type:"STRING"}, citation_fr:{type:"STRING"}, debut:{type:"NUMBER"},
@@ -799,7 +857,8 @@ ${texte ? `His question: """${texte}"""` : "The attached AUDIO is his spoken que
       const sec = d.debut >= d0 - 2 && d.debut <= d1 + 2 ? d.debut : d0;
       b.onclick = () => rejouerVideo(sec); box.append(b);
     }
-    feed.append(box); scrollDown();
+    const x = el("button", "vfermer", "×"); x.setAttribute("aria-label", "Fermer"); x.onclick = () => video?.qa.replaceChildren();
+    video.qa.replaceChildren(x, you, box); feed.scrollTo({top:0, behavior:"smooth"}); video.cur = -2;
     if (d.vocab?.en && d.vocab?.fr) { ajouterVocab(d.vocab); briller2($("vocBtn")); }
     video.questions++; gagner(5, you);
     await speak(d.reponse, null, null, d.langue === "fr" ? "fr" : undefined);
@@ -843,7 +902,7 @@ async function terminerVideo(){
   }
   if (d?.sujet) { const parler = el("button", "gros cfin"); parler.innerHTML = ICO_MIC; parler.append("En parler"); parler.onclick = () => { const su = (v.titre ? '"' + v.titre + '". ' : "") + d.sujet; quitterVideo(); commencerLibre("", su); }; c.append(parler); }
   const rentrer = el("button", "gros second cfin", "Terminer"); rentrer.onclick = () => { confettis(rentrer); ding(); setTimeout(allerAccueil, 650); }; c.append(rentrer);
-  feed.append(c); scrollDown(); ding();
+  v.fini = true; feed.replaceChildren(c); feed.scrollTop = 0; ding();
 }
 // la feuille Watch : coller un lien, ou reprendre une video recente
 function afficherWatch(){

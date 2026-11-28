@@ -1016,16 +1016,16 @@ function dessinerSous(v){
   if (v.ouverte === -1) v.ouverte = null;
   if (v.ouverte != null) { const l = v.sous.children[v.ouverte]; l.classList.add("ouverte"); l.scrollTop = defile; }
 }
-// toucher la phrase en cours : elle s'ouvre (traduction, mots touchables) ; toucher une autre phrase (passee
-// en remontant, ou a venir) ne l'ouvre pas : la video repart simplement de cette phrase
+// toucher une phrase : la video va au debut de cette phrase et se met en pause ;
+// toucher a nouveau la phrase sur laquelle on est en pause : ses details s'ouvrent
 function toucherLigne(v, i){
   if (v.ouverte === i) { hidePop(); return; }   // deja ouverte : un toucher ne fait que fermer la bulle d'un mot
-  if (v.ouverte == null && i === v.cur) {
-    let joue = false; try { joue = v.player.getPlayerState() === 1; } catch {}
-    if (joue) { try { v.player.pauseVideo(); } catch {} return; }   // 1er toucher : pause ; le suivant ouvre la phrase
-    ouvrirLigne(v, i); return;
-  }
-  stopSpeak(); finParcours(v); jouerLigne(v, i, 1);
+  let joue = false; try { joue = v.player.getPlayerState() === 1; } catch {}
+  if (v.ouverte == null && i === v.cur && !joue) { ouvrirLigne(v, i); return; }
+  stopSpeak(); hidePop(); finParcours(v);
+  v.ouverte = null; v.lent = false; v.cur = -2;
+  try { v.player.setPlaybackRate(1); v.player.seekTo(Math.max(0, v.subs[i].t - .15), true); v.player.pauseVideo(); } catch {}
+  suivreSous(v);
 }
 // la phrase en cours s'ouvre : la video se met en pause, la phrase vient au point fixe et montre sa traduction
 function ouvrirLigne(v, i){

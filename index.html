@@ -146,6 +146,18 @@ svg{width:24px;height:24px;flex:none}
 .defisur svg{width:13px;height:13px}
 .portes{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .portes .gros{padding:16px 14px;white-space:nowrap}
+.portes #watchHome{grid-column:1/-1}
+/* Watch with Talk : la video en haut, la discussion dessous */
+.lecteur{position:relative;z-index:1;flex:none;margin:4px 14px 0;aspect-ratio:16/9;border-radius:22px;overflow:hidden;background:#0B0F1E;box-shadow:0 12px 34px color-mix(in srgb,#2457C5 22%,transparent);animation:entre .4s var(--ease) both}
+.lecteur iframe,.lecteur>div{width:100%;height:100%;border:0;display:block}
+.wlien{display:flex;gap:10px;align-items:center;margin:10px 0 4px}
+.wlien input{flex:1;border-radius:999px;padding:14px 18px;background:var(--soft);border:none}
+.wlien input.non{animation:secoue .4s ease}
+.wlien .round{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.wlien .round svg{width:22px;height:22px}
+.vrep{align-self:stretch}
+.vrep .ex{border-bottom:none;background:var(--card);border:1px solid var(--card-line);border-radius:18px;padding:12px 14px;margin-top:8px}
+.vouvrir{margin-top:10px}
 .defititre{font-size:clamp(1.25rem,5.6vw,1.55rem);font-weight:700;line-height:1.15;letter-spacing:-.01em}
 .defibas{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px}
 .defiseg{position:relative;display:block;width:88px;height:6px;border-radius:3px;background:rgba(255,255,255,.28);overflow:hidden;--p:0}
@@ -532,6 +544,7 @@ button:not(:disabled):active{transform:scale(.94)}
         </button>
       </div>
     </div>
+    <div id="lecteur" class="lecteur" hidden><div id="ytp"></div></div>
     <p id="voiceStatus"></p>
     <div id="feed" aria-live="polite">
       <div class="empty" id="empty">
@@ -547,6 +560,7 @@ button:not(:disabled):active{transform:scale(.94)}
           <div class="portes">
           <button class="gros second" id="freeHome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>Free talk</button>
           <button class="gros second" id="askHome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.4A8.5 8.5 0 1 1 21 12z"/><text x="12" y="14.6" text-anchor="middle" font-size="7.5" font-weight="800" font-family="Figtree,system-ui,sans-serif" fill="currentColor" stroke="none" letter-spacing=".3">FR</text></svg>Ask in French</button>
+          <button class="gros second" id="watchHome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="4"/><path d="M10.5 9.5v5l4-2.5z" fill="currentColor"/></svg>Watch a video</button>
           </div>
           <p class="status" id="homeNote"></p>
         </div>
@@ -588,6 +602,14 @@ button:not(:disabled):active{transform:scale(.94)}
   <div class="sheet" role="dialog" aria-labelledby="microTitle">
     <div class="mothead"><h2 id="microTitle">Micro et son</h2><button class="iconbtn" id="microClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div id="microBody"></div>
+  </div>
+</div>
+<div class="sheetwrap" id="watch" hidden>
+  <div class="sheet" role="dialog" aria-labelledby="watchTitle">
+    <div class="mothead"><h2 id="watchTitle">Watch</h2><button class="iconbtn" id="watchClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="wlien"><input id="watchUrl" type="url" inputmode="url" placeholder="Lien YouTube" autocomplete="off" aria-label="Lien YouTube"><button class="round" id="watchPaste" aria-label="Coller le lien"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="12" height="16" rx="3"/><path d="M9 5a3 3 0 0 1 6 0"/></svg></button></div>
+    <p class="tip">Depuis YouTube : Partager, puis Talk Practice.</p>
+    <div id="watchList"></div>
   </div>
 </div>
 <div class="sheetwrap" id="vocab" hidden>
@@ -653,6 +675,7 @@ const TRANS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const $ = id => document.getElementById(id);
 const feed = $("feed"), mic = $("mic"), statusEl = $("status"), pop = $("pop");
 let theme = null, history = [], busy = false, started = false, lastHint = null;
+let video = null;   // Watch with Talk : {id, titre, player, questions}
 // "history" = ce que le modele voit (phrases acceptees) ; "journal" = tout ce qui s'est affiche
 // (essais rates avec leurs fautes, conseils, repliques decoupees), pour retrouver la conversation entiere.
 let journal = [], dernierConseil = -99;
@@ -663,7 +686,7 @@ function setStatus(t){ statusEl.textContent = t || ""; homeNote.textContent = t 
 /* Bouton retour du telephone (historique du navigateur) : une seule entree "dedans" posee des qu'on entre
    dans une conversation ou qu'on ouvre une fenetre. Retour = fermer la fenetre ouverte, sinon revenir a
    l'accueil ; on ne quitte l'appli qu'en faisant retour depuis l'accueil. */
-const FENETRES = ["settings", "mot", "roles", "qa", "vocab", "micro"];
+const FENETRES = ["settings", "mot", "roles", "qa", "vocab", "micro", "watch"];
 function navDedans(){ if (window.history.state?.tp !== "in") window.history.pushState({tp:"in"}, ""); }
 function ouvrir(id){ navDedans(); $(id).hidden = false; }
 window.addEventListener("popstate", () => {
@@ -708,6 +731,139 @@ if ((S.v || 1) < 4) {
 }
 if (S.theme?.fr && S.theme?.en && S.theme?.role) setTheme(S.theme); else setTheme(THEMES[0]);
 if (S.leconSuspendue) { S.lecon = S.leconSuspendue; delete S.leconSuspendue; saveS(); }
+/* ---------- Watch with Talk : regarder une video YouTube avec l'IA ----------
+   La video joue dans l'appli (lecteur officiel), donc on sait a quelle seconde on est. On met pause, on pose
+   sa question au micro : l'IA recoit les 45 dernieres secondes de la video et repond. A la fin : les phrases a garder. */
+const ytId = t => { const m = String(t || "").match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/); return m ? m[1] : null; };
+function chargerYT(){
+  return new Promise(ok => {
+    if (window.YT?.Player) return ok();
+    const avant = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { avant?.(); ok(); };
+    if (!document.getElementById("ytapi")) { const sc = document.createElement("script"); sc.id = "ytapi"; sc.src = "https://www.youtube.com/iframe_api"; document.head.append(sc); }
+  });
+}
+function videosVues(){ if (!Array.isArray(S.videos)) S.videos = []; return S.videos; }
+function quitterVideo(){
+  if (!video) { $("lecteur").hidden = true; return; }
+  try { video.player?.destroy?.(); } catch {}
+  video = null; $("lecteur").hidden = true; $("lecteur").innerHTML = '<div id="ytp"></div>';
+}
+async function ouvrirVideo(id){
+  if (!S.key) { openSettings(); return; }
+  if (!$("watch").hidden) fermer("watch");
+  setTheme(LIBRE); ouvrirFil(true); history = [];
+  const v = video = {id, titre:"", player:null, questions:0};
+  mainsLibres = false; mlMaj(); boutonFin(true); majLeconChip(); mic.disabled = false; xpSession = 0;
+  $("lecteur").hidden = false;
+  await chargerYT(); if (video !== v) return;
+  v.player = new YT.Player("ytp", {videoId:id, playerVars:{playsinline:1, rel:0, modestbranding:1}, events:{
+    onReady: () => { try { v.titre = v.player.getVideoData().title || ""; } catch {} const l = videosVues().filter(x => x.id !== id); l.push({id, titre:v.titre, t:Date.now()}); S.videos = l.slice(-8); saveS(); },
+    onError: () => {
+      // certaines videos refusent d'etre lues hors de YouTube
+      const b = el("div", "qar vrep"); b.append(el("p", null, "Cette vidéo ne peut pas être lue ici."));
+      const o = el("a", "gros second vouvrir", "Ouvrir dans YouTube"); o.href = "https://www.youtube.com/watch?v=" + id; o.target = "_blank"; o.rel = "noopener"; b.append(o); feed.append(b);
+    }
+  }});
+}
+const SCHEMA_VIDEO = {type:"OBJECT", properties:{
+  heard:{type:"STRING"}, langue:{type:"STRING"}, reponse:{type:"STRING"}, citation:{type:"STRING"}, citation_fr:{type:"STRING"}, debut:{type:"NUMBER"},
+  vocab:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}, lies:{type:"ARRAY", items:{type:"OBJECT", properties:{fr:{type:"STRING"}, en:{type:"STRING"}}, required:["fr","en"], propertyOrdering:["fr","en"]}}}, required:["fr","en","lies"], propertyOrdering:["fr","en","lies"]}
+}, required:["heard","langue","reponse","citation","citation_fr","debut","vocab"], propertyOrdering:["heard","langue","reponse","citation","citation_fr","debut","vocab"]};
+function rejouerVideo(sec){ stopSpeak(); try { video.player.seekTo(Math.max(0, sec - 1), true); video.player.playVideo(); } catch {} }
+// une question sur ce qu'on vient de voir (au micro ; "texte" sert aux essais sans micro)
+async function demanderVideo(you, aud, texte){
+  if (busy || !video) return;
+  busy = true; mic.disabled = true; setStatus("");
+  const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); feed.append(dots); scrollDown();
+  let t = 0; try { t = Math.floor(video.player?.getCurrentTime?.() || 0); } catch {}
+  const d0 = Math.max(0, t - 45), d1 = t + 3;
+  try {
+    const d = await llm(`You are an AI English tutor watching a YouTube video WITH a French-speaking learner (level A2/B1). The attached VIDEO clip (from ${d0}s to ${d1}s of the full video) is what he has just watched: he paused at the end of it to ask you something.
+${texte ? `His question: """${texte}"""` : "The attached AUDIO is his spoken question, in French or in English."}
+- "heard": ${texte ? "copy his question." : `his question, word for word. If the audio is silent or not intelligible, write "" and leave everything else empty: never guess.`}
+- "langue": "fr" if he asked in French, "en" if he asked in English.
+- "reponse": your answer IN THE SAME LANGUAGE as his question (with « tu » in French; simple English otherwise), spoken style, 2 to 4 short sentences, concrete: what was said, what it means, why it is said that way. No markdown, no lists. Never invent what is not in the clip: if the answer is not in it, say so.
+- "citation": the exact English words spoken in the video that his question is about (one sentence at most, as spoken). "" if none.
+- "citation_fr": its French translation. "debut": the time, in seconds from the START OF THE FULL VIDEO, when the citation begins (between ${d0} and ${d1}); 0 if no citation.
+- "vocab": ONLY if a word or expression from the video is worth remembering: "fr" = the French meaning, "en" = the English word or expression, "lies" = 3 related words {fr, en}. Otherwise fr "", en "", lies [].`, SCHEMA_VIDEO, {...(aud || {}), video:{uri:"https://www.youtube.com/watch?v=" + video.id, debut:d0, fin:d1}});
+    dots.remove();
+    const h = String(d.heard || "").trim();
+    if (!h) { montrerBas(you, "Pas compris"); return; }
+    you.className = "you"; you.textContent = h;
+    const box = el("div", "qar vrep");
+    String(d.reponse || "").split(/\n+/).filter(Boolean).forEach(x => box.append(el("p", null, x)));
+    if (d.citation) {
+      // la phrase de la video : un toucher la rejoue dans la video
+      const b = el("button", "ex"), tx = el("span", "extxt"), ic = el("span", "explay"); ic.innerHTML = PLAY;
+      tx.append(el("span", "exen", d.citation), el("span", "exfr", d.citation_fr || "")); b.append(tx, ic);
+      const sec = d.debut >= d0 - 2 && d.debut <= d1 + 2 ? d.debut : d0;
+      b.onclick = () => rejouerVideo(sec); box.append(b);
+    }
+    feed.append(box); scrollDown();
+    if (d.vocab?.en && d.vocab?.fr) { ajouterVocab(d.vocab); briller2($("vocBtn")); }
+    video.questions++; gagner(5, you);
+    await speak(d.reponse, null, null, d.langue === "fr" ? "fr" : undefined);
+  } catch (e) {
+    dots.remove(); console.error(e); you?.remove();
+    setStatus(e?.code === "rate" ? "Limite gratuite atteinte, réessaie plus tard." : e?.code === "net" ? "Pas de réseau." : "Pas de réponse, réessaie.");
+  } finally { busy = false; mic.disabled = !started; }
+}
+// Terminer : les phrases a garder de la video, puis en parler ou rentrer
+const SCHEMA_VIDEO_FIN = {type:"OBJECT", properties:{sujet:{type:"STRING"}, phrases:{type:"ARRAY", items:{type:"OBJECT", properties:{en:{type:"STRING"}, fr:{type:"STRING"}}, required:["en","fr"], propertyOrdering:["en","fr"]}}}, required:["sujet","phrases"], propertyOrdering:["sujet","phrases"]};
+async function terminerVideo(){
+  if (busy || !video) return;
+  const v = video; let fin = 0; try { v.player?.pauseVideo?.(); fin = Math.floor(v.player?.getCurrentTime?.() || 0); } catch {}
+  if (fin < 20 && !v.questions) { allerAccueil(); return; }   // rien regarde : on rentre simplement
+  busy = true; mic.disabled = true; boutonFin(false); $("askBtn").hidden = true; stopSpeak();
+  const dots = el("div", "dots"); dots.append(el("i"), el("i"), el("i")); feed.append(dots); scrollDown();
+  let d = null;
+  try {
+    d = await llm(`A French-speaking learner of English (level A2/B1) has just watched this part of a YouTube video. From what is actually SAID in it:
+- "phrases": the 3 most useful everyday sentences or expressions for him to reuse (as spoken, 12 words max each, no proper nouns if possible), each with its French translation.
+- "sujet": what the video is about, in English, in 2 short sentences.`, SCHEMA_VIDEO_FIN, {video:{uri:"https://www.youtube.com/watch?v=" + v.id, debut:0, fin:Math.min(Math.max(fin, 30), 480)}});
+  } catch (e) { console.error(e); }
+  dots.remove(); busy = false;
+  if (video !== v) return;
+  noterJour();
+  const c = carte("bilan", []);
+  const n = serieJours();
+  const tuile = (ico, cls, val, lib) => { const t = el("div", "btuile " + cls); const i = el("span", "bico"); i.innerHTML = ico; t.append(i, el("b", null, String(val)), el("span", null, lib)); return t; };
+  const tuiles = el("div", "btuiles"); tuiles.style.gridTemplateColumns = "1fr 1fr";
+  tuiles.append(tuile(ICO_FLAMME, "flamme", n, n > 1 ? "jours d'affilée" : "jour"), tuile(ICO_ECLAIR, "pts", "+" + xpSession, "points"));
+  c.append(tuiles);
+  const phrases = (d?.phrases || []).filter(x => x.en).slice(0, 3);
+  if (phrases.length) {
+    const ul = el("div", "cfaits");
+    for (const f of phrases) {
+      ajouterRappel({type:"video", en:f.en});
+      const l = el("button", "ex"), tx = el("span", "extxt"), ic = el("span", "explay"); ic.innerHTML = PLAY;
+      tx.append(el("span", "exen", f.en), el("span", "exfr", f.fr || "")); l.append(tx, ic); l.onclick = () => { unlockAudio(); speak(f.en, l, null); }; ul.append(l);
+    }
+    c.append(ul);
+  }
+  if (d?.sujet) { const parler = el("button", "gros cfin"); parler.innerHTML = ICO_MIC; parler.append("En parler"); parler.onclick = () => { const su = (v.titre ? '"' + v.titre + '". ' : "") + d.sujet; quitterVideo(); commencerLibre("", su); }; c.append(parler); }
+  const rentrer = el("button", "gros second cfin", "Terminer"); rentrer.onclick = () => { confettis(rentrer); ding(); setTimeout(allerAccueil, 650); }; c.append(rentrer);
+  feed.append(c); scrollDown(); ding();
+}
+// la feuille Watch : coller un lien, ou reprendre une video recente
+function afficherWatch(){
+  $("watchUrl").value = ""; $("watchUrl").classList.remove("non");
+  const l = [...videosVues()].reverse();
+  $("watchList").replaceChildren(...(l.length ? [el("div", "profsec", "Récentes")] : []), ...l.map(x => { const b = el("button", "drow"); b.append(el("span", "dtitre", x.titre || "Vidéo"), el("span", "dtemps", tempsCourt(x.t))); b.onclick = () => ouvrirVideo(x.id); return b; }));
+  ouvrir("watch");
+}
+function essayerLien(t){ const id = ytId(t); if (id) { ouvrirVideo(id); return true; } const i = $("watchUrl"); i.classList.remove("non"); void i.offsetWidth; i.classList.add("non"); return false; }
+$("watchHome").onclick = () => { if (busy) return; hidePop(); afficherWatch(); };
+$("watchUrl").oninput = () => { if (ytId($("watchUrl").value)) essayerLien($("watchUrl").value); };
+$("watchUrl").onkeydown = e => { if (e.key === "Enter") essayerLien($("watchUrl").value); };
+$("watchPaste").onclick = async () => { try { const t = await navigator.clipboard.readText(); $("watchUrl").value = t; essayerLien(t); } catch { $("watchUrl").focus(); } };
+$("watch").onclick = e => { if (e.target.id === "watch" || e.target.closest("#watchClose")) fermer("watch"); };
+// arrivee par "Partager" depuis YouTube (l'appli installee est dans la liste de partage)
+{
+  const q = new URLSearchParams(location.search), partage = [q.get("u"), q.get("x"), q.get("t")].map(ytId).find(Boolean);
+  if (q.has("u") || q.has("x") || q.has("t")) window.history.replaceState(null, "", location.pathname);
+  if (partage) setTimeout(() => ouvrirVideo(partage), 50);
+}
 majVocBtn();
 
 
@@ -1119,6 +1275,7 @@ function garderFlux(){ clearTimeout(fluxTimer); fluxTimer = setTimeout(libererFl
 function libererFlux(){ clearTimeout(fluxTimer); fluxGarde?.getTracks().forEach(t => t.stop()); fluxGarde = null; }
 document.addEventListener("visibilitychange", () => { if (document.hidden && !(enreg && enreg.state === "recording")) libererFlux(); });
 async function basculerEnreg(opts = {}){
+  if (video && !(enreg && enreg.state === "recording")) { try { video.player?.pauseVideo?.(); } catch {} }   // on met la video en pause pour poser sa question
   const auto = !!opts.auto;
   if (enreg && enreg.state === "recording") { enreg.forcer?.(); enreg.stop(); return; }
   if (busy || enTransition || !started) return;
@@ -1158,7 +1315,8 @@ async function basculerEnreg(opts = {}){
     you.className = "you pending"; you.textContent = "";
     setStatus("");
     you._rec = blob; you.dataset.rec = "1";   // pour reecouter sa propre prononciation (le passage corrige)
-    ask(null, you, {audio:{data: await blobB64(blob), mime:type, faible: analyse ? (q.pic < 12 || q.voix < 12) : false}});
+    const aud = {data: await blobB64(blob), mime:type, faible: analyse ? (q.pic < 12 || q.voix < 12) : false};
+    if (video) demanderVideo(you, aud); else ask(null, you, {audio:aud});
   };
   // Niveau de la voix en direct : le halo du micro et les barres de ta bulle bougent avec toi.
   let analyse = null, source = null, raf = 0;
@@ -1247,7 +1405,7 @@ async function mlWake(on){
   } catch {}
 }
 function mlMaj(){
-  mlBtn.hidden = !started || !ecouteGemini();
+  mlBtn.hidden = !started || !ecouteGemini() || !!video;
   mlBtn.classList.toggle("actif", mainsLibres);
   mlBtn.setAttribute("aria-label", mainsLibres ? "Quitter le mode mains libres" : "Mode mains libres");
   mic.classList.toggle("ml", mainsLibres);
@@ -1508,7 +1666,7 @@ function afficherDefi(d){
 function prendreDefi(d, points){ if (!S.leconSuspendue) S.leconSuspendue = S.lecon; S.lecon = {cible:cibleDe(d.id), points, tours:0, sansUsage:0, debut:Date.now()}; saveS(); }
 function boutonDefi(on){ $("redoBtn").hidden = !on; $("askBtn").hidden = !!on; $("finBtn").hidden = true; }
 function boutonFin(on){ $("finBtn").hidden = !on; if (on) { $("askBtn").hidden = true; $("redoBtn").hidden = true; } }
-$("finBtn").onclick = () => terminerLibre();
+$("finBtn").onclick = () => video ? terminerVideo() : terminerLibre();
 $("redoBtn").onclick = () => {
   if (busy || enTransition) return;
   if (entrainement) { const d = entrainement; recommencerDefi(d); return; }
@@ -1754,7 +1912,7 @@ async function appelGemini(model, prompt, schema, audio){
     return await fetch(url, {
       method:"POST",
       headers:{"Content-Type":"application/json","x-goog-api-key":S.key},
-      body: JSON.stringify({contents:[{role:"user", parts:[...(audio ? [{inlineData:{mimeType:audio.mime, data:audio.data}}] : []), {text:prompt}]}], generationConfig:{responseMimeType:"application/json", responseSchema:schema, temperature:0.6}})
+      body: JSON.stringify({contents:[{role:"user", parts:[...(audio?.video ? [{fileData:{fileUri:audio.video.uri}, videoMetadata:{startOffset:audio.video.debut + "s", endOffset:audio.video.fin + "s"}}] : []), ...(audio?.data ? [{inlineData:{mimeType:audio.mime, data:audio.data}}] : []), {text:prompt}]}], generationConfig:{responseMimeType:"application/json", responseSchema:schema, temperature:0.6}})
     });
   } catch (e) { throw {code:"net", detail:String(e)}; }
 }
@@ -1958,7 +2116,7 @@ let entrainement = null;   // defi deja valide sur lequel on discute ("En parler
 function briller(){ const c = $("leconChip"); c.classList.remove("brille"); void c.offsetWidth; c.classList.add("brille"); }
 function majLeconChip(){
   const chip = $("leconChip"), l = lecon();
-  if (!l || !started || modeLibre()) { chip.hidden = true; return; }
+  if (!l || !started || modeLibre() || video) { chip.hidden = true; return; }
   if (Date.now() < feteDefi) return;
   // on garde le meme element pour que le remplissage glisse au lieu de sauter
   let lbl = chip.querySelector(".lbl"); if (!lbl) { chip.replaceChildren(); lbl = el("span", "lbl"); chip.append(lbl); }
@@ -2099,9 +2257,11 @@ Keep every French instruction under 14 words.`, SCHEMA_SEANCE);
   return {modele:d.modele, guide:g.slice(0, 3), secours:g[3] || g[2] || null, rappels:rap};
 }
 // Mode libre : la conversation ouverte (ni seance, ni discussion d'un defi)
-function modeLibre(){ return !!(started && theme?.libre && !seance && !entrainement); }
+function modeLibre(){ return !!(started && theme?.libre && !seance && !entrainement && !video); }
 let libre = null;   // {tours, justes, phrases:[], mots:[]} : ce que la conversation a apporte, pour le bilan
 function ouvertureLibre(){
+  if (libre?.videoSujet) return `He has just watched this YouTube video with you: ${libre.videoSujet}
+Open the conversation IN ENGLISH with ONE short, curious question (18 words max) about what he thought of it or about one precise thing in it. Never summarize the video.`;
   if (libre?.sujet) return `Just before, he asked you side questions IN FRENCH about English, and got these answers:
 ${libre.sujet}
 Open the conversation IN ENGLISH on the real situation behind his LAST question. First read what he ALREADY told you in his questions (what he is doing, where, when, with whom, what went wrong): NEVER ask back a fact he already gave, and never ask whether he is doing what he just said he is doing. Ask ONE short, curious question (18 words max) that moves that situation forward (what comes next, what he will actually say or do, how he feels about it), so that his natural answer makes him use what he just learned. Example: he asked how to say he has an internship interview with a company in Cork on Friday -> "What do you want them to remember about you after Friday?" Never quiz him, never recap the answer, no French.`;
@@ -2880,7 +3040,7 @@ function allerAccueil(){
   $("modeName").textContent = "Talk Practice"; $("themeName").textContent = ""; $("themeName").hidden = false; $("newTheme").hidden = true; $("leconChip").hidden = true;
   mic.disabled = true;
   if (S.leconSuspendue) { S.lecon = S.leconSuspendue; delete S.leconSuspendue; saveS(); }
-  entrainement = null; libre = null; boutonDefi(false);
+  entrainement = null; libre = null; boutonDefi(false); quitterVideo();
   feed.replaceChildren(accueil); setStatus(""); document.body.classList.add("home"); majDepart();
   if (validationAccueil) { const v = validationAccueil; validationAccueil = null; animerValidation(v); }
   if (window.history.state?.tp === "in") window.history.replaceState(null, "");
@@ -2899,11 +3059,11 @@ function begin(){
   lancerSeance();
 }
 // sujet (facultatif) : les questions posees en francais juste avant, pour que l'IA ouvre dessus
-function commencerLibre(sujet){
+function commencerLibre(sujet, videoSujet){
   if (!S.key) { openSettings(); return; }
   setTheme(LIBRE);
   ouvrirFil(true); history = [];
-  libre = {tours:0, justes:0, phrases:[], mots:[], sujet:sujet || ""}; boutonFin(true); majLeconChip();
+  libre = {tours:0, justes:0, phrases:[], mots:[], sujet:sujet || "", videoSujet:videoSujet || ""}; boutonFin(true); majLeconChip();
   ask(null);   // l'IA ouvre toujours, avec une seule question (selon le moment, ou le suivi d'un vrai moment)
 }
 // Terminer le mode libre : ce que la conversation a apporte, puis l'accueil

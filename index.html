@@ -174,7 +174,14 @@ body.video #feed.defile{overflow-y:auto}
 .sl.ouverte .tx{font-size:clamp(1.45rem,6.2vw,1.8rem);line-height:1.45}
 .sl.ouverte .sg{border-bottom:2px dotted color-mix(in srgb,var(--accent) 55%,transparent);border-radius:4px}
 .sl.ouverte .sg.sel{background:color-mix(in srgb,var(--accent) 16%,transparent)}
-.sl .sact{display:flex;gap:8px;padding-bottom:4px}
+/* les boutons restent toujours visibles en bas de la phrase ouverte ; une phrase longue retrecit, et defile si besoin */
+.sl .sact{display:none;gap:8px}
+.sl.ouverte .sact{display:flex;position:sticky;bottom:0;z-index:1;margin:0 -8px;padding:8px;border-radius:999px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.sousvue.focus{touch-action:pan-y}
+.sl.ouverte{max-height:calc(var(--vh,300px) - 8px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;padding-top:4px;padding-bottom:0}
+.sl.ouverte::-webkit-scrollbar{display:none}
+.sl.ouverte.longue .tx{font-size:clamp(1.15rem,5vw,1.35rem);line-height:1.4}
+.sl.ouverte.longue .sfr{font-size:1.02rem;margin:10px 0 12px}
 .sbtn{height:38px;min-width:38px;padding:0 12px;border-radius:999px;border:none;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:.85rem;font-weight:700}
 .sbtn svg{width:16px;height:16px}
 .sbtn.garde{background:var(--accent);color:var(--on-accent)}
@@ -871,7 +878,8 @@ function dessinerSous(v){
     const garder = el("button", "sbtn" + (x.garde ? " garde" : "")); garder.innerHTML = ICO_SIGNET; garder.setAttribute("aria-label", "Garder cette phrase");
     garder.onclick = e => { e.stopPropagation(); if (!x.garde) { x.garde = true; passages().push({en:x.en, fr:x.fr || "", v:v.id, t:x.t, titre:v.titre, d:Date.now()}); S.passages = S.passages.slice(-60); ajouterRappel({type:"video", en:x.en}); noterJour(); garder.classList.add("garde"); vibre(10); briller2($("gardeBtn")); } };
     const fl = (sens, d) => { const b = el("button", "sbtn"); b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg>'; b.setAttribute("aria-label", sens < 0 ? "Phrase précédente" : "Phrase suivante"); b.disabled = !v.subs[i + sens]; b.onclick = e => { e.stopPropagation(); if (v.subs[i + sens]) ouvrirLigne(v, i + sens); }; return b; };
-    act.append(rejouer, garder, el("span", "espace"), fl(-1, "M15 5l-7 7 7 7"), fl(1, "M9 5l7 7-7 7")); dd.append(el("p", "sfr", x.fr || ""), act); d.append(dd); l.append(d);
+    act.append(rejouer, garder, el("span", "espace"), fl(-1, "M15 5l-7 7 7 7"), fl(1, "M9 5l7 7-7 7")); dd.append(el("p", "sfr", x.fr || "")); d.append(dd); l.append(d, act);
+    if (x.en.length > 70) l.classList.add("longue");
     l.onclick = () => { if (Date.now() - (v.glisseT || 0) < 300) return; ouvrirLigne(v, i); };
     return l;
   }));
@@ -894,8 +902,8 @@ function placerSous(v){
   const f = v.ouverte ?? v.cur, lignes = [...v.sous.children];
   lignes.forEach((b, j) => { b.classList.toggle("on", j === f); b.classList.toggle("d1", Math.abs(j - f) === 1); b.classList.toggle("ouverte", j === v.ouverte); });
   const cible = lignes[Math.max(0, f)], focus = v.ouverte != null;
-  v.vue.classList.toggle("focus", focus);
-  if (focus) finParcours(v, true);
+  v.vue.classList.toggle("focus", focus); v.vue.style.setProperty("--vh", v.vue.clientHeight + "px");
+  if (focus) { finParcours(v, true); if (cible) cible.scrollTop = 0; }
   if (v.libre) return;   // on parcourt au doigt : la liste ne bouge pas toute seule
   v.y = Math.round(cible ? (focus ? 4 : v.vue.clientHeight * .2) - cible.offsetTop : 0); v.sous.style.transform = "translateY(" + v.y + "px)";
 }
